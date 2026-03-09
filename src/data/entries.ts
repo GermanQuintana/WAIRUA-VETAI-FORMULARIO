@@ -6,8 +6,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Amoxicillin + Clavulanic Acid',
     tradeNames: ['Clavamox', 'Synulox'],
     species: ['Dog', 'Cat', 'Rabbit'],
+    tags: ['Medicina interna', 'Dermatologia', 'Respiratorio', 'Antibioticos'],
     systems: ['Infectious Diseases', 'Dermatology', 'Respiratory'],
     pathologies: ['Pyoderma', 'Upper Respiratory Infection', 'Soft Tissue Infection'],
+    concentrations: ['50 mg/mL suspension oral', '62.5 mg tablets', '250 mg tablets'],
     indications: {
       es: 'Tratamiento empirico de infecciones bacterianas susceptibles mientras se esperan cultivo y antibiograma.',
       en: 'Empirical treatment of susceptible bacterial infections while culture and susceptibility are pending.',
@@ -15,6 +17,14 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     dosage: {
       es: 'Perros: 12.5-25 mg/kg VO cada 12 h.\nGatos: 12.5-25 mg/kg VO cada 12 h.\nConejos: usar con precaucion y monitorizacion veterinaria estricta.',
       en: 'Dogs: 12.5-25 mg/kg PO q12h.\nCats: 12.5-25 mg/kg PO q12h.\nRabbits: use with caution and only under strict veterinary monitoring.',
+    },
+    administrationConditions: {
+      es: 'Puede administrarse con alimento si existe intolerancia gastrointestinal. Mantener intervalos regulares de dosificacion.',
+      en: 'May be given with food if gastrointestinal intolerance is present. Keep dosing intervals consistent.',
+    },
+    adverseEffects: {
+      es: 'Trastornos gastrointestinales, hipersensibilidad y alteracion de microbiota en especies sensibles.',
+      en: 'Gastrointestinal upset, hypersensitivity, and microbiota disruption in sensitive species.',
     },
     contraindications: {
       es: 'Evitar en hipersensibilidad grave a beta-lactamicos. Reevaluar en especies con riesgo de disbiosis gastrointestinal.',
@@ -25,6 +35,23 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       en: 'Culture-directed de-escalation is recommended once susceptibility testing becomes available.',
     },
     evidenceLevel: 'Moderate',
+    editorialStatus: 'approved',
+    calculatorPresets: [
+      {
+        id: 'amoxclav-dog-po',
+        category: { es: 'Antibioticos', en: 'Antibiotics' },
+        species: ['Dog'],
+        route: 'PO',
+        indication: { es: 'Pioderma e infecciones de tejidos blandos', en: 'Pyoderma and soft tissue infection' },
+        doseRangeMgKg: { min: 12.5, max: 25 },
+        defaultDoseMgKg: 12.5,
+        concentration: {
+          es: '50 mg/mL suspension oral',
+          en: '50 mg/mL oral suspension',
+          mgPerMl: 50,
+        },
+      },
+    ],
     references: [
       {
         id: 'ref-iscaid-2019',
@@ -45,8 +72,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Maropitant',
     tradeNames: ['Cerenia'],
     species: ['Dog', 'Cat', 'Ferret'],
+    tags: ['Urgencias', 'Anestesia', 'Oncologia', 'Antiemeticos'],
     systems: ['Gastroenterology', 'Oncology Support'],
     pathologies: ['Acute Vomiting', 'Motion Sickness', 'Chemotherapy-Induced Nausea'],
+    concentrations: ['10 mg/mL injectable', '16 mg tablets', '24 mg tablets', '60 mg tablets'],
     indications: {
       es: 'Antiemetico para vias centrales y perifericas del vomito. Util en control multimodal de pacientes hospitalizados.',
       en: 'Antiemetic for central and peripheral emetic pathways. Useful as multimodal control in hospitalized patients.',
@@ -55,11 +84,50 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'Perros: 1 mg/kg SC/VO cada 24 h.\nGatos: 1 mg/kg SC cada 24 h o 2 mg/kg VO cada 24 h segun protocolo.',
       en: 'Dogs: 1 mg/kg SC/PO q24h.\nCats: 1 mg/kg SC q24h or 2 mg/kg PO q24h depending on protocol.',
     },
+    administrationConditions: {
+      es: 'Usar segun la via elegida y valorar administracion previa a quimioterapia, viaje o induccion anestesica si procede.',
+      en: 'Use according to the selected route and consider pre-chemotherapy, pre-travel, or pre-anesthetic timing when appropriate.',
+    },
+    adverseEffects: {
+      es: 'Dolor transitorio en el punto de inyeccion, hipersalivacion y raramente sedacion leve.',
+      en: 'Transient injection-site discomfort, hypersalivation, and rarely mild sedation.',
+    },
     contraindications: {
       es: 'Precaucion en disfuncion hepatica grave y en pacientes muy jovenes.',
       en: 'Use caution in severe hepatic dysfunction and in very young patients.',
     },
     evidenceLevel: 'High',
+    editorialStatus: 'approved',
+    calculatorPresets: [
+      {
+        id: 'maropitant-dog-sc',
+        category: { es: 'Antiemeticos', en: 'Antiemetics' },
+        species: ['Dog'],
+        route: 'SC',
+        indication: { es: 'Vomito agudo', en: 'Acute vomiting' },
+        doseRangeMgKg: { min: 1, max: 1 },
+        defaultDoseMgKg: 1,
+        concentration: {
+          es: '10 mg/mL inyectable',
+          en: '10 mg/mL injectable',
+          mgPerMl: 10,
+        },
+      },
+      {
+        id: 'maropitant-cat-po',
+        category: { es: 'Antiemeticos', en: 'Antiemetics' },
+        species: ['Cat'],
+        route: 'PO',
+        indication: { es: 'Nausea y control emetico', en: 'Nausea and emesis control' },
+        doseRangeMgKg: { min: 1, max: 2 },
+        defaultDoseMgKg: 2,
+        concentration: {
+          es: 'Comprimidos 16 mg',
+          en: '16 mg tablets',
+          mgPerTablet: 16,
+        },
+      },
+    ],
     references: [],
     cimavet: {
       nregistro: 'EU/2/06/062/005',
@@ -72,8 +140,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Meloxicam',
     tradeNames: ['Metacam', 'Meloxidyl'],
     species: ['Dog', 'Cat', 'Rabbit', 'Guinea Pig', 'Chinchilla', 'Equine'],
+    tags: ['Analgesicos', 'AINEs', 'Anestesia', 'Cirugia'],
     systems: ['Analgesia', 'Orthopedics', 'Inflammation'],
     pathologies: ['Postoperative Pain', 'Osteoarthritis', 'Inflammatory Conditions'],
+    concentrations: ['1.5 mg/mL suspension oral', '0.5 mg/mL suspension oral', '5 mg/mL injectable'],
     indications: {
       es: 'AINE para control del dolor inflamatorio en especies seleccionadas, con monitorizacion renal y gastrointestinal.',
       en: 'NSAID for inflammatory pain control in selected species with renal and GI monitoring.',
@@ -82,11 +152,36 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'Perros: 0.1 mg/kg VO dosis inicial y luego 0.05 mg/kg cada 24 h.\nGatos: solo protocolos autorizados por especie.',
       en: 'Dogs: 0.1 mg/kg PO loading then 0.05 mg/kg q24h.\nCats: species-specific licensed protocols only.',
     },
+    administrationConditions: {
+      es: 'Administrar con buena hidratacion y valorar uso con alimento si existe sensibilidad digestiva.',
+      en: 'Administer with adequate hydration and consider giving with food if digestive sensitivity exists.',
+    },
+    adverseEffects: {
+      es: 'Vomitos, diarrea, anorexia, ulceracion gastrointestinal y deterioro renal en pacientes predispuestos.',
+      en: 'Vomiting, diarrhea, anorexia, gastrointestinal ulceration, and renal deterioration in predisposed patients.',
+    },
     contraindications: {
       es: 'No combinar con otros AINE ni corticosteroides. Evitar en deshidratacion, hipotension o compromiso renal.',
       en: 'Do not combine with other NSAIDs or corticosteroids. Avoid in dehydration, hypotension, or renal compromise.',
     },
     evidenceLevel: 'Moderate',
+    editorialStatus: 'approved',
+    calculatorPresets: [
+      {
+        id: 'meloxicam-dog-po',
+        category: { es: 'Analgesia y AINE', en: 'Analgesia and NSAIDs' },
+        species: ['Dog'],
+        route: 'PO',
+        indication: { es: 'Dolor inflamatorio', en: 'Inflammatory pain' },
+        doseRangeMgKg: { min: 0.05, max: 0.1 },
+        defaultDoseMgKg: 0.05,
+        concentration: {
+          es: '1.5 mg/mL suspension oral',
+          en: '1.5 mg/mL oral suspension',
+          mgPerMl: 1.5,
+        },
+      },
+    ],
     references: [],
     cimavet: {
       nameQuery: 'Metacam',
@@ -98,8 +193,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Itraconazole',
     tradeNames: ['Sporanox', 'Itrafungol'],
     species: ['Dog', 'Cat', 'Psittacines', 'Reptiles'],
+    tags: ['Dermatologia', 'Antifungicos', 'Medicina interna', 'Respiratorio'],
     systems: ['Dermatology', 'Infectious Diseases', 'Avian Medicine', 'Exotics'],
     pathologies: ['Dermatophytosis', 'Aspergillosis', 'Systemic Mycoses'],
+    concentrations: ['10 mg/mL solucion oral', '100 mg capsules'],
     indications: {
       es: 'Antifungico sistemico para infecciones por levaduras y mohos; suele requerir tratamientos prolongados y monitorizacion.',
       en: 'Systemic antifungal for yeast and mold infections, often long-course and monitoring-intensive.',
@@ -108,11 +205,36 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'Perros: 5 mg/kg VO cada 24 h en pauta continua o pulsada.\nGatos: 5 mg/kg VO cada 24 h en pauta continua o pulsada.',
       en: 'Dogs: 5 mg/kg PO q24h in pulse or continuous protocols.\nCats: 5 mg/kg PO q24h in pulse or continuous protocols.',
     },
+    administrationConditions: {
+      es: 'Mantener pauta constante y revisar interacciones. Segun formulacion, optimizar administracion separada de comidas si se busca absorcion predecible.',
+      en: 'Keep the schedule consistent and review interactions. Depending on formulation, separate from meals if more predictable absorption is needed.',
+    },
+    adverseEffects: {
+      es: 'Hepatotoxicidad, anorexia, vomitos y reacciones gastrointestinales durante tratamientos prolongados.',
+      en: 'Hepatotoxicity, anorexia, vomiting, and gastrointestinal reactions during prolonged treatment.',
+    },
     contraindications: {
       es: 'Monitorizar riesgo de hepatotoxicidad y posibles interacciones por metabolismo CYP.',
       en: 'Monitor hepatotoxicity risk. Adjust strategy when interacting with CYP-metabolized drugs.',
     },
     evidenceLevel: 'Moderate',
+    editorialStatus: 'approved',
+    calculatorPresets: [
+      {
+        id: 'itraconazole-cat-po',
+        category: { es: 'Antifungicos', en: 'Antifungals' },
+        species: ['Cat'],
+        route: 'PO',
+        indication: { es: 'Dermatofitosis', en: 'Dermatophytosis' },
+        doseRangeMgKg: { min: 5, max: 10 },
+        defaultDoseMgKg: 5,
+        concentration: {
+          es: '10 mg/mL solucion oral',
+          en: '10 mg/mL oral solution',
+          mgPerMl: 10,
+        },
+      },
+    ],
     references: [],
     cimavet: {
       nameQuery: 'Itrafungol',
@@ -124,8 +246,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Enrofloxacin',
     tradeNames: ['Baytril'],
     species: ['Dog', 'Cat', 'Rabbit', 'Ferret', 'Reptiles', 'Poultry', 'Equine'],
+    tags: ['UCI', 'Respiratorio', 'Urinario y nefrologia', 'Antibioticos'],
     systems: ['Infectious Diseases', 'Respiratory', 'Urology'],
     pathologies: ['Complicated UTI', 'Pneumonia', 'Gram-negative infections'],
+    concentrations: ['22.7 mg tablets', '50 mg tablets', '100 mg tablets', '25 mg/mL injectable'],
     indications: {
       es: 'Fluoroquinolona reservada para infecciones con sensibilidad documentada y uso bajo criterios de stewardship.',
       en: 'Fluoroquinolone reserved for infections with documented susceptibility and stewardship oversight.',
@@ -134,15 +258,103 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'Perros: 5-20 mg/kg VO cada 24 h segun indicacion.\nGatos: evitar dosis altas por riesgo de toxicidad retiniana.',
       en: 'Dogs: 5-20 mg/kg PO q24h depending on indication.\nCats: avoid high doses due to retinal toxicity risk.',
     },
+    administrationConditions: {
+      es: 'Separar de cationes multivalentes y ajustar con base en cultivo, sensibilidad y funcion renal cuando corresponda.',
+      en: 'Separate from multivalent cations and adjust based on culture, susceptibility, and renal function when appropriate.',
+    },
+    adverseEffects: {
+      es: 'Alteraciones gastrointestinales, artropatia en crecimiento y retinotoxicidad en gatos a dosis elevadas.',
+      en: 'Gastrointestinal upset, arthropathy in growing animals, and retinal toxicity in cats at high doses.',
+    },
     contraindications: {
       es: 'Evitar uso empirico de primera linea cuando existan alternativas. Precaucion en animales en crecimiento.',
       en: 'Avoid empirical first-line use when alternatives are available. Use caution in growing animals.',
     },
     evidenceLevel: 'High',
+    editorialStatus: 'approved',
+    calculatorPresets: [
+      {
+        id: 'enrofloxacin-dog-po',
+        category: { es: 'Antibioticos', en: 'Antibiotics' },
+        species: ['Dog'],
+        route: 'PO',
+        indication: { es: 'Infecciones gramnegativas', en: 'Gram-negative infections' },
+        doseRangeMgKg: { min: 5, max: 20 },
+        defaultDoseMgKg: 10,
+        concentration: {
+          es: '50 mg comprimidos',
+          en: '50 mg tablets',
+          mgPerTablet: 50,
+        },
+      },
+    ],
     references: [],
     cimavet: {
       nameQuery: 'Baytril',
     },
     lastUpdated: '2026-03-05',
+  },
+  {
+    id: 'phenobarbital',
+    activeIngredient: 'Phenobarbital',
+    tradeNames: ['Luminal', 'Gardenal'],
+    species: ['Dog', 'Cat'],
+    tags: ['Neurologia', 'Anticonvulsivantes', 'Medicina interna', 'UCI'],
+    systems: ['Neurology', 'Internal Medicine'],
+    pathologies: ['Seizure Control', 'Epilepsy Management'],
+    concentrations: ['15 mg/mL oral solution', '25 mg tablets', '50 mg tablets'],
+    indications: {
+      es: 'Anticonvulsivante de mantenimiento que requiere monitorizacion de niveles, funcion hepatica y respuesta clinica sostenida.',
+      en: 'Maintenance anticonvulsant requiring level monitoring, hepatic follow-up, and sustained clinical response assessment.',
+    },
+    dosage: {
+      es: 'Perros: 2-3 mg/kg VO cada 12 h como inicio habitual.\nGatos: 1.5-2.5 mg/kg VO cada 12 h segun respuesta y tolerancia.',
+      en: 'Dogs: 2-3 mg/kg PO q12h as a common starting point.\nCats: 1.5-2.5 mg/kg PO q12h depending on response and tolerance.',
+    },
+    administrationConditions: {
+      es: 'Mantener horarios estrictos y documentar la hora exacta de administracion cuando se planifiquen niveles sericos.',
+      en: 'Keep strict dosing times and document the exact administration time when serum levels are planned.',
+    },
+    adverseEffects: {
+      es: 'Sedacion, ataxia, polifagia, poliuria/polidipsia y alteraciones hepaticas en tratamientos prolongados.',
+      en: 'Sedation, ataxia, polyphagia, polyuria/polydipsia, and hepatic changes with prolonged therapy.',
+    },
+    contraindications: {
+      es: 'Precaucion en hepatopatia, sedacion marcada o cuando no sea posible monitorizar concentraciones y enzimas hepaticas.',
+      en: 'Use caution with liver disease, marked sedation, or when serum concentration and hepatic enzymes cannot be monitored.',
+    },
+    notes: {
+      es: 'Valorar concentracion serica en estado estacionario y despues de cambios de dosis. Documentar siempre horario exacto de toma y extraccion.',
+      en: 'Assess serum concentration at steady state and after dose changes. Always document exact dosing and sampling times.',
+    },
+    evidenceLevel: 'Moderate',
+    editorialStatus: 'approved',
+    calculatorPresets: [
+      {
+        id: 'phenobarbital-dog-po',
+        category: { es: 'Neurologia', en: 'Neurology' },
+        species: ['Dog'],
+        route: 'PO',
+        indication: { es: 'Mantenimiento anticonvulsivante', en: 'Maintenance anticonvulsant therapy' },
+        doseRangeMgKg: { min: 2, max: 3 },
+        defaultDoseMgKg: 2.5,
+        concentration: {
+          es: '15 mg/mL solucion oral',
+          en: '15 mg/mL oral solution',
+          mgPerMl: 15,
+        },
+      },
+    ],
+    references: [
+      {
+        id: 'ref-acvim-seizure-2015',
+        title: 'International veterinary epilepsy task force consensus proposal: medical treatment of canine epilepsy in Europe',
+        authors: 'Bhatti SFM et al.',
+        year: 2015,
+        source: 'BMC Veterinary Research',
+        url: 'https://doi.org/10.1186/s12917-015-0464-z',
+      },
+    ],
+    lastUpdated: '2026-03-06',
   },
 ];

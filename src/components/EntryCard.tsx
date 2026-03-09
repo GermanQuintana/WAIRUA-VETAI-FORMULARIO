@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { labels, Language } from '../i18n';
-import { translateEvidenceLevel, translateMedicalTerms } from '../lib/terms';
+import { translateEditorialStatus, translateEvidenceLevel, translateMedicalTerms } from '../lib/terms';
 import { buildCimavetListUrl, buildCimavetRecordUrl, resolveCimavetBaseUrl } from '../services/cimavet';
 import { TherapeuticEntry } from '../types';
 
 interface Props {
   entry: TherapeuticEntry;
   lang: Language;
+  onEdit?: (entry: TherapeuticEntry) => void;
+  onDelete?: (entry: TherapeuticEntry) => void;
 }
 
 const CIMAVET_API_BASE = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
-export default function EntryCard({ entry, lang }: Props) {
+export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
   const t = labels[lang];
   const [resolvedCimavetUrl, setResolvedCimavetUrl] = useState<string | null>(entry.cimavet?.url ?? null);
   const [isResolvingCimavet, setIsResolvingCimavet] = useState(false);
@@ -23,6 +25,7 @@ export default function EntryCard({ entry, lang }: Props) {
     () => translateMedicalTerms(entry.pathologies, lang).join(', '),
     [entry.pathologies, lang],
   );
+  const tagsLabel = useMemo(() => translateMedicalTerms(entry.tags, lang).join(', '), [entry.tags, lang]);
 
   useEffect(() => {
     let isMounted = true;
@@ -76,7 +79,28 @@ export default function EntryCard({ entry, lang }: Props) {
 
   return (
     <article className="entry-card">
-      <h3>{entry.activeIngredient}</h3>
+      <div className="entry-card-header">
+        <div>
+          <h3>{entry.activeIngredient}</h3>
+          <span className={`editorial-status editorial-status-${entry.editorialStatus}`}>
+            {translateEditorialStatus(entry.editorialStatus, lang)}
+          </span>
+        </div>
+        {(onEdit || onDelete) && (
+          <div className="entry-card-actions">
+            {onEdit && (
+              <button type="button" className="secondary-button entry-card-edit" onClick={() => onEdit(entry)}>
+                {lang === 'es' ? 'Editar' : 'Edit'}
+              </button>
+            )}
+            {onDelete && (
+              <button type="button" className="secondary-button entry-card-delete" onClick={() => onDelete(entry)}>
+                {t.deleteRecord}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       <p>
         <strong>{t.tradeNames}:</strong> {entry.tradeNames.join(', ')}
       </p>
@@ -90,10 +114,22 @@ export default function EntryCard({ entry, lang }: Props) {
         <strong>{t.pathologies}:</strong> {pathologiesLabel}
       </p>
       <p>
+        <strong>{t.tagsLabel}:</strong> {tagsLabel}
+      </p>
+      <p>
+        <strong>{t.concentrationsLabel}:</strong> {entry.concentrations.join(', ')}
+      </p>
+      <p>
         <strong>{t.indications}:</strong> {entry.indications[lang]}
       </p>
       <p className="multiline-text">
         <strong>{t.dosage}:</strong> {entry.dosage[lang]}
+      </p>
+      <p>
+        <strong>{t.administrationConditions}:</strong> {entry.administrationConditions[lang]}
+      </p>
+      <p>
+        <strong>{t.adverseEffects}:</strong> {entry.adverseEffects[lang]}
       </p>
       <p>
         <strong>{t.contraindications}:</strong> {entry.contraindications[lang]}
@@ -105,6 +141,9 @@ export default function EntryCard({ entry, lang }: Props) {
       )}
       <p>
         <strong>{t.evidence}:</strong> {translateEvidenceLevel(entry.evidenceLevel, lang)}
+      </p>
+      <p>
+        <strong>{t.editorialStatus}:</strong> {translateEditorialStatus(entry.editorialStatus, lang)}
       </p>
 
       {(resolvedCimavetUrl || isResolvingCimavet) && (

@@ -1,15 +1,28 @@
-import { TherapeuticEntry } from '../types';
+import { canonicalTagOptions } from '../data/taxonomy';
+import { DoseCalculatorEntry, Species, TherapeuticEntry } from '../types';
 
 const uniqueSorted = (values: string[]) => Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 
 export const getSpeciesOptions = (entries: TherapeuticEntry[]) =>
-  uniqueSorted(entries.flatMap((entry) => entry.species));
+  uniqueSorted(entries.flatMap((entry) => entry.species)) as Species[];
 
 export const getSystemOptions = (entries: TherapeuticEntry[]) =>
   uniqueSorted(entries.flatMap((entry) => entry.systems));
 
 export const getIndicationOptions = (entries: TherapeuticEntry[]) =>
   uniqueSorted(entries.flatMap((entry) => entry.pathologies));
+
+export const getTagOptions = (entries: TherapeuticEntry[]) =>
+  uniqueSorted([...canonicalTagOptions, ...entries.flatMap((entry) => entry.tags)]);
+
+export const buildDoseCalculatorEntries = (entries: TherapeuticEntry[]): DoseCalculatorEntry[] =>
+  entries.flatMap((entry) =>
+    (entry.calculatorPresets ?? []).map((preset) => ({
+      ...preset,
+      activeIngredient: entry.activeIngredient,
+      linkedEntryId: entry.id,
+    })),
+  );
 
 export const byAlphabeticalKey = (entries: TherapeuticEntry[], key: keyof TherapeuticEntry) =>
   [...entries].sort((a, b) => String(a[key]).localeCompare(String(b[key])));

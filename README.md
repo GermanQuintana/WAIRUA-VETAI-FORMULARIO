@@ -27,6 +27,7 @@ npm run dev
 Variables de entorno (copia `.env.example` a `.env`):
 
 ```bash
+VITE_CIMA_BASE_URL=
 VITE_CIMAVET_BASE_URL=
 VITE_CIMAVET_API_KEY=
 VITE_SUPABASE_URL=
@@ -38,6 +39,7 @@ VITE_SUPABASE_ANON_KEY=
 - `src/data/entries.ts`: dataset inicial de ejemplo.
 - `src/types.ts`: tipos de datos terapeuticos y referencias.
 - `src/services/cimavet.ts`: cliente de integracion CIMAVet (lista paginada, detalle por `nregistro`, carga de catalogo y filtro local por nombre/principio activo).
+- `src/services/cima.ts`: cliente de integracion con CIMA humana (busqueda por nombre comercial y principio activo, detalle por `nregistro` y enlaces a ficha tecnica/prospecto).
 - `supabase/schema.sql`: propuesta inicial de modelo relacional para autenticacion y contenido colaborativo.
 
 ## Estado de integracion con CIMAVet
@@ -54,6 +56,13 @@ VITE_SUPABASE_ANON_KEY=
 - Flujo editorial con estados (`draft`, `under_review`, `approved`).
 - Sincronizacion bidireccional con API de Cimavet.
 - Auditoria de cambios por entrada y trazabilidad de referencias.
+
+## Estado de integracion con CIMA humana
+
+- Endpoint de lista: `GET /medicamentos?nombre=` y `GET /medicamentos?practiv1=`.
+- Endpoint de detalle: `GET /medicamento?nregistro=`.
+- Busqueda actual implementada: combinacion de consulta por nombre comercial y principio activo usando la API oficial de CIMA.
+- Enlaces disponibles en UI: ficha tecnica y prospecto cuando CIMA los expone en `docs`.
 
 ## Open source
 

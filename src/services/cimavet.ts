@@ -283,8 +283,12 @@ export class CimavetService {
       activeIngredient,
       tradeNames: [detail.nombre],
       species: species as TherapeuticEntry['species'],
+      tags: ['Imported', 'Needs Review'],
       systems: detail.atcs?.map((atc) => `[${atc.codigo}] ${atc.nombre}`) ?? ['General Medicine'],
       pathologies: ['Pending pathology indexing'],
+      concentrations:
+        detail.principiosActivos?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim()) ??
+        [],
       indications: {
         es: indicationsText,
         en: indicationsText,
@@ -292,6 +296,14 @@ export class CimavetService {
       dosage: {
         es: 'Pendiente de curacion de dosis desde ficha tecnica y referencias clinicas.',
         en: 'Pending dosage curation from SmPC and clinical references.',
+      },
+      administrationConditions: {
+        es: 'Pendiente de curacion de condiciones de administracion.',
+        en: 'Pending curation of administration conditions.',
+      },
+      adverseEffects: {
+        es: 'Pendiente de curacion de efectos adversos relevantes.',
+        en: 'Pending curation of relevant adverse effects.',
       },
       contraindications: {
         es: contraindicationsText,
@@ -302,6 +314,7 @@ export class CimavetService {
         en: `Imported from CIMAVet. Registration: ${detail.nregistro}.`,
       },
       evidenceLevel: 'Expert Consensus',
+      editorialStatus: 'draft',
       references: [
         {
           id: `ref-cimavet-${detail.nregistro}`,

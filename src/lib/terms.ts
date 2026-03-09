@@ -1,5 +1,5 @@
 import { Language } from '../i18n';
-import { EvidenceLevel } from '../types';
+import { EditorialStatus, EvidenceLevel } from '../types';
 
 type TermDictionary = Record<string, { es: string; en: string }>;
 
@@ -17,6 +17,60 @@ const termDictionary: TermDictionary = {
   Passerines: { es: 'Paseriformes', en: 'Passerines' },
   Poultry: { es: 'Aves de produccion', en: 'Poultry' },
   Equine: { es: 'Caballos', en: 'Equine' },
+  Dermatologia: { es: 'Dermatologia', en: 'Dermatology' },
+  'Diagnostico por imagen': { es: 'Diagnostico por imagen', en: 'Diagnostic Imaging' },
+  Digestivo: { es: 'Digestivo', en: 'Digestive' },
+  Endocrino: { es: 'Endocrino', en: 'Endocrinology' },
+  Fluidoterapia: { es: 'Fluidoterapia', en: 'Fluid Therapy' },
+  'Medicina del comportamiento': { es: 'Medicina del comportamiento', en: 'Behavioral Medicine' },
+  'Medicina interna': { es: 'Medicina interna', en: 'Internal Medicine' },
+  Neurologia: { es: 'Neurologia', en: 'Neurology' },
+  Nutricion: { es: 'Nutricion', en: 'Nutrition' },
+  Oncologia: { es: 'Oncologia', en: 'Oncology' },
+  Oftalmologia: { es: 'Oftalmologia', en: 'Ophthalmology' },
+  Odontologia: { es: 'Odontologia', en: 'Dentistry' },
+  Reproduccion: { es: 'Reproduccion', en: 'Reproduction' },
+  Respiratorio: { es: 'Respiratorio', en: 'Respiratory' },
+  UCI: { es: 'UCI', en: 'ICU' },
+  Urgencias: { es: 'Urgencias', en: 'Emergency' },
+  'Urinario y nefrologia': { es: 'Urinario y nefrologia', en: 'Urinary and Nephrology' },
+  AINEs: { es: 'AINEs', en: 'NSAIDs' },
+  Analgesicos: { es: 'Analgesicos', en: 'Analgesics' },
+  Anestesicos: { es: 'Anestesicos', en: 'Anesthetics' },
+  Ansioliticos: { es: 'Ansioliticos', en: 'Anxiolytics' },
+  'Antiacidos y protectores gastricos': { es: 'Antiacidos y protectores gastricos', en: 'Antacids and Gastroprotectants' },
+  Antiarritmicos: { es: 'Antiarritmicos', en: 'Antiarrhythmics' },
+  Antibioticos: { es: 'Antibioticos', en: 'Antibiotics' },
+  Anticonvulsivantes: { es: 'Anticonvulsivantes', en: 'Anticonvulsants' },
+  Antidepresivos: { es: 'Antidepresivos', en: 'Antidepressants' },
+  Antiemeticos: { es: 'Antiemeticos', en: 'Antiemetics' },
+  Antifungicos: { es: 'Antifungicos', en: 'Antifungals' },
+  Antihistaminicos: { es: 'Antihistaminicos', en: 'Antihistamines' },
+  Antiinflamatorios: { es: 'Antiinflamatorios', en: 'Anti-inflammatory agents' },
+  'Antiparasitarios externos': { es: 'Antiparasitarios externos', en: 'External antiparasitics' },
+  'Antiparasitarios internos': { es: 'Antiparasitarios internos', en: 'Internal antiparasitics' },
+  Antipruriginosos: { es: 'Antipruriginosos', en: 'Antipruritics' },
+  Antivirales: { es: 'Antivirales', en: 'Antivirals' },
+  Biologicos: { es: 'Biologicos', en: 'Biologics' },
+  Champuterapia: { es: 'Champuterapia', en: 'Shampoo therapy' },
+  Corticoesteroides: { es: 'Corticoesteroides', en: 'Corticosteroids' },
+  Hepatoprotectores: { es: 'Hepatoprotectores', en: 'Hepatoprotectants' },
+  Hormonas: { es: 'Hormonas', en: 'Hormones' },
+  Inmunomoduladores: { es: 'Inmunomoduladores', en: 'Immunomodulators' },
+  Otologicos: { es: 'Otologicos', en: 'Otologics' },
+  Probioticos: { es: 'Probioticos', en: 'Probiotics' },
+  Vacunas: { es: 'Vacunas', en: 'Vaccines' },
+  Vitaminas: { es: 'Vitaminas', en: 'Vitamins' },
+  Neurology: { es: 'Neurologia', en: 'Neurology' },
+  'Internal Medicine': { es: 'Medicina interna', en: 'Internal Medicine' },
+  Emergency: { es: 'Urgencias', en: 'Emergency' },
+  Anesthesia: { es: 'Anestesia', en: 'Anesthesia' },
+  'Critical Care': { es: 'UCI', en: 'Critical Care' },
+  Monitoring: { es: 'Monitorizacion', en: 'Monitoring' },
+  Oncology: { es: 'Oncologia', en: 'Oncology' },
+  'Pain Management': { es: 'Manejo del dolor', en: 'Pain Management' },
+  Avian: { es: 'Aviar', en: 'Avian' },
+  'Antibiotic Stewardship': { es: 'Uso responsable de antibioticos', en: 'Antibiotic Stewardship' },
   'Infectious Diseases': { es: 'Enfermedades infecciosas', en: 'Infectious Diseases' },
   Dermatology: { es: 'Dermatologia', en: 'Dermatology' },
   Respiratory: { es: 'Respiratorio', en: 'Respiratory' },
@@ -43,6 +97,8 @@ const termDictionary: TermDictionary = {
   'Complicated UTI': { es: 'ITU complicada', en: 'Complicated UTI' },
   Pneumonia: { es: 'Neumonia', en: 'Pneumonia' },
   'Gram-negative infections': { es: 'Infecciones por gramnegativos', en: 'Gram-negative infections' },
+  'Seizure Control': { es: 'Control de crisis', en: 'Seizure Control' },
+  'Epilepsy Management': { es: 'Manejo de epilepsia', en: 'Epilepsy Management' },
 };
 
 const evidenceLabels: Record<EvidenceLevel, { es: string; en: string }> = {
@@ -50,6 +106,12 @@ const evidenceLabels: Record<EvidenceLevel, { es: string; en: string }> = {
   Moderate: { es: 'Moderada', en: 'Moderate' },
   Low: { es: 'Baja', en: 'Low' },
   'Expert Consensus': { es: 'Consenso experto', en: 'Expert Consensus' },
+};
+
+const editorialStatusLabels: Record<EditorialStatus, { es: string; en: string }> = {
+  draft: { es: 'Borrador', en: 'Draft' },
+  under_review: { es: 'En revision', en: 'Under review' },
+  approved: { es: 'Aprobado', en: 'Approved' },
 };
 
 export const translateMedicalTerm = (term: string, lang: Language) => {
@@ -61,6 +123,8 @@ export const translateMedicalTerms = (values: string[], lang: Language) =>
   values.map((value) => translateMedicalTerm(value, lang));
 
 export const translateEvidenceLevel = (evidence: EvidenceLevel, lang: Language) => evidenceLabels[evidence][lang];
+
+export const translateEditorialStatus = (status: EditorialStatus, lang: Language) => editorialStatusLabels[status][lang];
 
 export const expandMedicalTermAliases = (term: string) => {
   const found = termDictionary[term];
