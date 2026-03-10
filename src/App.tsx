@@ -71,6 +71,13 @@ const normalizeFilterText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const formatDelimitedText = (value: string) =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join(', ');
+
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
   query: string,
@@ -128,6 +135,8 @@ const filterTherapeuticEntries = (
 };
 
 function App() {
+  const livePageSizeOptions = [12, 24, 'all'] as const;
+
   const [entryCatalog, setEntryCatalog] = useState<TherapeuticEntry[]>(therapeuticEntries);
   const [editingEntry, setEditingEntry] = useState<TherapeuticEntry | null>(null);
   const [lang, setLang] = useState<Language>('es');
@@ -139,8 +148,10 @@ function App() {
 
   const [rxQuery, setRxQuery] = useState('');
   const [rxSpecies, setRxSpecies] = useState('');
-  const [rxSystem, setRxSystem] = useState('');
   const [rxIndication, setRxIndication] = useState('');
+  const [rxOnlyCommercialized, setRxOnlyCommercialized] = useState(false);
+  const [livePageSize, setLivePageSize] = useState<(typeof livePageSizeOptions)[number]>(24);
+  const [livePage, setLivePage] = useState(1);
 
   const [activeQuery, setActiveQuery] = useState('');
   const [activeSpecies, setActiveSpecies] = useState('');
@@ -257,23 +268,38 @@ function App() {
   }, [liveDetails]);
 
   const filteredLiveResults = useMemo(() => {
-    const byIndication = rxIndication
-      ? liveResults.filter((medication) => {
+    const commercialized = rxOnlyCommercialized ? liveResults.filter((medication) => medication.comerc) : liveResults;
+
+    return rxIndication
+      ? commercialized.filter((medication) => {
           const detail = liveDetails[medication.nregistro];
           if (!detail?.indicaciones?.length) return false;
           return detail.indicaciones.some((item) => item.nombre === rxIndication);
         })
-      : liveResults;
+      : commercialized;
+  }, [liveDetails, liveResults, rxIndication, rxOnlyCommercialized]);
 
-    if (!rxSystem) return byIndication;
+  const liveTotalPages = useMemo(() => {
+    if (livePageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(filteredLiveResults.length / livePageSize));
+  }, [filteredLiveResults.length, livePageSize]);
 
-    const loweredSystem = rxSystem.toLowerCase();
-    return byIndication.filter((medication) => {
-      const detail = liveDetails[medication.nregistro];
-      if (!detail?.atcs?.length) return true;
-      return detail.atcs.some((atc) => atc.nombre.toLowerCase().includes(loweredSystem));
-    });
-  }, [liveDetails, liveResults, rxIndication, rxSystem]);
+  const livePageBounds = useMemo(() => {
+    if (filteredLiveResults.length === 0) return { start: 0, end: 0 };
+    if (livePageSize === 'all') return { start: 1, end: filteredLiveResults.length };
+
+    const start = (livePage - 1) * livePageSize + 1;
+    const end = Math.min(filteredLiveResults.length, livePage * livePageSize);
+    return { start, end };
+  }, [filteredLiveResults.length, livePage, livePageSize]);
+
+  const visibleLiveResults = useMemo(
+    () =>
+      livePageSize === 'all'
+        ? filteredLiveResults
+        : filteredLiveResults.slice((livePage - 1) * livePageSize, livePage * livePageSize),
+    [filteredLiveResults, livePage, livePageSize],
+  );
 
   const filteredHumanResults = useMemo(() => {
     const normalizedDose = normalizeFilterText(humanDoseFilter);
@@ -309,6 +335,14 @@ function App() {
 
     return () => window.clearTimeout(warmup);
   }, [cimavetService]);
+
+  useEffect(() => {
+    setLivePage(1);
+  }, [rxQuery, rxSpecies, rxIndication, rxOnlyCommercialized, livePageSize]);
+
+  useEffect(() => {
+    setLivePage((current) => Math.min(current, liveTotalPages));
+  }, [liveTotalPages]);
 
   useEffect(() => {
     if (!supabaseEditorialService) return;
@@ -658,11 +692,6 @@ function App() {
           <p className="badge">WAIRUA VetAI</p>
           <h1>{t.appTitle}</h1>
           <p>{t.appSubtitle}</p>
-          <div className="hero-actions">
-            <button onClick={() => setActiveTab('prescription')}>{t.prescriptionHub}</button>
-            <button onClick={() => setActiveTab('active')}>{t.activeHub}</button>
-            <button onClick={() => setActiveTab('toolkit')}>{t.toolkitHub}</button>
-          </div>
         </div>
         <div className="controls">
           <button className="theme-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
@@ -764,18 +793,6 @@ function App() {
               </label>
 
               <label>
-                {t.system}
-                <select value={rxSystem} onChange={(event) => setRxSystem(event.target.value)}>
-                  <option value="">{t.all}</option>
-                  {systemOptions.map((system) => (
-                    <option key={system} value={system}>
-                      {translateMedicalTerm(system, lang)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
                 {t.indicationFilter}
                 <select value={rxIndication} onChange={(event) => setRxIndication(event.target.value)}>
                   <option value="">{t.all}</option>
@@ -786,6 +803,18 @@ function App() {
                   ))}
                 </select>
               </label>
+
+              <div className="search-grid-checkboxes">
+                <span>{t.results}</span>
+                <label className="checkbox-inline">
+                  <input
+                    type="checkbox"
+                    checked={rxOnlyCommercialized}
+                    onChange={(event) => setRxOnlyCommercialized(event.target.checked)}
+                  />
+                  {t.commercializedOnly}
+                </label>
+              </div>
             </div>
 
             <section className="live-panel">
@@ -794,9 +823,27 @@ function App() {
                   <h3>{t.liveResults}</h3>
                   <p className="live-hint">{t.liveHint}</p>
                 </div>
-                <button className="live-toggle" onClick={() => setIsLiveExpanded((value) => !value)} type="button">
-                  {isLiveExpanded ? t.collapseLive : t.expandLive}
-                </button>
+                <div className="live-panel-tools">
+                  <div className="live-page-size" aria-label={t.visibleCards}>
+                    <span>{t.visibleCards}</span>
+                    {livePageSizeOptions.map((option) => {
+                      const label = option === 'all' ? t.all : String(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={livePageSize === option ? 'active' : ''}
+                          onClick={() => setLivePageSize(option)}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button className="live-toggle" onClick={() => setIsLiveExpanded((value) => !value)} type="button">
+                    {isLiveExpanded ? t.collapseLive : t.expandLive}
+                  </button>
+                </div>
               </div>
 
               {isLiveExpanded && liveLoading && <p>{t.liveLoading}</p>}
@@ -810,8 +857,32 @@ function App() {
                   <p className="live-summary">
                     {t.liveShowing}: <strong>{filteredLiveResults.length}</strong>
                   </p>
+                  {livePageSize !== 'all' && filteredLiveResults.length > livePageSize && (
+                    <div className="live-pagination">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setLivePage((page) => Math.max(1, page - 1))}
+                        disabled={livePage === 1}
+                      >
+                        {t.previousPage}
+                      </button>
+                      <p>
+                        {livePageBounds.start}-{livePageBounds.end} {t.ofLabel} {filteredLiveResults.length}. {t.pageLabel}{' '}
+                        {livePage} {t.ofLabel} {liveTotalPages}
+                      </p>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setLivePage((page) => Math.min(liveTotalPages, page + 1))}
+                        disabled={livePage === liveTotalPages}
+                      >
+                        {t.nextPage}
+                      </button>
+                    </div>
+                  )}
                   <ul className="live-results-list">
-                    {filteredLiveResults.map((medication) => (
+                    {visibleLiveResults.map((medication) => (
                       <li key={medication.nregistro}>
                         <article className="live-card">
                           <header className="live-card-header">
@@ -834,7 +905,7 @@ function App() {
                             </p>
                             <p>
                               <span>{t.activeIngredient}</span>
-                              <strong>{medication.pactivos || '-'}</strong>
+                              <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
                             </p>
                             <p>
                               <span>{t.administrationRoute}</span>
@@ -1507,16 +1578,20 @@ function App() {
         )}
       </main>
 
-      <footer className="footer-grid">
-        <section>
-          <h3>{t.contribute}</h3>
-          <p>{t.contributeText}</p>
-        </section>
-        <section>
-          <h3>{t.futureIntegrations}</h3>
-          <p>{t.integrationText}</p>
-        </section>
-      </footer>
+      {activeTab !== 'otc' && (
+        <footer className={`footer-grid${activeTab === 'prescription' ? ' footer-grid-single' : ''}`}>
+          <section>
+            <h3>{t.contribute}</h3>
+            <p>{t.contributeText}</p>
+          </section>
+          {activeTab !== 'prescription' && (
+            <section>
+              <h3>{t.futureIntegrations}</h3>
+              <p>{t.integrationText}</p>
+            </section>
+          )}
+        </footer>
+      )}
     </div>
   );
 }

@@ -80,7 +80,7 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
   return (
     <article className="entry-card">
       <div className="entry-card-header">
-        <div>
+        <div className="entry-card-title">
           <h3>{entry.activeIngredient}</h3>
           <span className={`editorial-status editorial-status-${entry.editorialStatus}`}>
             {translateEditorialStatus(entry.editorialStatus, lang)}
