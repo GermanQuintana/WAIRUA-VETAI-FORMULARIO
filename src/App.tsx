@@ -2,21 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
 import DoseCalculator from './components/DoseCalculator';
 import EntryCard from './components/EntryCard';
-import GroupedIndex from './components/GroupedIndex';
 import {
-  activeIngredientWorkstreams,
   humanCimaCards,
   otcSubmissionFields,
   otcWorkflowCards,
-  protocolFocusExamples,
   toolkitModules,
 } from './data/platform';
 import { therapeuticEntries } from './data/entries';
 import { labels, Language } from './i18n';
 import {
   buildDoseCalculatorEntries,
-  buildGroupedIndex,
-  byAlphabeticalKey,
   getIndicationOptions,
   getSpeciesOptions,
   getSystemOptions,
@@ -40,8 +35,8 @@ import {
 import { createSupabaseEditorialService } from './services/supabase';
 import { TherapeuticEntry } from './types';
 
-const productTabs = ['prescription', 'otc', 'active', 'toolkit', 'human'] as const;
-const activeViews = ['records', 'systems', 'trade', 'pathology', 'create'] as const;
+const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
+const activeViews = ['records', 'create'] as const;
 const toolkitViews = ['overview', 'dose', 'assistant'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
@@ -78,11 +73,23 @@ const formatDelimitedText = (value: string) =>
     .filter(Boolean)
     .join(', ');
 
+const hasEquivalentMedicalTerm = (left: string, right: string) => {
+  const leftAliases = new Set(expandMedicalTermAliases(left));
+  return expandMedicalTermAliases(right).some((alias) => leftAliases.has(alias));
+};
+
+const toggleEquivalentTag = (current: string[], value: string) => {
+  const exists = current.some((item) => hasEquivalentMedicalTerm(item, value));
+  if (exists) {
+    return current.filter((item) => !hasEquivalentMedicalTerm(item, value));
+  }
+  return [...current, value];
+};
+
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
   query: string,
   selectedSpecies: string,
-  selectedSystem: string,
   selectedIndication: string,
   selectedTags: string[],
   concentrationQuery: string,
@@ -92,14 +99,17 @@ const filterTherapeuticEntries = (
 
   return entries.filter((entry) => {
     const inSpecies = selectedSpecies ? entry.species.some((value) => value === selectedSpecies) : true;
-    const inSystem = selectedSystem ? entry.systems.includes(selectedSystem) : true;
     const inIndication = selectedIndication ? entry.pathologies.includes(selectedIndication) : true;
-    const inTags = selectedTags.length > 0 ? entry.tags.some((tag) => selectedTags.includes(tag)) : true;
+    const facetValues = Array.from(new Set([...entry.tags, ...entry.systems, ...entry.pathologies]));
+    const inTags =
+      selectedTags.length > 0
+        ? facetValues.some((tag) => selectedTags.some((selectedTag) => hasEquivalentMedicalTerm(selectedTag, tag)))
+        : true;
     const inConcentration = loweredConcentration
       ? entry.concentrations.some((value) => value.toLowerCase().includes(loweredConcentration))
       : true;
 
-    if (!loweredQuery) return inSpecies && inSystem && inIndication && inTags && inConcentration;
+    if (!loweredQuery) return inSpecies && inIndication && inTags && inConcentration;
 
     const translatedAliases = [...entry.pathologies, ...entry.systems, ...entry.species, ...entry.tags].flatMap((term) =>
       expandMedicalTermAliases(term),
@@ -123,6 +133,8 @@ const filterTherapeuticEntries = (
       entry.adverseEffects.en,
       entry.contraindications.es,
       entry.contraindications.en,
+      entry.interactions.es,
+      entry.interactions.en,
       entry.notes?.es ?? '',
       entry.notes?.en ?? '',
       ...translatedAliases,
@@ -130,12 +142,13 @@ const filterTherapeuticEntries = (
       .join(' ')
       .toLowerCase();
 
-    return inSpecies && inSystem && inIndication && inTags && inConcentration && searchable.includes(loweredQuery);
+    return inSpecies && inIndication && inTags && inConcentration && searchable.includes(loweredQuery);
   });
 };
 
 function App() {
   const livePageSizeOptions = [12, 24, 'all'] as const;
+  const activeRecordPageSizeOptions = [12, 24, 'all'] as const;
 
   const [entryCatalog, setEntryCatalog] = useState<TherapeuticEntry[]>(therapeuticEntries);
   const [editingEntry, setEditingEntry] = useState<TherapeuticEntry | null>(null);
@@ -155,16 +168,19 @@ function App() {
 
   const [activeQuery, setActiveQuery] = useState('');
   const [activeSpecies, setActiveSpecies] = useState('');
-  const [activeSystem, setActiveSystem] = useState('');
   const [activeIndication, setActiveIndication] = useState('');
   const [activeConcentrationQuery, setActiveConcentrationQuery] = useState('');
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [isActiveTagFilterExpanded, setIsActiveTagFilterExpanded] = useState(false);
+  const [isActiveVetExpanded, setIsActiveVetExpanded] = useState(true);
+  const [isActiveHumanExpanded, setIsActiveHumanExpanded] = useState(true);
+  const [activeRecordPageSize, setActiveRecordPageSize] = useState<(typeof activeRecordPageSizeOptions)[number]>(24);
+  const [activeRecordPage, setActiveRecordPage] = useState(1);
 
   const [humanQuery, setHumanQuery] = useState('');
   const [humanDoseFilter, setHumanDoseFilter] = useState('');
   const [humanPresentationFilter, setHumanPresentationFilter] = useState('');
-  const [humanShowCommercialized, setHumanShowCommercialized] = useState(true);
-  const [humanShowNonCommercialized, setHumanShowNonCommercialized] = useState(true);
+  const [humanOnlyCommercialized, setHumanOnlyCommercialized] = useState(false);
 
   const [liveResults, setLiveResults] = useState<CimavetMedicationSummary[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -174,6 +190,14 @@ function App() {
   const [humanLoading, setHumanLoading] = useState(false);
   const [humanError, setHumanError] = useState<string | null>(null);
   const [humanDetails, setHumanDetails] = useState<Record<string, CimaMedicationDetail>>({});
+  const [activeVetResults, setActiveVetResults] = useState<CimavetMedicationSummary[]>([]);
+  const [activeVetLoading, setActiveVetLoading] = useState(false);
+  const [activeVetError, setActiveVetError] = useState<string | null>(null);
+  const [activeVetDetails, setActiveVetDetails] = useState<Record<string, CimavetMedicationDetail>>({});
+  const [activeHumanResults, setActiveHumanResults] = useState<CimaMedicationSummary[]>([]);
+  const [activeHumanLoading, setActiveHumanLoading] = useState(false);
+  const [activeHumanError, setActiveHumanError] = useState<string | null>(null);
+  const [activeHumanDetails, setActiveHumanDetails] = useState<Record<string, CimaMedicationDetail>>({});
 
   const [assistantSpecies, setAssistantSpecies] = useState('');
   const [assistantPathology, setAssistantPathology] = useState('');
@@ -186,11 +210,27 @@ function App() {
   const cimavetService = useMemo(() => createCimavetServiceFromEnv(), []);
   const supabaseEditorialService = useMemo(() => createSupabaseEditorialService(), []);
   const t = labels[lang];
+  const activeConcentrationPlaceholder = lang === 'es' ? 'Ejemplo: 10 mg/mL, 50 mg...' : 'Example: 10 mg/mL, 50 mg...';
 
   const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
   const systemOptions = useMemo(() => getSystemOptions(entryCatalog), [entryCatalog]);
   const localIndicationOptions = useMemo(() => getIndicationOptions(entryCatalog), [entryCatalog]);
   const tagOptions = useMemo(() => getTagOptions(entryCatalog), [entryCatalog]);
+  const formTagOptions = useMemo(
+    () => Array.from(new Set([...tagOptions, ...systemOptions])).sort((a, b) => a.localeCompare(b)),
+    [systemOptions, tagOptions],
+  );
+  const activeFacetOptions = useMemo(
+    () => Array.from(new Set([...formTagOptions, ...localIndicationOptions])).sort((a, b) => a.localeCompare(b)),
+    [formTagOptions, localIndicationOptions],
+  );
+  const sortedTagOptions = useMemo(
+    () =>
+      [...activeFacetOptions].sort((left, right) =>
+        translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en'),
+      ),
+    [activeFacetOptions, lang],
+  );
   const doseCalculatorEntries = useMemo(() => buildDoseCalculatorEntries(entryCatalog), [entryCatalog]);
   const pathologyOptions = useMemo(
     () => Array.from(new Set(entryCatalog.flatMap((entry) => entry.pathologies))).sort((a, b) => a.localeCompare(b)),
@@ -201,7 +241,6 @@ function App() {
     setActiveTab('active');
     setActiveKnowledgeView('records');
     setActiveSpecies('');
-    setActiveSystem('');
     setActiveIndication('');
     setActiveConcentrationQuery('');
     setActiveTags([]);
@@ -234,12 +273,32 @@ function App() {
         entryCatalog,
         activeQuery,
         activeSpecies,
-        activeSystem,
         activeIndication,
         activeTags,
         activeConcentrationQuery,
       ),
-    [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeSystem, activeTags, entryCatalog],
+    [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeTags, entryCatalog],
+  );
+  const shouldShowActiveRecords = activeQuery.trim().length > 0;
+  const activeFilteredCount = filteredEntries.length;
+  const activeRecordTotalPages = useMemo(() => {
+    if (activeRecordPageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(activeFilteredCount / activeRecordPageSize));
+  }, [activeFilteredCount, activeRecordPageSize]);
+  const activeRecordBounds = useMemo(() => {
+    if (activeFilteredCount === 0) return { start: 0, end: 0 };
+    if (activeRecordPageSize === 'all') return { start: 1, end: activeFilteredCount };
+
+    const start = (activeRecordPage - 1) * activeRecordPageSize + 1;
+    const end = Math.min(activeFilteredCount, activeRecordPage * activeRecordPageSize);
+    return { start, end };
+  }, [activeFilteredCount, activeRecordPage, activeRecordPageSize]);
+  const visibleActiveEntries = useMemo(
+    () =>
+      activeRecordPageSize === 'all'
+        ? filteredEntries
+        : filteredEntries.slice((activeRecordPage - 1) * activeRecordPageSize, activeRecordPage * activeRecordPageSize),
+    [activeRecordPage, activeRecordPageSize, filteredEntries],
   );
 
   const assistantMatches = useMemo(() => {
@@ -249,11 +308,6 @@ function App() {
       return speciesMatch && pathologyMatch;
     });
   }, [assistantPathology, assistantSpecies, entryCatalog]);
-
-  const systemsIndex = useMemo(() => buildGroupedIndex(entryCatalog, 'systems'), [entryCatalog]);
-  const pathologyIndex = useMemo(() => buildGroupedIndex(entryCatalog, 'pathologies'), [entryCatalog]);
-  const tradeGlossary = useMemo(() => buildGroupedIndex(entryCatalog, 'tradeNames'), [entryCatalog]);
-  const activeGlossary = useMemo(() => byAlphabeticalKey(entryCatalog, 'activeIngredient'), [entryCatalog]);
 
   const rxIndicationOptions = useMemo(() => {
     const values = new Set<string>();
@@ -306,8 +360,7 @@ function App() {
     const normalizedPresentation = normalizeFilterText(humanPresentationFilter);
 
     return humanResults.filter((medication) => {
-      if (medication.comerc && !humanShowCommercialized) return false;
-      if (!medication.comerc && !humanShowNonCommercialized) return false;
+      if (humanOnlyCommercialized && !medication.comerc) return false;
 
       const formText = `${medication.formaFarmaceuticaSimplificada?.nombre ?? ''} ${medication.formaFarmaceutica?.nombre ?? ''}`;
       const doseText = medication.dosis ?? '';
@@ -322,11 +375,12 @@ function App() {
     humanDoseFilter,
     humanPresentationFilter,
     humanResults,
-    humanShowCommercialized,
-    humanShowNonCommercialized,
+    humanOnlyCommercialized,
   ]);
 
   const humanResultsForDetails = useMemo(() => filteredHumanResults.slice(0, 24), [filteredHumanResults]);
+  const activeVetResultsForDetails = useMemo(() => activeVetResults.slice(0, 12), [activeVetResults]);
+  const activeHumanResultsForDetails = useMemo(() => activeHumanResults.slice(0, 12), [activeHumanResults]);
 
   useEffect(() => {
     const warmup = window.setTimeout(() => {
@@ -343,6 +397,14 @@ function App() {
   useEffect(() => {
     setLivePage((current) => Math.min(current, liveTotalPages));
   }, [liveTotalPages]);
+
+  useEffect(() => {
+    setActiveRecordPage(1);
+  }, [activeQuery, activeSpecies, activeIndication, activeTags, activeConcentrationQuery, activeRecordPageSize]);
+
+  useEffect(() => {
+    setActiveRecordPage((current) => Math.min(current, activeRecordTotalPages));
+  }, [activeRecordTotalPages]);
 
   useEffect(() => {
     if (!supabaseEditorialService) return;
@@ -552,6 +614,170 @@ function App() {
     };
   }, [activeTab, cimaService, humanDetails, humanResultsForDetails]);
 
+  useEffect(() => {
+    if (activeTab !== 'active' || activeKnowledgeView !== 'records') return;
+
+    const q = activeQuery.trim();
+    if (q.length < 2) {
+      setActiveVetResults([]);
+      setActiveVetError(null);
+      setActiveVetLoading(false);
+      return;
+    }
+
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setActiveVetLoading(true);
+      setActiveVetError(null);
+
+      try {
+        const results = await cimavetService.searchMedications(q, {
+          species: activeSpecies ? translateMedicalTerm(activeSpecies, 'es') : undefined,
+          includeActiveIngredientSearch: true,
+        });
+
+        if (!ignore) {
+          setActiveVetResults(results);
+          setActiveVetLoading(false);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setActiveVetResults([]);
+          setActiveVetError(error instanceof Error ? error.message : 'Unknown CIMAVet error');
+          setActiveVetLoading(false);
+        }
+      }
+    }, 450);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [activeKnowledgeView, activeQuery, activeSpecies, activeTab, cimavetService]);
+
+  useEffect(() => {
+    if (activeTab !== 'active' || activeKnowledgeView !== 'records' || activeVetResultsForDetails.length === 0) return;
+
+    const missing = activeVetResultsForDetails
+      .filter((item) => !activeVetDetails[item.nregistro])
+      .map((item) => item.nregistro);
+    if (missing.length === 0) return;
+
+    let ignore = false;
+
+    const loadDetails = async () => {
+      const batchSize = 6;
+
+      for (let i = 0; i < missing.length; i += batchSize) {
+        const batch = missing.slice(i, i + batchSize);
+        const details = await Promise.all(
+          batch.map(async (nregistro) => {
+            const detail = await cimavetService.getMedicationByRegistration(nregistro).catch(() => null);
+            return detail ? ({ nregistro, detail } as const) : null;
+          }),
+        );
+
+        if (ignore) return;
+
+        setActiveVetDetails((current) => {
+          const next = { ...current };
+          details.forEach((item) => {
+            if (item) next[item.nregistro] = item.detail;
+          });
+          return next;
+        });
+      }
+    };
+
+    void loadDetails();
+
+    return () => {
+      ignore = true;
+    };
+  }, [activeKnowledgeView, activeTab, activeVetDetails, activeVetResultsForDetails, cimavetService]);
+
+  useEffect(() => {
+    if (activeTab !== 'active' || activeKnowledgeView !== 'records') return;
+
+    const q = activeQuery.trim();
+    if (q.length < 2) {
+      setActiveHumanResults([]);
+      setActiveHumanError(null);
+      setActiveHumanLoading(false);
+      return;
+    }
+
+    let ignore = false;
+    const timer = window.setTimeout(async () => {
+      setActiveHumanLoading(true);
+      setActiveHumanError(null);
+
+      try {
+        const results = await cimaService.searchMedications(q, {
+          includeActiveIngredientSearch: true,
+          includeTradeNameSearch: false,
+        });
+
+        if (!ignore) {
+          setActiveHumanResults(results);
+          setActiveHumanLoading(false);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setActiveHumanResults([]);
+          setActiveHumanError(error instanceof Error ? error.message : 'Unknown CIMA error');
+          setActiveHumanLoading(false);
+        }
+      }
+    }, 450);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [activeKnowledgeView, activeQuery, activeTab, cimaService]);
+
+  useEffect(() => {
+    if (activeTab !== 'active' || activeKnowledgeView !== 'records' || activeHumanResultsForDetails.length === 0) return;
+
+    const missing = activeHumanResultsForDetails
+      .filter((item) => !activeHumanDetails[item.nregistro])
+      .map((item) => item.nregistro);
+    if (missing.length === 0) return;
+
+    let ignore = false;
+
+    const loadDetails = async () => {
+      const batchSize = 6;
+
+      for (let i = 0; i < missing.length; i += batchSize) {
+        const batch = missing.slice(i, i + batchSize);
+        const details = await Promise.all(
+          batch.map(async (nregistro) => {
+            const detail = await cimaService.getMedicationByRegistration(nregistro).catch(() => null);
+            return detail ? ({ nregistro, detail } as const) : null;
+          }),
+        );
+
+        if (ignore) return;
+
+        setActiveHumanDetails((current) => {
+          const next = { ...current };
+          details.forEach((item) => {
+            if (item) next[item.nregistro] = item.detail;
+          });
+          return next;
+        });
+      }
+    };
+
+    void loadDetails();
+
+    return () => {
+      ignore = true;
+    };
+  }, [activeHumanDetails, activeHumanResultsForDetails, activeKnowledgeView, activeTab, cimaService]);
+
   const renderLocalizedCards = (cards: typeof otcWorkflowCards) => (
     <div className="feature-grid">
       {cards.map((card) => (
@@ -736,17 +962,17 @@ function App() {
         <button onClick={() => setActiveTab('prescription')} className={activeTab === 'prescription' ? 'active' : ''}>
           {t.prescriptionHub}
         </button>
-        <button onClick={() => setActiveTab('otc')} className={activeTab === 'otc' ? 'active' : ''}>
-          {t.otcHub}
+        <button onClick={() => setActiveTab('human')} className={activeTab === 'human' ? 'active' : ''}>
+          {t.humanHub}
         </button>
         <button onClick={() => setActiveTab('active')} className={activeTab === 'active' ? 'active' : ''}>
           {t.activeHub}
         </button>
+        <button onClick={() => setActiveTab('otc')} className={activeTab === 'otc' ? 'active' : ''}>
+          {t.otcHub}
+        </button>
         <button onClick={() => setActiveTab('toolkit')} className={activeTab === 'toolkit' ? 'active' : ''}>
           {t.toolkitHub}
-        </button>
-        <button onClick={() => setActiveTab('human')} className={activeTab === 'human' ? 'active' : ''}>
-          {t.humanHub}
         </button>
       </nav>
 
@@ -775,6 +1001,7 @@ function App() {
                 <input
                   type="search"
                   placeholder={t.searchPlaceholder}
+                  title={t.searchPlaceholder}
                   value={rxQuery}
                   onChange={(event) => setRxQuery(event.target.value)}
                 />
@@ -1007,7 +1234,8 @@ function App() {
                 {t.search}
                 <input
                   type="search"
-                  placeholder={t.searchPlaceholder}
+                  placeholder={t.activeSearchPlaceholder}
+                  title={t.activeSearchPlaceholder}
                   value={activeQuery}
                   onChange={(event) => setActiveQuery(event.target.value)}
                 />
@@ -1020,18 +1248,6 @@ function App() {
                   {speciesOptions.map((species) => (
                     <option key={species} value={species}>
                       {translateMedicalTerm(species, lang)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                {t.system}
-                <select value={activeSystem} onChange={(event) => setActiveSystem(event.target.value)}>
-                  <option value="">{t.all}</option>
-                  {systemOptions.map((system) => (
-                    <option key={system} value={system}>
-                      {translateMedicalTerm(system, lang)}
                     </option>
                   ))}
                 </select>
@@ -1055,40 +1271,251 @@ function App() {
                   type="search"
                   value={activeConcentrationQuery}
                   onChange={(event) => setActiveConcentrationQuery(event.target.value)}
-                  placeholder={lang === 'es' ? 'Ejemplo: 10 mg/mL, 50 mg...' : 'Example: 10 mg/mL, 50 mg...'}
+                  placeholder={activeConcentrationPlaceholder}
+                  title={activeConcentrationPlaceholder}
                 />
               </label>
             </div>
 
             <section className="tag-filter-panel">
               <div className="tag-filter-header">
-                <h3>{t.tagsLabel}</h3>
-                <p>
-                  {lang === 'es'
-                    ? 'Marca una o varias tags para quedarte solo con los principios activos relevantes.'
-                    : 'Select one or more tags to keep only the relevant active ingredients.'}
-                </p>
+                <div>
+                  <h3>{t.tagFilterTitle}</h3>
+                  <p>{t.tagFilterText}</p>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button tag-filter-toggle"
+                  onClick={() => setIsActiveTagFilterExpanded((value) => !value)}
+                >
+                  {isActiveTagFilterExpanded ? t.collapseLive : t.expandLive}
+                </button>
               </div>
-              <div className="tag-chip-list">
-                {tagOptions.map((tag) => {
-                  const isActive = activeTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={isActive ? 'active' : ''}
-                      onClick={() =>
-                        setActiveTags((current) =>
-                          current.includes(tag) ? current.filter((value) => value !== tag) : [...current, tag],
-                        )
-                      }
-                    >
-                      {translateMedicalTerm(tag, lang)}
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="tag-filter-summary">
+                {t.selectedTags}: <strong>{activeTags.length}</strong>
+              </p>
+              {isActiveTagFilterExpanded && (
+                <div className="tag-checklist">
+                  {sortedTagOptions.map((tag) => (
+                    <label key={tag} className="checkbox-inline tag-check-item">
+                      <input
+                        type="checkbox"
+                        checked={activeTags.some((selectedTag) => hasEquivalentMedicalTerm(selectedTag, tag))}
+                        onChange={() => setActiveTags((current) => toggleEquivalentTag(current, tag))}
+                      />
+                      <span>{translateMedicalTerm(tag, lang)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </section>
+
+            {activeKnowledgeView === 'records' && (
+              <section className="embedded-section">
+                <div className="feature-callout">
+                  <h3>{t.liveKnowledgeTitle}</h3>
+                  <p>{t.liveKnowledgeText}</p>
+                </div>
+
+                <div className="active-live-grid">
+                  <section className="live-panel">
+                    <div className="live-panel-header">
+                      <div>
+                        <h3>{t.liveResults}</h3>
+                        <p className="live-hint">{t.liveHint}</p>
+                      </div>
+                      <button className="live-toggle" onClick={() => setIsActiveVetExpanded((value) => !value)} type="button">
+                        {isActiveVetExpanded ? t.collapseLive : t.expandLive}
+                      </button>
+                    </div>
+
+                    {isActiveVetExpanded && activeVetLoading && <p>{t.liveLoading}</p>}
+                    {isActiveVetExpanded && !activeVetLoading && activeVetError && <p>{t.liveError} ({activeVetError})</p>}
+                    {isActiveVetExpanded && !activeQuery.trim().length && (
+                      <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMAVET.' : 'Type an active ingredient to query CIMAVET.'}</p>
+                    )}
+                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && activeVetResults.length === 0 && <p>{t.liveEmpty}</p>}
+
+                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && activeVetResults.length > 0 && (
+                      <>
+                        <p className="live-summary">
+                          {t.liveShowing}: <strong>{activeVetResults.length}</strong>
+                        </p>
+                        <ul className="live-results-list">
+                          {activeVetResultsForDetails.map((medication) => (
+                            <li key={`active-vet-${medication.nregistro}`}>
+                              <article className="live-card">
+                                <header className="live-card-header">
+                                  <h4>{medication.nombre}</h4>
+                                  <div className="live-badges">
+                                    {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
+                                    {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
+                                    {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                                  </div>
+                                </header>
+
+                                <div className="live-meta-grid">
+                                  <p>
+                                    <span>{t.laboratory}</span>
+                                    <strong>{medication.labtitular || '-'}</strong>
+                                  </p>
+                                  <p>
+                                    <span>{t.pharmaceuticalForm}</span>
+                                    <strong>{medication.forma?.nombre || '-'}</strong>
+                                  </p>
+                                  <p>
+                                    <span>{t.activeIngredient}</span>
+                                    <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
+                                  </p>
+                                  <p>
+                                    <span>{t.administrationRoute}</span>
+                                    <strong>{medication.administracion?.nombre || '-'}</strong>
+                                  </p>
+                                </div>
+
+                                {activeVetDetails[medication.nregistro]?.indicaciones?.length ? (
+                                  <section className="live-indications">
+                                    <h5>{t.indications}</h5>
+                                    <ul>
+                                      {activeVetDetails[medication.nregistro].indicaciones!.slice(0, 4).map((indication, index) => (
+                                        <li key={`${medication.nregistro}-active-indication-${index}`}>
+                                          {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
+                                          {indication.nombre}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </section>
+                                ) : null}
+
+                                <footer className="live-card-footer">
+                                  <span>
+                                    {t.registration}: {medication.nregistro}
+                                  </span>
+                                  <a
+                                    href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {t.openRecord}
+                                  </a>
+                                </footer>
+                              </article>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </section>
+
+                  <section className="live-panel">
+                    <div className="live-panel-header">
+                      <div>
+                        <h3>{t.humanLiveResults}</h3>
+                        <p className="live-hint">{t.humanLiveHint}</p>
+                      </div>
+                      <button className="live-toggle" onClick={() => setIsActiveHumanExpanded((value) => !value)} type="button">
+                        {isActiveHumanExpanded ? t.collapseLive : t.expandLive}
+                      </button>
+                    </div>
+
+                    {isActiveHumanExpanded && activeHumanLoading && <p>{t.humanLiveLoading}</p>}
+                    {isActiveHumanExpanded && !activeHumanLoading && activeHumanError && <p>{t.humanLiveError} ({activeHumanError})</p>}
+                    {isActiveHumanExpanded && !activeQuery.trim().length && (
+                      <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMA.' : 'Type an active ingredient to query CIMA.'}</p>
+                    )}
+                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && activeHumanResults.length === 0 && (
+                      <p>{t.humanLiveEmpty}</p>
+                    )}
+
+                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && activeHumanResults.length > 0 && (
+                      <>
+                        <p className="live-summary">
+                          {t.humanLiveShowing}: <strong>{activeHumanResults.length}</strong>
+                        </p>
+                        <ul className="live-results-list">
+                          {activeHumanResultsForDetails.map((medication) => {
+                            const detail = activeHumanDetails[medication.nregistro];
+                            const technicalSheetUrl = getCimaDocumentUrl(detail ?? medication, 1);
+                            const leafletUrl = getCimaDocumentUrl(detail ?? medication, 2);
+                            const recordUrl = buildCimaRecordUrl(CIMA_BASE_URL, medication.nregistro);
+
+                            return (
+                              <li key={`active-human-${medication.nregistro}`}>
+                                <article className="live-card">
+                                  <header className="live-card-header">
+                                    <h4>{medication.nombre}</h4>
+                                    <div className="live-badges">
+                                      {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
+                                      {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
+                                      {medication.generico && <span className="live-badge live-badge-blue">{t.generic}</span>}
+                                    </div>
+                                  </header>
+
+                                  <div className="live-meta-grid">
+                                    <p>
+                                      <span>{t.laboratory}</span>
+                                      <strong>{medication.labtitular || '-'}</strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.pharmaceuticalForm}</span>
+                                      <strong>
+                                        {medication.formaFarmaceuticaSimplificada?.nombre ??
+                                          medication.formaFarmaceutica?.nombre ??
+                                          '-'}
+                                      </strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.activeIngredient}</span>
+                                      <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.dose}</span>
+                                      <strong>{medication.dosis || '-'}</strong>
+                                    </p>
+                                  </div>
+
+                                  {detail?.viasAdministracion?.length ? (
+                                    <section className="live-indications">
+                                      <h5>{t.presentation}</h5>
+                                      <ul>
+                                        {detail.viasAdministracion.slice(0, 4).map((route, index) => (
+                                          <li key={`${medication.nregistro}-active-route-${index}`}>{route.nombre}</li>
+                                        ))}
+                                      </ul>
+                                    </section>
+                                  ) : null}
+
+                                  <footer className="live-card-footer">
+                                    <span>
+                                      {t.registration}: {medication.nregistro}
+                                    </span>
+                                    <div className="live-card-links">
+                                      {technicalSheetUrl && (
+                                        <a href={technicalSheetUrl} target="_blank" rel="noreferrer">
+                                          {t.technicalSheet}
+                                        </a>
+                                      )}
+                                      {leafletUrl && (
+                                        <a href={leafletUrl} target="_blank" rel="noreferrer">
+                                          {t.leaflet}
+                                        </a>
+                                      )}
+                                      <a href={recordUrl} target="_blank" rel="noreferrer">
+                                        {t.openRecord}
+                                      </a>
+                                    </div>
+                                  </footer>
+                                </article>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </>
+                    )}
+                  </section>
+                </div>
+              </section>
+            )}
 
             <div className="collaborative-callout">
               <h3>{t.collaborativeNoticeTitle}</h3>
@@ -1109,35 +1536,8 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  setActiveKnowledgeView('systems');
-                  setEditingEntry(null);
-                }}
-                className={activeKnowledgeView === 'systems' ? 'active' : ''}
-              >
-                {t.systemsView}
-              </button>
-              <button
-                onClick={() => {
-                  setActiveKnowledgeView('trade');
-                  setEditingEntry(null);
-                }}
-                className={activeKnowledgeView === 'trade' ? 'active' : ''}
-              >
-                {t.tradeView}
-              </button>
-              <button
-                onClick={() => {
-                  setActiveKnowledgeView('pathology');
-                  setEditingEntry(null);
-                }}
-                className={activeKnowledgeView === 'pathology' ? 'active' : ''}
-              >
-                {t.pathologyView}
-              </button>
-              <button
-                onClick={() => {
                   setActiveKnowledgeView('create');
-                  if (!editingEntry) setEditingEntry(null);
+                  setEditingEntry(null);
                 }}
                 className={activeKnowledgeView === 'create' ? 'active' : ''}
               >
@@ -1147,37 +1547,73 @@ function App() {
 
             {activeKnowledgeView === 'records' && (
               <>
-                <h3>
-                  {t.activeIngredientSummaries}: {filteredEntries.length}
-                </h3>
-                {filteredEntries.length === 0 && <p>{t.noResults}</p>}
-                <div className="entry-grid">
-                  {filteredEntries.map((entry) => (
-                    <EntryCard key={entry.id} entry={entry} lang={lang} onEdit={openEntryEditor} onDelete={handleDeleteEntry} />
-                  ))}
+                <div className="live-panel-header active-records-header">
+                  <div>
+                    <h3>
+                      {t.activeIngredientSummaries}: {shouldShowActiveRecords ? activeFilteredCount : 0}
+                    </h3>
+                    {!shouldShowActiveRecords && (
+                      <p className="live-hint">
+                        {lang === 'es'
+                          ? 'Las fichas se muestran al buscar un principio activo.'
+                          : 'Records are shown once you search for an active ingredient.'}
+                      </p>
+                    )}
+                  </div>
+                  {shouldShowActiveRecords && (
+                    <div className="live-panel-tools">
+                      <div className="live-page-size" aria-label={t.visibleCards}>
+                        <span>{t.visibleCards}</span>
+                        {activeRecordPageSizeOptions.map((option) => {
+                          const label = option === 'all' ? t.all : String(option);
+                          return (
+                            <button
+                              key={`active-size-${option}`}
+                              type="button"
+                              className={activeRecordPageSize === option ? 'active' : ''}
+                              onClick={() => setActiveRecordPageSize(option)}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {shouldShowActiveRecords && activeFilteredCount === 0 && <p>{t.noResults}</p>}
+                {shouldShowActiveRecords && activeRecordPageSize !== 'all' && activeFilteredCount > activeRecordPageSize && (
+                  <div className="live-pagination">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setActiveRecordPage((page) => Math.max(1, page - 1))}
+                      disabled={activeRecordPage === 1}
+                    >
+                      {t.previousPage}
+                    </button>
+                    <p>
+                      {activeRecordBounds.start}-{activeRecordBounds.end} {t.ofLabel} {activeFilteredCount}. {t.pageLabel}{' '}
+                      {activeRecordPage} {t.ofLabel} {activeRecordTotalPages}
+                    </p>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setActiveRecordPage((page) => Math.min(activeRecordTotalPages, page + 1))}
+                      disabled={activeRecordPage === activeRecordTotalPages}
+                    >
+                      {t.nextPage}
+                    </button>
+                  </div>
+                )}
+                {shouldShowActiveRecords && (
+                  <div className="entry-grid">
+                    {visibleActiveEntries.map((entry) => (
+                      <EntryCard key={entry.id} entry={entry} lang={lang} onEdit={openEntryEditor} onDelete={handleDeleteEntry} />
+                    ))}
+                  </div>
+                )}
               </>
-            )}
-
-            {activeKnowledgeView === 'systems' && (
-              <section className="embedded-section">
-                <h3>{t.indexBySystem}</h3>
-                <GroupedIndex groups={systemsIndex} formatLabel={(label) => translateMedicalTerm(label, lang)} />
-              </section>
-            )}
-
-            {activeKnowledgeView === 'trade' && (
-              <section className="embedded-section">
-                <h3>{t.glossaryByTrade}</h3>
-                <GroupedIndex groups={tradeGlossary} />
-              </section>
-            )}
-
-            {activeKnowledgeView === 'pathology' && (
-              <section className="embedded-section">
-                <h3>{t.indexByPathology}</h3>
-                <GroupedIndex groups={pathologyIndex} formatLabel={(label) => translateMedicalTerm(label, lang)} />
-              </section>
             )}
 
             {activeKnowledgeView === 'create' && (
@@ -1186,32 +1622,13 @@ function App() {
                   lang={lang}
                   speciesOptions={speciesOptions}
                   systemOptions={systemOptions}
-                  tagOptions={tagOptions}
+                  tagOptions={formTagOptions}
                   initialEntry={editingEntry}
                   onSubmit={handleSaveEntry}
                   onCancelEdit={() => setEditingEntry(null)}
                 />
               </section>
             )}
-
-            <section className="embedded-section">
-              <h3>{lang === 'es' ? 'Lineas de colaboracion' : 'Collaboration tracks'}</h3>
-              {renderLocalizedCards(activeIngredientWorkstreams)}
-            </section>
-
-            <section className="embedded-section">
-              <h3>{lang === 'es' ? 'Protocolos a desarrollar primero' : 'Protocols to develop first'}</h3>
-              {renderLocalizedCards(protocolFocusExamples)}
-            </section>
-
-            <section className="embedded-section">
-              <h3>{t.glossaryByActive}</h3>
-              <div className="glossary-list">
-                {activeGlossary.map((entry) => (
-                  <p key={entry.id}>{entry.activeIngredient}</p>
-                ))}
-              </div>
-            </section>
           </section>
         )}
 
@@ -1312,6 +1729,7 @@ function App() {
                       value={assistantWeight}
                       onChange={(event) => setAssistantWeight(event.target.value)}
                       placeholder="4.5"
+                      title="4.5"
                     />
                   </label>
 
@@ -1321,9 +1739,8 @@ function App() {
                       type="text"
                       value={assistantNotes}
                       onChange={(event) => setAssistantNotes(event.target.value)}
-                      placeholder={
-                        lang === 'es' ? 'Ejemplo: insuficiencia renal, geriatrico...' : 'Example: renal disease, geriatric...'
-                      }
+                      placeholder={lang === 'es' ? 'Ejemplo: insuficiencia renal, geriatrico...' : 'Example: renal disease, geriatric...'}
+                      title={lang === 'es' ? 'Ejemplo: insuficiencia renal, geriatrico...' : 'Example: renal disease, geriatric...'}
                     />
                   </label>
 
@@ -1398,6 +1815,7 @@ function App() {
                 <input
                   type="search"
                   placeholder={t.humanSearchPlaceholder}
+                  title={t.humanSearchPlaceholder}
                   value={humanQuery}
                   onChange={(event) => setHumanQuery(event.target.value)}
                 />
@@ -1408,6 +1826,7 @@ function App() {
                 <input
                   type="search"
                   placeholder={t.humanDosePlaceholder}
+                  title={t.humanDosePlaceholder}
                   value={humanDoseFilter}
                   onChange={(event) => setHumanDoseFilter(event.target.value)}
                 />
@@ -1418,28 +1837,20 @@ function App() {
                 <input
                   type="search"
                   placeholder={t.humanPresentationPlaceholder}
+                  title={t.humanPresentationPlaceholder}
                   value={humanPresentationFilter}
                   onChange={(event) => setHumanPresentationFilter(event.target.value)}
                 />
               </label>
 
               <div className="search-grid-checkboxes">
-                <span>{t.humanCommercialization}</span>
                 <label className="checkbox-inline">
                   <input
                     type="checkbox"
-                    checked={humanShowCommercialized}
-                    onChange={(event) => setHumanShowCommercialized(event.target.checked)}
+                    checked={humanOnlyCommercialized}
+                    onChange={(event) => setHumanOnlyCommercialized(event.target.checked)}
                   />
-                  {t.humanCommercializedOption}
-                </label>
-                <label className="checkbox-inline">
-                  <input
-                    type="checkbox"
-                    checked={humanShowNonCommercialized}
-                    onChange={(event) => setHumanShowNonCommercialized(event.target.checked)}
-                  />
-                  {t.humanNonCommercializedOption}
+                  {t.commercializedOnly}
                 </label>
               </div>
             </div>
@@ -1578,20 +1989,20 @@ function App() {
         )}
       </main>
 
-      {activeTab !== 'otc' && (
-        <footer className={`footer-grid${activeTab === 'prescription' ? ' footer-grid-single' : ''}`}>
+      {(activeTab === 'otc' || activeTab === 'toolkit') && (
+        <footer className="footer-grid footer-grid-single">
           <section>
             <h3>{t.contribute}</h3>
             <p>{t.contributeText}</p>
           </section>
-          {activeTab !== 'prescription' && (
-            <section>
-              <h3>{t.futureIntegrations}</h3>
-              <p>{t.integrationText}</p>
-            </section>
-          )}
         </footer>
       )}
+
+      <section className="app-signature">
+        <p>{lang === 'es' ? 'Desarrollado por' : 'Developed by'}</p>
+        <strong>PhD LV MSc German Quintana Diez</strong>
+        <span>WAIRUA Veterinary Precision Medicine</span>
+      </section>
     </div>
   );
 }

@@ -309,6 +309,10 @@ export class CimavetService {
         es: contraindicationsText,
         en: contraindicationsText,
       },
+      interactions: {
+        es: 'Pendiente de curacion de interacciones clinicamente relevantes.',
+        en: 'Pending curation of clinically relevant interactions.',
+      },
       notes: {
         es: `Importado desde CIMAVet. Registro: ${detail.nregistro}.`,
         en: `Imported from CIMAVet. Registration: ${detail.nregistro}.`,

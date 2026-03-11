@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { labels, Language } from '../i18n';
-import { translateEditorialStatus, translateEvidenceLevel, translateMedicalTerms } from '../lib/terms';
-import { buildCimavetListUrl, buildCimavetRecordUrl, resolveCimavetBaseUrl } from '../services/cimavet';
+import { translateEditorialStatus, translateEvidenceLevel, translateMedicalTerm, translateMedicalTerms } from '../lib/terms';
 import { TherapeuticEntry } from '../types';
 
 interface Props {
@@ -11,71 +10,75 @@ interface Props {
   onDelete?: (entry: TherapeuticEntry) => void;
 }
 
-const CIMAVET_API_BASE = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
-
 export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
   const t = labels[lang];
-  const [resolvedCimavetUrl, setResolvedCimavetUrl] = useState<string | null>(entry.cimavet?.url ?? null);
-  const [isResolvingCimavet, setIsResolvingCimavet] = useState(false);
-  const validatedReferences = useMemo(() => entry.references.filter((reference) => Boolean(reference.url)), [entry.references]);
+  const validatedReferences = useMemo(() => {
+    const aggregated = new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        authors: string;
+        year: number;
+        source: string;
+        url?: string;
+        context?: string;
+      }
+    >();
+
+    entry.references
+      .filter((reference) => Boolean(reference.url))
+      .forEach((reference) => {
+        aggregated.set(reference.url ?? reference.id, { ...reference });
+      });
+
+    (entry.calculatorPresets ?? []).forEach((preset) => {
+      const context = `${translateMedicalTerm(preset.species[0] ?? '', lang)} | ${preset.indication[lang]}`;
+      (preset.references ?? [])
+        .filter((reference) => Boolean(reference.url))
+        .forEach((reference) => {
+          const key = `${reference.url ?? reference.id}-${context}`;
+          aggregated.set(key, { ...reference, context });
+        });
+    });
+
+    return Array.from(aggregated.values()).sort((left, right) => {
+      if (right.year !== left.year) return right.year - left.year;
+      return left.title.localeCompare(right.title);
+    });
+  }, [entry.calculatorPresets, entry.references, lang]);
 
   const speciesLabel = useMemo(() => translateMedicalTerms(entry.species, lang).join(', '), [entry.species, lang]);
-  const systemsLabel = useMemo(() => translateMedicalTerms(entry.systems, lang).join(', '), [entry.systems, lang]);
   const pathologiesLabel = useMemo(
     () => translateMedicalTerms(entry.pathologies, lang).join(', '),
     [entry.pathologies, lang],
   );
-  const tagsLabel = useMemo(() => translateMedicalTerms(entry.tags, lang).join(', '), [entry.tags, lang]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const resolve = async () => {
-      if (entry.cimavet?.url) {
-        setResolvedCimavetUrl(entry.cimavet.url);
-        return;
-      }
-
-      if (entry.cimavet?.nregistro) {
-        setResolvedCimavetUrl(buildCimavetRecordUrl(CIMAVET_API_BASE, entry.cimavet.nregistro));
-        return;
-      }
-
-      const query = entry.cimavet?.nameQuery ?? entry.tradeNames[0] ?? entry.activeIngredient;
-      if (!query) return;
-
-      setIsResolvingCimavet(true);
-      try {
-        const response = await fetch(
-          buildCimavetListUrl(CIMAVET_API_BASE, {
-            pagina: '1',
-            tamanioPagina: '25',
-            nombre: query,
-          }),
-        );
-        if (!response.ok) return;
-
-        const data = (await response.json()) as {
-          resultados?: Array<{ nregistro: string; nombre: string }>;
+  const tagsLabel = useMemo(
+    () => translateMedicalTerms(Array.from(new Set([...entry.tags, ...entry.systems])), lang).join(', '),
+    [entry.systems, entry.tags, lang],
+  );
+  const structuredDoseRows = useMemo(() => {
+    return [...(entry.calculatorPresets ?? [])]
+      .sort((left, right) => {
+        const leftSpecies = translateMedicalTerm(left.species[0] ?? '', lang);
+        const rightSpecies = translateMedicalTerm(right.species[0] ?? '', lang);
+        return `${leftSpecies} ${left.indication[lang]}`.localeCompare(`${rightSpecies} ${right.indication[lang]}`);
+      })
+      .map((preset) => {
+        const min = preset.doseRangeMgKg.min;
+        const max = preset.doseRangeMgKg.max;
+        const doseRange = min === max ? `${min} mg/kg` : `${min}-${max} mg/kg`;
+        const concentration = preset.concentration[lang] || preset.concentration.es || preset.concentration.en;
+        return {
+          id: preset.id,
+          species: translateMedicalTerm(preset.species[0] ?? '', lang),
+          indication: preset.indication[lang],
+          summary: `${doseRange} ${preset.route}`.trim(),
+          concentration,
+          referenceCount: preset.references?.filter((reference) => Boolean(reference.url)).length ?? 0,
         };
-
-        const bestMatch = data.resultados?.[0];
-        if (isMounted && bestMatch?.nregistro) {
-          setResolvedCimavetUrl(buildCimavetRecordUrl(CIMAVET_API_BASE, bestMatch.nregistro));
-        }
-      } catch {
-        // Optional enhancement: failing CIMAVet lookup should never break card rendering.
-      } finally {
-        if (isMounted) setIsResolvingCimavet(false);
-      }
-    };
-
-    resolve();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [entry.activeIngredient, entry.cimavet?.nameQuery, entry.cimavet?.nregistro, entry.cimavet?.url, entry.tradeNames]);
+      });
+  }, [entry.calculatorPresets, lang]);
 
   return (
     <article className="entry-card">
@@ -102,13 +105,7 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
         )}
       </div>
       <p>
-        <strong>{t.tradeNames}:</strong> {entry.tradeNames.join(', ')}
-      </p>
-      <p>
         <strong>{t.species}:</strong> {speciesLabel}
-      </p>
-      <p>
-        <strong>{t.systems}:</strong> {systemsLabel}
       </p>
       <p>
         <strong>{t.pathologies}:</strong> {pathologiesLabel}
@@ -134,6 +131,25 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
       <p>
         <strong>{t.contraindications}:</strong> {entry.contraindications[lang]}
       </p>
+      <p>
+        <strong>{t.interactions}:</strong> {entry.interactions[lang]}
+      </p>
+      {structuredDoseRows.length > 0 && (
+        <div className="entry-dose-summary">
+          <strong>{t.doseBySpeciesIndication}:</strong>
+          <ul>
+            {structuredDoseRows.map((row) => (
+              <li key={row.id}>
+                <span>{row.species}</span>
+                <span>{row.indication}</span>
+                <span>{row.summary}</span>
+                {row.concentration ? <span>{row.concentration}</span> : null}
+                {row.referenceCount > 0 ? <span>{t.references}: {row.referenceCount}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {entry.notes && (
         <p>
           <strong>{t.notes}:</strong> {entry.notes[lang]}
@@ -146,19 +162,6 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
         <strong>{t.editorialStatus}:</strong> {translateEditorialStatus(entry.editorialStatus, lang)}
       </p>
 
-      {(resolvedCimavetUrl || isResolvingCimavet) && (
-        <p className="record-link">
-          <strong>{t.sourceLinks}:</strong>{' '}
-          {resolvedCimavetUrl ? (
-            <a className="cimavet-link" href={resolvedCimavetUrl} target="_blank" rel="noreferrer">
-              {t.cimavetLink}
-            </a>
-          ) : (
-            <span>{t.resolvingCimavet}</span>
-          )}
-        </p>
-      )}
-
       <div className="reference-list">
         <strong>{t.references}:</strong>
         <p className="reference-note">{t.validatedReferencesOnly}</p>
@@ -166,6 +169,7 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
           <ul>
             {validatedReferences.map((reference) => (
               <li key={reference.id}>
+                {reference.context ? `${reference.context}. ` : ''}
                 {reference.authors} ({reference.year}). {reference.title}. {reference.source}{' '}
                 <a href={reference.url} target="_blank" rel="noreferrer">
                   DOI/URL

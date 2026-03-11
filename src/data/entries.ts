@@ -30,6 +30,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'Evitar en hipersensibilidad grave a beta-lactamicos. Reevaluar en especies con riesgo de disbiosis gastrointestinal.',
       en: 'Avoid in severe beta-lactam hypersensitivity. Reassess in GI dysbiosis risk species.',
     },
+    interactions: {
+      es: 'Precaucion con otros antibioticos bacteriostaticos y revisar compatibilidad con probioticos o protectores digestivos cuando se use terapia prolongada.',
+      en: 'Use caution with bacteriostatic antibiotics and review compatibility with probiotics or GI support when prolonged therapy is used.',
+    },
     notes: {
       es: 'Se recomienda desescalado dirigido por cultivo cuando este disponible la sensibilidad.',
       en: 'Culture-directed de-escalation is recommended once susceptibility testing becomes available.',
@@ -95,6 +99,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     contraindications: {
       es: 'Precaucion en disfuncion hepatica grave y en pacientes muy jovenes.',
       en: 'Use caution in severe hepatic dysfunction and in very young patients.',
+    },
+    interactions: {
+      es: 'Vigilar combinaciones con sedantes, opioides y farmacos metabolizados hepaticamente en pacientes hospitalizados complejos.',
+      en: 'Monitor combinations with sedatives, opioids, and hepatically metabolized drugs in complex hospitalized patients.',
     },
     evidenceLevel: 'High',
     editorialStatus: 'approved',
@@ -164,6 +172,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'No combinar con otros AINE ni corticosteroides. Evitar en deshidratacion, hipotension o compromiso renal.',
       en: 'Do not combine with other NSAIDs or corticosteroids. Avoid in dehydration, hypotension, or renal compromise.',
     },
+    interactions: {
+      es: 'No combinar con otros AINEs o corticoides. Extremar control con IECAs, diureticos y otros nefrotoxicos.',
+      en: 'Do not combine with other NSAIDs or corticosteroids. Use extra caution with ACE inhibitors, diuretics, and other nephrotoxic drugs.',
+    },
     evidenceLevel: 'Moderate',
     editorialStatus: 'approved',
     calculatorPresets: [
@@ -216,6 +228,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     contraindications: {
       es: 'Monitorizar riesgo de hepatotoxicidad y posibles interacciones por metabolismo CYP.',
       en: 'Monitor hepatotoxicity risk. Adjust strategy when interacting with CYP-metabolized drugs.',
+    },
+    interactions: {
+      es: 'Interacciones frecuentes con farmacos metabolizados por CYP3A, antiacidos y algunos inmunosupresores.',
+      en: 'Frequent interactions with CYP3A-metabolized drugs, antacids, and some immunosuppressants.',
     },
     evidenceLevel: 'Moderate',
     editorialStatus: 'approved',
@@ -270,6 +286,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       es: 'Evitar uso empirico de primera linea cuando existan alternativas. Precaucion en animales en crecimiento.',
       en: 'Avoid empirical first-line use when alternatives are available. Use caution in growing animals.',
     },
+    interactions: {
+      es: 'Separar de sucralfato, antiacidos y suplementos minerales. Revisar uso concomitante con otros farmacos proconvulsivantes.',
+      en: 'Separate from sucralfate, antacids, and mineral supplements. Review concomitant use with other pro-convulsant drugs.',
+    },
     evidenceLevel: 'High',
     editorialStatus: 'approved',
     calculatorPresets: [
@@ -322,6 +342,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     contraindications: {
       es: 'Precaucion en hepatopatia, sedacion marcada o cuando no sea posible monitorizar concentraciones y enzimas hepaticas.',
       en: 'Use caution with liver disease, marked sedation, or when serum concentration and hepatic enzymes cannot be monitored.',
+    },
+    interactions: {
+      es: 'Potente inductor enzimatico: puede reducir concentraciones de otros farmacos y variar con bromuro, levetiracetam o diazepam.',
+      en: 'Potent enzyme inducer: it can reduce concentrations of other drugs and may vary with bromide, levetiracetam, or diazepam.',
     },
     notes: {
       es: 'Valorar concentracion serica en estado estacionario y despues de cambios de dosis. Documentar siempre horario exacto de toma y extraccion.',

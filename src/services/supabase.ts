@@ -40,7 +40,13 @@ const formatDoseLine = (rule: Record<string, unknown>, locale: 'es' | 'en') => {
 const noteBody = (notes: Array<{ field_name: string; locale: 'es' | 'en'; body: string }>, field: string, locale: 'es' | 'en') =>
   notes.find((item) => item.field_name === field && item.locale === locale)?.body ?? '';
 
-const mapReferences = (rows: Array<{ references?: { id?: string; title?: string; authors?: string; year?: number; source?: string; doi_or_url?: string } | null }>) => {
+const mapReferences = (
+  rows: Array<{
+    scope?: string;
+    scope_label?: string;
+    references?: { id?: string; title?: string; authors?: string; year?: number; source?: string; doi_or_url?: string } | null;
+  }>,
+) => {
   return rows
     .map((item, index) => {
       const reference = item.references;
@@ -52,12 +58,17 @@ const mapReferences = (rows: Array<{ references?: { id?: string; title?: string;
         year: reference.year ?? new Date().getFullYear(),
         source: reference.source ?? 'WAIRUA VetAI',
         url: reference.doi_or_url ?? undefined,
-      } satisfies ScientificReference;
+        scope: item.scope ?? 'record',
+        scopeLabel: item.scope_label ?? '',
+      };
     })
-    .filter(Boolean) as ScientificReference[];
+    .filter(Boolean) as Array<ScientificReference & { scope: string; scopeLabel: string }>;
 };
 
-const mapRuleToPreset = (rule: Record<string, unknown>): DoseCalculatorPreset | null => {
+const mapRuleToPreset = (
+  rule: Record<string, unknown>,
+  references: Array<ScientificReference & { scope: string; scopeLabel: string }>,
+): DoseCalculatorPreset | null => {
   if (!rule.calculator_enabled) return null;
   const presentations = Array.isArray(rule.dosing_rule_presentations)
     ? (rule.dosing_rule_presentations as Array<Record<string, unknown>>)
@@ -84,6 +95,9 @@ const mapRuleToPreset = (rule: Record<string, unknown>): DoseCalculatorPreset | 
       mgPerMl: presentation.mg_per_ml ? Number(presentation.mg_per_ml) : undefined,
       mgPerTablet: presentation.mg_per_tablet ? Number(presentation.mg_per_tablet) : undefined,
     },
+    references: references
+      .filter((reference) => reference.scope === 'dosing_rule' && reference.scopeLabel === String(rule.id))
+      .map(({ scope: _scope, scopeLabel: _scopeLabel, ...reference }) => reference),
   };
 };
 
@@ -93,6 +107,13 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
     locale: 'es' | 'en';
     body: string;
   }>;
+  const referenceRows = mapReferences(
+    (row.active_ingredient_references as Array<{
+      scope?: string;
+      scope_label?: string;
+      references?: ScientificReference | null;
+    }> | undefined) ?? [],
+  );
   const dosingRules = (Array.isArray(row.dosing_rules) ? row.dosing_rules : []) as Array<Record<string, unknown>>;
   const speciesFromRules = uniq(dosingRules.map((rule) => String(rule.species)).filter(Boolean));
   const pathologiesFromRules = uniq(dosingRules.map((rule) => String(rule.indication)).filter(Boolean));
@@ -126,6 +147,10 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
       es: noteBody(notes, 'contraindications', 'es'),
       en: noteBody(notes, 'contraindications', 'en'),
     },
+    interactions: {
+      es: noteBody(notes, 'interactions', 'es'),
+      en: noteBody(notes, 'interactions', 'en'),
+    },
     notes: noteBody(notes, 'clinical_notes', 'es') || noteBody(notes, 'clinical_notes', 'en')
       ? {
           es: noteBody(notes, 'clinical_notes', 'es'),
@@ -134,8 +159,10 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
       : undefined,
     evidenceLevel: String(row.evidence_level) as TherapeuticEntry['evidenceLevel'],
     editorialStatus: String(row.status ?? 'draft') as TherapeuticEntry['editorialStatus'],
-    calculatorPresets: dosingRules.map(mapRuleToPreset).filter(Boolean) as DoseCalculatorPreset[],
-    references: mapReferences((row.active_ingredient_references as Array<{ references?: ScientificReference | null }> | undefined) ?? []),
+    calculatorPresets: dosingRules.map((rule) => mapRuleToPreset(rule, referenceRows)).filter(Boolean) as DoseCalculatorPreset[],
+    references: referenceRows
+      .filter((reference) => reference.scope !== 'dosing_rule')
+      .map(({ scope: _scope, scopeLabel: _scopeLabel, ...reference }) => reference),
     lastUpdated: String(row.updated_at ?? '').slice(0, 10) || new Date().toISOString().slice(0, 10),
   };
 };
@@ -169,6 +196,8 @@ const activeIngredientSelect = `
     dosing_rule_presentations ( label, mg_per_ml, mg_per_tablet )
   ),
   active_ingredient_references (
+    scope,
+    scope_label,
     references ( id, title, authors, year, source, doi_or_url )
   )
 `;
@@ -201,6 +230,8 @@ class SupabaseEditorialService {
       { field_name: 'adverse_effects', locale: 'en', body: entry.adverseEffects.en },
       { field_name: 'contraindications', locale: 'es', body: entry.contraindications.es },
       { field_name: 'contraindications', locale: 'en', body: entry.contraindications.en },
+      { field_name: 'interactions', locale: 'es', body: entry.interactions.es },
+      { field_name: 'interactions', locale: 'en', body: entry.interactions.en },
       ...(entry.notes
         ? [
             { field_name: 'clinical_notes', locale: 'es', body: entry.notes.es },
@@ -295,6 +326,29 @@ class SupabaseEditorialService {
           mg_per_tablet: preset.concentration.mgPerTablet,
         });
         if (error) throw error;
+      }
+
+      for (const reference of (preset.references ?? []).filter((item) => item.title || item.url)) {
+        const { data: ref, error: refError } = await this.client
+          .from('references')
+          .insert({
+            title: reference.title,
+            authors: reference.authors,
+            year: reference.year,
+            source: reference.source,
+            doi_or_url: reference.url,
+          })
+          .select('id')
+          .single();
+        if (refError) throw refError;
+
+        const { error: linkError } = await this.client.from('active_ingredient_references').insert({
+          active_ingredient_id: activeIngredientId,
+          reference_id: ref.id,
+          scope: 'dosing_rule',
+          scope_label: rule.id,
+        });
+        if (linkError) throw linkError;
       }
     }
 

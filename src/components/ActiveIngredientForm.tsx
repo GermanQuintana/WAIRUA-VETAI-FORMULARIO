@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
+import { translateMedicalTerm } from '../lib/terms';
 import { DoseCalculatorPreset, EditorialStatus, EvidenceLevel, Species, TherapeuticEntry } from '../types';
 
 interface SubmitResult {
@@ -33,6 +34,7 @@ interface PresetDraft {
   concentrationEn: string;
   mgPerMl: string;
   mgPerTablet: string;
+  referencesInput: string;
 }
 
 const evidenceOptions: EvidenceLevel[] = ['High', 'Moderate', 'Low', 'Expert Consensus'];
@@ -65,6 +67,7 @@ const emptyPreset = (): PresetDraft => ({
   concentrationEn: '',
   mgPerMl: '',
   mgPerTablet: '',
+  referencesInput: '',
 });
 
 const presetToDraft = (preset: DoseCalculatorPreset): PresetDraft => ({
@@ -82,6 +85,7 @@ const presetToDraft = (preset: DoseCalculatorPreset): PresetDraft => ({
   concentrationEn: preset.concentration.en,
   mgPerMl: preset.concentration.mgPerMl?.toString() ?? '',
   mgPerTablet: preset.concentration.mgPerTablet?.toString() ?? '',
+  referencesInput: (preset.references ?? []).map((reference) => [reference.title, reference.url].filter(Boolean).join(' | ')).join('\n'),
 });
 
 const slugify = (value: string) =>
@@ -98,6 +102,23 @@ const splitList = (value: string) =>
     .split(/[\n,]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+
+const parseReferences = (value: string, prefix: string) =>
+  value
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+    const [title, url] = line.split('|').map((item) => item.trim());
+    return {
+      id: `${prefix}-ref-${index + 1}`,
+      title: title || `Reference ${index + 1}`,
+      authors: 'Contributor submission',
+      year: new Date().getFullYear(),
+      source: 'WAIRUA VetAI',
+      url: url || undefined,
+    };
+  });
 
 export default function ActiveIngredientForm({
   lang,
@@ -117,37 +138,34 @@ export default function ActiveIngredientForm({
             createTitle: 'Nueva ficha de principio activo',
             editTitle: 'Editar ficha de principio activo',
             createSubtitle:
-              'Crea una ficha base con tags, concentraciones y presets para que la calculadora y los filtros la usen inmediatamente.',
+              'Crea una ficha simple por principio activo. Puedes dejar listas varias presentaciones y varios presets de dosis por especie e indicacion para reutilizarlos luego en el toolkit.',
             editSubtitle:
-              'Actualiza la ficha, sus presets y sus referencias. Los cambios se reflejan en filtros, fichas y calculadora.',
+              'Actualiza la ficha, sus presentaciones y sus presets de dosis. Los cambios se reflejan en consulta, edicion y calculadora.',
             activeIngredient: 'Principio activo',
             tradeNames: 'Nombres comerciales',
             tradeHint: 'Separados por coma',
             species: 'Especies',
-            systems: 'Sistemas',
             tags: 'Tags clinicas',
             customTags: 'Tags personalizadas',
-            customTagsHint: 'Ejemplo: Neurologia, UCI, Anestesia',
+            customTagsHint: 'Ejemplo: Vomito, Digestivo, UCI, Dermatologia',
             pathologies: 'Indicaciones/patologias',
-            concentrations: 'Concentraciones/presentaciones',
-            concentrationsHint: 'Una por linea o separadas por coma',
-            indicationsEs: 'Indicaciones (ES)',
-            indicationsEn: 'Indications (EN)',
-            dosageEs: 'Dosis (ES)',
-            dosageEn: 'Dosage (EN)',
-            administrationConditionsEs: 'Condiciones de administracion (ES)',
-            administrationConditionsEn: 'Administration conditions (EN)',
-            adverseEffectsEs: 'Efectos adversos (ES)',
-            adverseEffectsEn: 'Adverse effects (EN)',
-            contraindicationsEs: 'Contraindicaciones (ES)',
-            contraindicationsEn: 'Contraindications (EN)',
-            notesEs: 'Notas (ES)',
-            notesEn: 'Notes (EN)',
+            concentrations: 'Presentaciones disponibles',
+            concentrationsHint: 'Una por linea o separadas por coma. Ejemplo: oral 50 mg, inyectable 10 mg/mL, topico 1%',
+            indications: 'Indicaciones resumidas',
+            dosage: 'Dosis resumidas',
+            administrationConditions: 'Condiciones de administracion',
+            adverseEffects: 'Efectos adversos',
+            contraindications: 'Contraindicaciones',
+            interactions: 'Interacciones',
+            notes: 'Notas',
+            languageNote: 'La ficha se completa en el idioma que estes usando ahora mismo.',
             evidence: 'Nivel de evidencia',
             editorialStatus: 'Estado editorial',
             references: 'Referencias',
             referencesHint: 'Formato por linea: Titulo | URL',
-            presets: 'Presets de calculadora',
+            presets: 'Dosis y presentaciones para toolkit',
+            presetsHint:
+              'Añade una fila por especie/indicacion/via. El mismo principio activo puede tener varias presentaciones y varias dosis.',
             addPreset: 'Añadir preset',
             removePreset: 'Eliminar',
             saveCreate: 'Crear ficha',
@@ -155,19 +173,16 @@ export default function ActiveIngredientForm({
             cancelEdit: 'Cancelar edicion',
             successCreate: 'Ficha creada.',
             successEdit: 'Ficha actualizada.',
-            categoryEs: 'Categoria (ES)',
-            categoryEn: 'Category (EN)',
+            category: 'Categoria',
             route: 'Via',
-            indicationPresetEs: 'Indicacion del preset (ES)',
-            indicationPresetEn: 'Preset indication (EN)',
+            indicationPreset: 'Indicacion del preset',
             minDose: 'Min mg/kg',
             maxDose: 'Max mg/kg',
             defaultDose: 'Dosis por defecto',
-            concentrationEs: 'Concentracion preset (ES)',
-            concentrationEn: 'Preset concentration (EN)',
+            concentration: 'Presentacion para el preset',
             mgPerMl: 'mg/mL',
             mgPerTablet: 'mg/comprimido',
-            required: 'Completa al menos principio activo, una especie y un sistema.',
+            required: 'Completa al menos principio activo y una especie.',
           }
         : {
             createKicker: 'Editorial intake',
@@ -175,37 +190,34 @@ export default function ActiveIngredientForm({
             createTitle: 'New active ingredient record',
             editTitle: 'Edit active ingredient record',
             createSubtitle:
-              'Create a base record with tags, concentrations, and calculator presets so filters and toolkit can use it immediately.',
+              'Create a simple active-ingredient record. You can add several presentations and several dosing presets by species and indication so the toolkit can reuse them later.',
             editSubtitle:
-              'Update the record, its calculator presets, and references. Changes propagate to filters, records, and the calculator.',
+              'Update the record, its presentations, and its dosing presets. Changes propagate to lookup, editing, and the calculator.',
             activeIngredient: 'Active ingredient',
             tradeNames: 'Trade names',
             tradeHint: 'Comma-separated',
             species: 'Species',
-            systems: 'Systems',
             tags: 'Clinical tags',
             customTags: 'Custom tags',
-            customTagsHint: 'Example: Neurology, ICU, Anesthesia',
+            customTagsHint: 'Example: Vomiting, Digestive, ICU, Dermatology',
             pathologies: 'Indications/pathologies',
-            concentrations: 'Concentrations/presentations',
-            concentrationsHint: 'One per line or comma-separated',
-            indicationsEs: 'Indications (ES)',
-            indicationsEn: 'Indications (EN)',
-            dosageEs: 'Dosage (ES)',
-            dosageEn: 'Dosage (EN)',
-            administrationConditionsEs: 'Administration conditions (ES)',
-            administrationConditionsEn: 'Administration conditions (EN)',
-            adverseEffectsEs: 'Adverse effects (ES)',
-            adverseEffectsEn: 'Adverse effects (EN)',
-            contraindicationsEs: 'Contraindications (ES)',
-            contraindicationsEn: 'Contraindications (EN)',
-            notesEs: 'Notes (ES)',
-            notesEn: 'Notes (EN)',
+            concentrations: 'Available presentations',
+            concentrationsHint: 'One per line or comma-separated. Example: oral 50 mg, injectable 10 mg/mL, topical 1%',
+            indications: 'Indications summary',
+            dosage: 'Dose summary',
+            administrationConditions: 'Administration conditions',
+            adverseEffects: 'Adverse effects',
+            contraindications: 'Contraindications',
+            interactions: 'Interactions',
+            notes: 'Notes',
+            languageNote: 'The record is edited in the language currently selected in the app.',
             evidence: 'Evidence level',
             editorialStatus: 'Editorial status',
             references: 'References',
             referencesHint: 'Line format: Title | URL',
-            presets: 'Calculator presets',
+            presets: 'Dose and presentation presets for toolkit',
+            presetsHint:
+              'Add one row per species/indication/route. The same active ingredient can have multiple presentations and multiple doses.',
             addPreset: 'Add preset',
             removePreset: 'Remove',
             saveCreate: 'Create record',
@@ -213,19 +225,16 @@ export default function ActiveIngredientForm({
             cancelEdit: 'Cancel edit',
             successCreate: 'Record created.',
             successEdit: 'Record updated.',
-            categoryEs: 'Category (ES)',
-            categoryEn: 'Category (EN)',
+            category: 'Category',
             route: 'Route',
-            indicationPresetEs: 'Preset indication (ES)',
-            indicationPresetEn: 'Preset indication (EN)',
+            indicationPreset: 'Preset indication',
             minDose: 'Min mg/kg',
             maxDose: 'Max mg/kg',
             defaultDose: 'Default dose',
-            concentrationEs: 'Preset concentration (ES)',
-            concentrationEn: 'Preset concentration (EN)',
+            concentration: 'Preset presentation',
             mgPerMl: 'mg/mL',
             mgPerTablet: 'mg/tablet',
-            required: 'Complete at least active ingredient, one species, and one system.',
+            required: 'Complete at least active ingredient and one species.',
           },
     [lang],
   );
@@ -233,7 +242,6 @@ export default function ActiveIngredientForm({
   const [activeIngredient, setActiveIngredient] = useState('');
   const [tradeNames, setTradeNames] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<Species[]>([]);
-  const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTags, setCustomTags] = useState('');
   const [pathologies, setPathologies] = useState('');
@@ -248,6 +256,8 @@ export default function ActiveIngredientForm({
   const [adverseEffectsEn, setAdverseEffectsEn] = useState('');
   const [contraindicationsEs, setContraindicationsEs] = useState('');
   const [contraindicationsEn, setContraindicationsEn] = useState('');
+  const [interactionsEs, setInteractionsEs] = useState('');
+  const [interactionsEn, setInteractionsEn] = useState('');
   const [notesEs, setNotesEs] = useState('');
   const [notesEn, setNotesEn] = useState('');
   const [evidenceLevel, setEvidenceLevel] = useState<EvidenceLevel>('Moderate');
@@ -258,16 +268,43 @@ export default function ActiveIngredientForm({
   const [success, setSuccess] = useState('');
 
   const isEditing = Boolean(initialEntry);
+  const isSpanish = lang === 'es';
 
   const toggleArrayValue = <T,>(current: T[], value: T) =>
     current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+
+  const localizedValue = (es: string, en: string) => (isSpanish ? es : en);
+  const setLocalizedValue = (
+    value: string,
+    setEs: (next: string) => void,
+    setEn: (next: string) => void,
+  ) => {
+    if (isSpanish) {
+      setEs(value);
+      if (!indicationsEn && setEn === setIndicationsEn) setEn(value);
+      if (!dosageEn && setEn === setDosageEn) setEn(value);
+      if (!administrationConditionsEn && setEn === setAdministrationConditionsEn) setEn(value);
+      if (!adverseEffectsEn && setEn === setAdverseEffectsEn) setEn(value);
+      if (!contraindicationsEn && setEn === setContraindicationsEn) setEn(value);
+      if (!interactionsEn && setEn === setInteractionsEn) setEn(value);
+      if (!notesEn && setEn === setNotesEn) setEn(value);
+    } else {
+      setEn(value);
+      if (!indicationsEs && setEs === setIndicationsEs) setEs(value);
+      if (!dosageEs && setEs === setDosageEs) setEs(value);
+      if (!administrationConditionsEs && setEs === setAdministrationConditionsEs) setEs(value);
+      if (!adverseEffectsEs && setEs === setAdverseEffectsEs) setEs(value);
+      if (!contraindicationsEs && setEs === setContraindicationsEs) setEs(value);
+      if (!interactionsEs && setEs === setInteractionsEs) setEs(value);
+      if (!notesEs && setEs === setNotesEs) setEs(value);
+    }
+  };
 
   const populateForm = (entry?: TherapeuticEntry | null) => {
     if (!entry) {
       setActiveIngredient('');
       setTradeNames('');
       setSelectedSpecies([]);
-      setSelectedSystems([]);
       setSelectedTags([]);
       setCustomTags('');
       setPathologies('');
@@ -282,6 +319,8 @@ export default function ActiveIngredientForm({
       setAdverseEffectsEn('');
       setContraindicationsEs('');
       setContraindicationsEn('');
+      setInteractionsEs('');
+      setInteractionsEn('');
       setNotesEs('');
       setNotesEn('');
       setEvidenceLevel('Moderate');
@@ -294,8 +333,7 @@ export default function ActiveIngredientForm({
     setActiveIngredient(entry.activeIngredient);
     setTradeNames(entry.tradeNames.join(', '));
     setSelectedSpecies(entry.species);
-    setSelectedSystems(entry.systems);
-    setSelectedTags(tagOptions.filter((tag) => entry.tags.includes(tag)));
+    setSelectedTags(tagOptions.filter((tag) => [...entry.tags, ...entry.systems].includes(tag)));
     setCustomTags(entry.tags.filter((tag) => !tagOptions.includes(tag)).join(', '));
     setPathologies(entry.pathologies.join(', '));
     setConcentrations(entry.concentrations.join(', '));
@@ -309,6 +347,8 @@ export default function ActiveIngredientForm({
     setAdverseEffectsEn(entry.adverseEffects.en);
     setContraindicationsEs(entry.contraindications.es);
     setContraindicationsEn(entry.contraindications.en);
+    setInteractionsEs(entry.interactions.es);
+    setInteractionsEn(entry.interactions.en);
     setNotesEs(entry.notes?.es ?? '');
     setNotesEn(entry.notes?.en ?? '');
     setEvidenceLevel(entry.evidenceLevel);
@@ -332,24 +372,15 @@ export default function ActiveIngredientForm({
     setError('');
     setSuccess('');
 
-    if (!activeIngredient.trim() || selectedSpecies.length === 0 || selectedSystems.length === 0) {
+    if (!activeIngredient.trim() || selectedSpecies.length === 0) {
       setError(text.required);
       return;
     }
 
     const mergedTags = Array.from(new Set([...selectedTags, ...splitList(customTags)]));
+    const derivedSystems = mergedTags.filter((tag) => systemOptions.includes(tag));
     const concentrationList = splitList(concentrations);
-    const references = splitList(referencesInput).map((line, index) => {
-      const [title, url] = line.split('|').map((value) => value.trim());
-      return {
-        id: `${slugify(activeIngredient)}-ref-${index + 1}`,
-        title: title || `Reference ${index + 1}`,
-        authors: 'Contributor submission',
-        year: new Date().getFullYear(),
-        source: 'WAIRUA VetAI',
-        url: url || undefined,
-      };
-    });
+    const references = parseReferences(referencesInput, slugify(activeIngredient));
 
     const calculatorPresets = presets
       .filter((preset) => preset.species && preset.route && preset.indicationEs && preset.minDose && preset.maxDose && preset.defaultDose)
@@ -373,6 +404,7 @@ export default function ActiveIngredientForm({
           mgPerMl: preset.mgPerMl ? Number(preset.mgPerMl) : undefined,
           mgPerTablet: preset.mgPerTablet ? Number(preset.mgPerTablet) : undefined,
         },
+        references: parseReferences(preset.referencesInput, `${slugify(activeIngredient)}-${preset.id}`),
       }));
 
     const entry: TherapeuticEntry = {
@@ -381,7 +413,7 @@ export default function ActiveIngredientForm({
       tradeNames: splitList(tradeNames),
       species: selectedSpecies,
       tags: mergedTags,
-      systems: selectedSystems,
+      systems: derivedSystems,
       pathologies: splitList(pathologies),
       concentrations: concentrationList,
       indications: {
@@ -403,6 +435,10 @@ export default function ActiveIngredientForm({
       contraindications: {
         es: contraindicationsEs.trim(),
         en: contraindicationsEn.trim() || contraindicationsEs.trim(),
+      },
+      interactions: {
+        es: interactionsEs.trim(),
+        en: interactionsEn.trim() || interactionsEs.trim(),
       },
       notes:
         notesEs.trim() || notesEn.trim()
@@ -438,6 +474,7 @@ export default function ActiveIngredientForm({
           <p className="section-kicker">{isEditing ? text.editKicker : text.createKicker}</p>
           <h3>{isEditing ? text.editTitle : text.createTitle}</h3>
           <p>{isEditing ? text.editSubtitle : text.createSubtitle}</p>
+          <p className="entry-form-language-note">{text.languageNote}</p>
         </div>
         {isEditing && onCancelEdit && (
           <button type="button" className="secondary-button" onClick={onCancelEdit}>
@@ -454,15 +491,20 @@ export default function ActiveIngredientForm({
           </label>
           <label>
             {text.tradeNames}
-            <input value={tradeNames} onChange={(event) => setTradeNames(event.target.value)} placeholder={text.tradeHint} />
+            <input value={tradeNames} onChange={(event) => setTradeNames(event.target.value)} placeholder={text.tradeHint} title={text.tradeHint} />
           </label>
           <label>
             {text.pathologies}
-            <input value={pathologies} onChange={(event) => setPathologies(event.target.value)} placeholder={text.tradeHint} />
+            <input value={pathologies} onChange={(event) => setPathologies(event.target.value)} placeholder={text.tradeHint} title={text.tradeHint} />
           </label>
           <label>
             {text.concentrations}
-            <input value={concentrations} onChange={(event) => setConcentrations(event.target.value)} placeholder={text.concentrationsHint} />
+            <input
+              value={concentrations}
+              onChange={(event) => setConcentrations(event.target.value)}
+              placeholder={text.concentrationsHint}
+              title={text.concentrationsHint}
+            />
           </label>
         </div>
 
@@ -476,23 +518,7 @@ export default function ActiveIngredientForm({
                 className={selectedSpecies.includes(species) ? 'active' : ''}
                 onClick={() => setSelectedSpecies((current) => toggleArrayValue(current, species))}
               >
-                {species}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="entry-form-block">
-          <h4>{text.systems}</h4>
-          <div className="tag-chip-list">
-            {systemOptions.map((system) => (
-              <button
-                key={system}
-                type="button"
-                className={selectedSystems.includes(system) ? 'active' : ''}
-                onClick={() => setSelectedSystems((current) => toggleArrayValue(current, system))}
-              >
-                {system}
+                {translateMedicalTerm(species, lang)}
               </button>
             ))}
           </div>
@@ -508,64 +534,74 @@ export default function ActiveIngredientForm({
                 className={selectedTags.includes(tag) ? 'active' : ''}
                 onClick={() => setSelectedTags((current) => toggleArrayValue(current, tag))}
               >
-                {tag}
+                {translateMedicalTerm(tag, lang)}
               </button>
             ))}
           </div>
           <label>
             {text.customTags}
-            <input value={customTags} onChange={(event) => setCustomTags(event.target.value)} placeholder={text.customTagsHint} />
+            <input value={customTags} onChange={(event) => setCustomTags(event.target.value)} placeholder={text.customTagsHint} title={text.customTagsHint} />
           </label>
         </section>
 
         <div className="entry-form-grid-2">
           <label>
-            {text.indicationsEs}
-            <textarea value={indicationsEs} onChange={(event) => setIndicationsEs(event.target.value)} rows={4} />
+            {text.indications}
+            <textarea
+              value={localizedValue(indicationsEs, indicationsEn)}
+              onChange={(event) => setLocalizedValue(event.target.value, setIndicationsEs, setIndicationsEn)}
+              rows={4}
+            />
           </label>
           <label>
-            {text.indicationsEn}
-            <textarea value={indicationsEn} onChange={(event) => setIndicationsEn(event.target.value)} rows={4} />
+            {text.dosage}
+            <textarea
+              value={localizedValue(dosageEs, dosageEn)}
+              onChange={(event) => setLocalizedValue(event.target.value, setDosageEs, setDosageEn)}
+              rows={4}
+            />
           </label>
           <label>
-            {text.dosageEs}
-            <textarea value={dosageEs} onChange={(event) => setDosageEs(event.target.value)} rows={4} />
+            {text.administrationConditions}
+            <textarea
+              value={localizedValue(administrationConditionsEs, administrationConditionsEn)}
+              onChange={(event) =>
+                setLocalizedValue(event.target.value, setAdministrationConditionsEs, setAdministrationConditionsEn)
+              }
+              rows={4}
+            />
           </label>
           <label>
-            {text.dosageEn}
-            <textarea value={dosageEn} onChange={(event) => setDosageEn(event.target.value)} rows={4} />
+            {text.adverseEffects}
+            <textarea
+              value={localizedValue(adverseEffectsEs, adverseEffectsEn)}
+              onChange={(event) => setLocalizedValue(event.target.value, setAdverseEffectsEs, setAdverseEffectsEn)}
+              rows={4}
+            />
           </label>
           <label>
-            {text.administrationConditionsEs}
-            <textarea value={administrationConditionsEs} onChange={(event) => setAdministrationConditionsEs(event.target.value)} rows={4} />
+            {text.contraindications}
+            <textarea
+              value={localizedValue(contraindicationsEs, contraindicationsEn)}
+              onChange={(event) => setLocalizedValue(event.target.value, setContraindicationsEs, setContraindicationsEn)}
+              rows={4}
+            />
           </label>
           <label>
-            {text.administrationConditionsEn}
-            <textarea value={administrationConditionsEn} onChange={(event) => setAdministrationConditionsEn(event.target.value)} rows={4} />
+            {text.interactions}
+            <textarea
+              value={localizedValue(interactionsEs, interactionsEn)}
+              onChange={(event) => setLocalizedValue(event.target.value, setInteractionsEs, setInteractionsEn)}
+              rows={4}
+            />
           </label>
           <label>
-            {text.adverseEffectsEs}
-            <textarea value={adverseEffectsEs} onChange={(event) => setAdverseEffectsEs(event.target.value)} rows={4} />
-          </label>
-          <label>
-            {text.adverseEffectsEn}
-            <textarea value={adverseEffectsEn} onChange={(event) => setAdverseEffectsEn(event.target.value)} rows={4} />
-          </label>
-          <label>
-            {text.contraindicationsEs}
-            <textarea value={contraindicationsEs} onChange={(event) => setContraindicationsEs(event.target.value)} rows={4} />
-          </label>
-          <label>
-            {text.contraindicationsEn}
-            <textarea value={contraindicationsEn} onChange={(event) => setContraindicationsEn(event.target.value)} rows={4} />
-          </label>
-          <label>
-            {text.notesEs}
-            <textarea value={notesEs} onChange={(event) => setNotesEs(event.target.value)} rows={3} />
-          </label>
-          <label>
-            {text.notesEn}
-            <textarea value={notesEn} onChange={(event) => setNotesEn(event.target.value)} rows={3} />
+            {text.notes}
+            <textarea
+              value={localizedValue(notesEs, notesEn)}
+              onChange={(event) => setLocalizedValue(event.target.value, setNotesEs, setNotesEn)}
+              rows={3}
+            />
           </label>
         </div>
 
@@ -592,13 +628,22 @@ export default function ActiveIngredientForm({
           </label>
           <label>
             {text.references}
-            <textarea value={referencesInput} onChange={(event) => setReferencesInput(event.target.value)} rows={3} placeholder={text.referencesHint} />
+            <textarea
+              value={referencesInput}
+              onChange={(event) => setReferencesInput(event.target.value)}
+              rows={3}
+              placeholder={text.referencesHint}
+              title={text.referencesHint}
+            />
           </label>
         </div>
 
         <section className="entry-form-block">
           <div className="entry-form-inline-header">
-            <h4>{text.presets}</h4>
+            <div>
+              <h4>{text.presets}</h4>
+              <p className="entry-form-block-hint">{text.presetsHint}</p>
+            </div>
             <button type="button" className="secondary-button" onClick={() => setPresets((current) => [...current, emptyPreset()])}>
               {text.addPreset}
             </button>
@@ -620,23 +665,18 @@ export default function ActiveIngredientForm({
                 </div>
                 <div className="search-grid">
                   <label>
-                    {text.categoryEs}
+                    {text.category}
                     <input
-                      value={preset.categoryEs}
+                      value={localizedValue(preset.categoryEs, preset.categoryEn)}
                       onChange={(event) =>
                         setPresets((current) =>
-                          current.map((item) => (item.id === preset.id ? { ...item, categoryEs: event.target.value } : item)),
-                        )
-                      }
-                    />
-                  </label>
-                  <label>
-                    {text.categoryEn}
-                    <input
-                      value={preset.categoryEn}
-                      onChange={(event) =>
-                        setPresets((current) =>
-                          current.map((item) => (item.id === preset.id ? { ...item, categoryEn: event.target.value } : item)),
+                          current.map((item) =>
+                            item.id === preset.id
+                              ? isSpanish
+                                ? { ...item, categoryEs: event.target.value, categoryEn: item.categoryEn || event.target.value }
+                                : { ...item, categoryEn: event.target.value, categoryEs: item.categoryEs || event.target.value }
+                              : item,
+                          ),
                         )
                       }
                     />
@@ -654,7 +694,7 @@ export default function ActiveIngredientForm({
                       <option value=""></option>
                       {speciesOptions.map((species) => (
                         <option key={species} value={species}>
-                          {species}
+                          {translateMedicalTerm(species, lang)}
                         </option>
                       ))}
                     </select>
@@ -671,23 +711,18 @@ export default function ActiveIngredientForm({
                     />
                   </label>
                   <label>
-                    {text.indicationPresetEs}
+                    {text.indicationPreset}
                     <input
-                      value={preset.indicationEs}
+                      value={localizedValue(preset.indicationEs, preset.indicationEn)}
                       onChange={(event) =>
                         setPresets((current) =>
-                          current.map((item) => (item.id === preset.id ? { ...item, indicationEs: event.target.value } : item)),
-                        )
-                      }
-                    />
-                  </label>
-                  <label>
-                    {text.indicationPresetEn}
-                    <input
-                      value={preset.indicationEn}
-                      onChange={(event) =>
-                        setPresets((current) =>
-                          current.map((item) => (item.id === preset.id ? { ...item, indicationEn: event.target.value } : item)),
+                          current.map((item) =>
+                            item.id === preset.id
+                              ? isSpanish
+                                ? { ...item, indicationEs: event.target.value, indicationEn: item.indicationEn || event.target.value }
+                                : { ...item, indicationEn: event.target.value, indicationEs: item.indicationEs || event.target.value }
+                              : item,
+                          ),
                         )
                       }
                     />
@@ -732,23 +767,26 @@ export default function ActiveIngredientForm({
                     />
                   </label>
                   <label>
-                    {text.concentrationEs}
+                    {text.concentration}
                     <input
-                      value={preset.concentrationEs}
+                      value={localizedValue(preset.concentrationEs, preset.concentrationEn)}
                       onChange={(event) =>
                         setPresets((current) =>
-                          current.map((item) => (item.id === preset.id ? { ...item, concentrationEs: event.target.value } : item)),
-                        )
-                      }
-                    />
-                  </label>
-                  <label>
-                    {text.concentrationEn}
-                    <input
-                      value={preset.concentrationEn}
-                      onChange={(event) =>
-                        setPresets((current) =>
-                          current.map((item) => (item.id === preset.id ? { ...item, concentrationEn: event.target.value } : item)),
+                          current.map((item) =>
+                            item.id === preset.id
+                              ? isSpanish
+                                ? {
+                                    ...item,
+                                    concentrationEs: event.target.value,
+                                    concentrationEn: item.concentrationEn || event.target.value,
+                                  }
+                                : {
+                                    ...item,
+                                    concentrationEn: event.target.value,
+                                    concentrationEs: item.concentrationEs || event.target.value,
+                                  }
+                              : item,
+                          ),
                         )
                       }
                     />
@@ -777,6 +815,20 @@ export default function ActiveIngredientForm({
                           current.map((item) => (item.id === preset.id ? { ...item, mgPerTablet: event.target.value } : item)),
                         )
                       }
+                    />
+                  </label>
+                  <label className="preset-reference-field">
+                    {text.references}
+                    <textarea
+                      value={preset.referencesInput}
+                      onChange={(event) =>
+                        setPresets((current) =>
+                          current.map((item) => (item.id === preset.id ? { ...item, referencesInput: event.target.value } : item)),
+                        )
+                      }
+                      rows={3}
+                      placeholder={text.referencesHint}
+                      title={text.referencesHint}
                     />
                   </label>
                 </div>

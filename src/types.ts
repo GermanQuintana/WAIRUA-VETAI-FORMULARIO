@@ -44,6 +44,7 @@ export interface TherapeuticEntry {
   administrationConditions: LocalizedText;
   adverseEffects: LocalizedText;
   contraindications: LocalizedText;
+  interactions: LocalizedText;
   notes?: LocalizedText;
   evidenceLevel: EvidenceLevel;
   editorialStatus: EditorialStatus;
@@ -74,6 +75,7 @@ export interface DoseCalculatorPreset {
     mgPerMl?: number;
     mgPerTablet?: number;
   };
+  references?: ScientificReference[];
 }
 
 export interface DoseCalculatorEntry {

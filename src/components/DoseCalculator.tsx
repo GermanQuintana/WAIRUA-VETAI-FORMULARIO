@@ -78,6 +78,7 @@ export default function DoseCalculator({ entries, lang, onOpenKnowledge }: Props
               value={weightKg}
               onChange={(event) => setWeightKg(event.target.value)}
               placeholder="4.5"
+              title="4.5"
             />
           </label>
           <div>
@@ -95,6 +96,7 @@ export default function DoseCalculator({ entries, lang, onOpenKnowledge }: Props
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t.doseCalculatorSearchPlaceholder}
+            title={t.doseCalculatorSearchPlaceholder}
           />
         </label>
         <label>
