@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
+import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import DoseCalculator from './components/DoseCalculator';
 import EntryCard from './components/EntryCard';
+import InfusionCalculator from './components/InfusionCalculator';
+import UnitConverter from './components/UnitConverter';
 import {
   humanCimaCards,
+  LocalizedCollectionCard,
   otcSubmissionFields,
   otcWorkflowCards,
   toolkitModules,
@@ -37,7 +41,7 @@ import { TherapeuticEntry } from './types';
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
-const toolkitViews = ['overview', 'dose', 'assistant'] as const;
+const toolkitViews = ['overview', 'dose', 'infusion', 'converter', 'surface', 'assistant'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
@@ -778,7 +782,7 @@ function App() {
     };
   }, [activeHumanDetails, activeHumanResultsForDetails, activeKnowledgeView, activeTab, cimaService]);
 
-  const renderLocalizedCards = (cards: typeof otcWorkflowCards) => (
+  const renderLocalizedCards = (cards: LocalizedCollectionCard[]) => (
     <div className="feature-grid">
       {cards.map((card) => (
         <article key={card.id} className="feature-card">
@@ -791,6 +795,18 @@ function App() {
                 <li key={bullet}>{bullet}</li>
               ))}
             </ul>
+          ) : null}
+          {card.toolkitView ? (
+            <button
+              type="button"
+              className="secondary-button feature-card-action"
+              onClick={() => {
+                setActiveTab('toolkit');
+                setActiveToolkitView(card.toolkitView!);
+              }}
+            >
+              {t.openToolkitModule}
+            </button>
           ) : null}
         </article>
       ))}
@@ -1657,6 +1673,15 @@ function App() {
               <button onClick={() => setActiveToolkitView('dose')} className={activeToolkitView === 'dose' ? 'active' : ''}>
                 {t.doseCalculatorTitle}
               </button>
+              <button onClick={() => setActiveToolkitView('infusion')} className={activeToolkitView === 'infusion' ? 'active' : ''}>
+                {t.infusionCalculatorNav}
+              </button>
+              <button onClick={() => setActiveToolkitView('converter')} className={activeToolkitView === 'converter' ? 'active' : ''}>
+                {t.unitConverterNav}
+              </button>
+              <button onClick={() => setActiveToolkitView('surface')} className={activeToolkitView === 'surface' ? 'active' : ''}>
+                {t.bodySurfaceNav}
+              </button>
               <button onClick={() => setActiveToolkitView('assistant')} className={activeToolkitView === 'assistant' ? 'active' : ''}>
                 {t.assistantForm}
               </button>
@@ -1683,6 +1708,12 @@ function App() {
                 onOpenKnowledge={(entry) => openKnowledgeRecord(entry.linkedEntryId, entry.activeIngredient)}
               />
             )}
+
+            {activeToolkitView === 'infusion' && <InfusionCalculator lang={lang} />}
+
+            {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
+
+            {activeToolkitView === 'surface' && <BodySurfaceAreaCalculator lang={lang} />}
 
             {activeToolkitView === 'assistant' && (
               <section className="embedded-section">

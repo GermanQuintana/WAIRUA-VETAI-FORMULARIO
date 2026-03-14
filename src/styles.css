@@ -988,6 +988,10 @@ select:focus-visible {
   padding-left: 1.1rem;
 }
 
+.feature-card-action {
+  margin-top: 0.9rem;
+}
+
 .status-pill {
   display: inline-flex;
   margin-top: 0.8rem;
@@ -1371,6 +1375,552 @@ select:focus-visible {
   background: rgba(26, 39, 43, 0.65);
 }
 
+.infusion-calculator {
+  display: grid;
+  gap: 1rem;
+}
+
+.infusion-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.infusion-header h3 {
+  margin: 0.2rem 0 0.4rem;
+}
+
+.infusion-header p {
+  margin: 0;
+  color: var(--muted-light);
+  max-width: 64ch;
+}
+
+.infusion-summary-card {
+  min-width: 240px;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #d5ddc7;
+  background: linear-gradient(135deg, #fffef8 0%, #f4faf5 100%);
+}
+
+.infusion-summary-card span,
+.infusion-summary-card p {
+  color: var(--muted-light);
+}
+
+.infusion-summary-card strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.5rem;
+}
+
+.infusion-summary-card p {
+  margin-top: 0.3rem;
+}
+
+.infusion-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.05fr);
+  gap: 1rem;
+}
+
+.infusion-config-panel,
+.infusion-results-panel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.infusion-block,
+.infusion-result-card {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #d9dfcc;
+  background: linear-gradient(135deg, #fffdf7 0%, #f7fbf4 100%);
+}
+
+.infusion-block-header h4,
+.infusion-card-header h4 {
+  margin: 0.2rem 0 0.25rem;
+}
+
+.infusion-block-header p,
+.infusion-card-header span,
+.infusion-empty-state,
+.infusion-reference-strip p,
+.infusion-prep-row p,
+.infusion-prep-amount span,
+.infusion-drug-heading span,
+.infusion-metric-card p,
+.infusion-summary-card span {
+  color: var(--muted-light);
+}
+
+.infusion-block-header p,
+.infusion-reference-strip p,
+.infusion-prep-row p,
+.infusion-metric-card p {
+  margin: 0;
+}
+
+.infusion-toggle-row,
+.infusion-volume-grid,
+.infusion-chip-row,
+.infusion-rate-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.infusion-toggle-row {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.infusion-toggle-row button,
+.infusion-volume-grid button,
+.infusion-chip-row button {
+  border: 1px solid #d7dfcf;
+  background: #fff;
+  color: inherit;
+  border-radius: 0.9rem;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.infusion-toggle-row button:hover,
+.infusion-volume-grid button:hover,
+.infusion-chip-row button:hover {
+  transform: translateY(-1px);
+}
+
+.infusion-toggle-row button.active,
+.infusion-volume-grid button.active,
+.infusion-chip-row button.active {
+  border-color: #1b7a87;
+  box-shadow: 0 0 0 2px rgba(27, 122, 135, 0.12);
+}
+
+.infusion-toggle-row button {
+  padding: 0.9rem;
+  text-align: left;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.infusion-toggle-row button span {
+  color: var(--muted-light);
+  font-size: 0.92rem;
+}
+
+.infusion-volume-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.infusion-volume-grid button {
+  padding: 0.85rem 0.7rem;
+  font-weight: 700;
+}
+
+.infusion-weight-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid #d7dfcf;
+  background: #fff;
+}
+
+.infusion-weight-input input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.infusion-weight-input span {
+  color: var(--muted-light);
+  font-weight: 700;
+}
+
+.infusion-drug-list,
+.infusion-prep-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.infusion-drug-card,
+.infusion-prep-row,
+.infusion-metric-card {
+  border-radius: 0.9rem;
+  border: 1px solid #d7dfcf;
+}
+
+.infusion-drug-card {
+  padding: 0.9rem;
+  background: #fff;
+}
+
+.infusion-drug-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.infusion-drug-heading strong {
+  display: block;
+}
+
+.infusion-chip-row {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.infusion-chip-row button {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.infusion-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.9rem;
+}
+
+.infusion-card-header h4 {
+  margin-bottom: 0;
+}
+
+.infusion-card-header .section-kicker {
+  margin-bottom: 0.2rem;
+}
+
+.infusion-prep-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  background: #fff;
+}
+
+.infusion-prep-row strong,
+.infusion-prep-amount strong,
+.infusion-metric-card strong {
+  display: block;
+}
+
+.infusion-prep-amount {
+  text-align: right;
+}
+
+.infusion-prep-amount strong {
+  font-size: 1.2rem;
+}
+
+.infusion-rate-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.infusion-metric-card {
+  padding: 1rem;
+  background: #fff;
+}
+
+.infusion-metric-card span {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.infusion-metric-card strong {
+  margin: 0.35rem 0;
+  font-size: 1.5rem;
+}
+
+.infusion-empty-state {
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px dashed #c9d4bc;
+  background: #fffefb;
+}
+
+.infusion-reference-strip {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #d9dfcc;
+  border-radius: 1rem;
+  background: rgba(255, 253, 247, 0.8);
+}
+
+.tone-morphine {
+  border-color: rgba(183, 68, 53, 0.28);
+  background: linear-gradient(135deg, rgba(245, 214, 209, 0.6) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.tone-fentanyl {
+  border-color: rgba(202, 123, 40, 0.28);
+  background: linear-gradient(135deg, rgba(252, 226, 200, 0.62) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.tone-lidocaine {
+  border-color: rgba(69, 145, 94, 0.28);
+  background: linear-gradient(135deg, rgba(216, 241, 223, 0.64) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.tone-ketamine {
+  border-color: rgba(64, 128, 189, 0.28);
+  background: linear-gradient(135deg, rgba(212, 229, 248, 0.64) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.tone-bolus {
+  border-color: rgba(204, 141, 49, 0.28);
+  background: linear-gradient(135deg, rgba(252, 238, 205, 0.7) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.tone-maintenance {
+  border-color: rgba(52, 124, 166, 0.28);
+  background: linear-gradient(135deg, rgba(215, 234, 247, 0.7) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.tone-duration {
+  border-color: rgba(94, 116, 88, 0.28);
+  background: linear-gradient(135deg, rgba(228, 236, 221, 0.72) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.app.dark .infusion-block,
+.app.dark .infusion-result-card,
+.app.dark .infusion-summary-card,
+.app.dark .infusion-reference-strip,
+.app.dark .infusion-weight-input,
+.app.dark .infusion-drug-card,
+.app.dark .infusion-prep-row,
+.app.dark .infusion-metric-card,
+.app.dark .infusion-toggle-row button,
+.app.dark .infusion-volume-grid button,
+.app.dark .infusion-chip-row button,
+.app.dark .infusion-empty-state {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .infusion-header p,
+.app.dark .infusion-summary-card span,
+.app.dark .infusion-summary-card p,
+.app.dark .infusion-block-header p,
+.app.dark .infusion-card-header span,
+.app.dark .infusion-empty-state,
+.app.dark .infusion-reference-strip p,
+.app.dark .infusion-prep-row p,
+.app.dark .infusion-prep-amount span,
+.app.dark .infusion-drug-heading span,
+.app.dark .infusion-metric-card p,
+.app.dark .infusion-weight-input span,
+.app.dark .infusion-toggle-row button span {
+  color: var(--muted-dark);
+}
+
+.app.dark .infusion-weight-input input {
+  color: var(--text-dark);
+}
+
+.toolkit-utility {
+  display: grid;
+  gap: 1rem;
+}
+
+.toolkit-utility-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.toolkit-utility-header h3,
+.toolkit-reference-header h4 {
+  margin: 0.2rem 0 0.35rem;
+}
+
+.toolkit-utility-header p,
+.toolkit-utility-note p,
+.toolkit-utility-help p,
+.toolkit-utility-equation,
+.toolkit-reference-header span {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.toolkit-utility-note,
+.toolkit-utility-card,
+.toolkit-reference-table {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #d9dfcc;
+  background: linear-gradient(135deg, #fffdf7 0%, #f7fbf4 100%);
+}
+
+.toolkit-utility-note {
+  min-width: 240px;
+}
+
+.toolkit-utility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.toolkit-utility-card.result-card {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+}
+
+.toolkit-utility-form {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.toolkit-utility-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.toolkit-utility-result {
+  display: flex;
+  align-items: end;
+  gap: 0.6rem;
+}
+
+.toolkit-utility-result strong {
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 1;
+}
+
+.toolkit-utility-result span {
+  padding-bottom: 0.2rem;
+  color: var(--muted-light);
+  font-weight: 700;
+}
+
+.toolkit-utility-help {
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.toolkit-table-toggle {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.toolkit-reference-table {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.toolkit-source-note {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.toolkit-source-note p {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.toolkit-source-note a {
+  color: var(--accent-light);
+  word-break: break-word;
+}
+
+.toolkit-reference-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.toolkit-table-shell {
+  overflow-x: auto;
+  border: 1px solid #d9dfcb;
+  border-radius: 1rem;
+  background: #fffdf7;
+}
+
+.toolkit-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 320px;
+}
+
+.toolkit-table th,
+.toolkit-table td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #e4ead8;
+  text-align: left;
+}
+
+.toolkit-table th {
+  background: #f4f0e5;
+}
+
+.toolkit-table tbody tr:nth-child(even) {
+  background: rgba(244, 248, 235, 0.55);
+}
+
+.app.dark .toolkit-utility-header p,
+.app.dark .toolkit-utility-note p,
+.app.dark .toolkit-utility-help p,
+.app.dark .toolkit-utility-equation,
+.app.dark .toolkit-reference-header span,
+.app.dark .toolkit-utility-result span,
+.app.dark .toolkit-source-note p {
+  color: var(--muted-dark);
+}
+
+.app.dark .toolkit-utility-note,
+.app.dark .toolkit-utility-card,
+.app.dark .toolkit-reference-table,
+.app.dark .toolkit-table-shell,
+.app.dark .toolkit-table th,
+.app.dark .toolkit-utility-help,
+.app.dark .toolkit-source-note {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .toolkit-source-note a {
+  color: var(--accent-dark);
+}
+
+.app.dark .toolkit-table th,
+.app.dark .toolkit-table td {
+  border-bottom-color: #24353b;
+}
+
+.app.dark .toolkit-table tbody tr:nth-child(even) {
+  background: rgba(26, 39, 43, 0.65);
+}
+
 @media (max-width: 840px) {
   .dose-calculator-header {
     flex-direction: column;
@@ -1379,6 +1929,44 @@ select:focus-visible {
   .dose-weight-card {
     min-width: 0;
     width: 100%;
+  }
+
+  .infusion-header,
+  .infusion-layout,
+  .infusion-card-header,
+  .infusion-prep-row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .infusion-summary-card {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .infusion-volume-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .infusion-prep-amount {
+    width: 100%;
+    text-align: left;
+  }
+
+  .toolkit-utility-header,
+  .toolkit-utility-grid,
+  .toolkit-reference-header {
+    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .toolkit-utility-note {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .toolkit-utility-form {
+    grid-template-columns: 1fr;
   }
 }
 

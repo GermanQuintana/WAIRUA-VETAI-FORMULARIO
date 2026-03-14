@@ -9,6 +9,7 @@ export interface LocalizedCollectionCard {
     en: string[];
   };
   status?: LocalizedText;
+  toolkitView?: 'overview' | 'dose' | 'infusion' | 'converter' | 'surface' | 'assistant';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -144,24 +145,47 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       en: 'Fast conversion from mg/kg to mg, mL, or tablets based on weight, concentration, and presentation.',
     },
     status: { es: 'Prioridad alta', en: 'High priority' },
+    toolkitView: 'dose',
   },
   {
-    id: 'cri',
-    title: { es: 'Calculadora de CRI', en: 'CRI calculator' },
+    id: 'analgesic-infusions',
+    title: { es: 'Infusiones analgesicas', en: 'Analgesic infusions' },
     description: {
-      es: 'Preparada para infusiones continuas, diluciones, ritmo de bomba y concentraciones finales.',
-      en: 'Prepared for constant-rate infusions, dilutions, pump rates, and final concentrations.',
+      es: 'Incluye la CRI concreta MLK/FLK para preparar bolsas, ajustar concentraciones y estimar ritmos.',
+      en: 'Includes the specific MLK/FLK CRI to prepare bags, adjust concentrations, and estimate rates.',
     },
-    status: { es: 'Siguiente modulo', en: 'Next module' },
+    status: { es: 'Disponible', en: 'Available' },
+    toolkitView: 'infusion',
   },
   {
     id: 'unit-converter',
     title: { es: 'Conversores de unidades', en: 'Unit converters' },
     description: {
-      es: 'Peso, volumen, concentraciones, energia, gasometria y conversiones clinicas frecuentes.',
-      en: 'Weight, volume, concentrations, energy, blood gas, and frequent clinical conversions.',
+      es: 'Conversion directa entre masa, volumen y concentraciones clinicas de interes para medicacion y perfusiones.',
+      en: 'Direct conversion between mass, volume, and clinically relevant concentration units for medication and infusions.',
     },
-    status: { es: 'En diseño', en: 'In design' },
+    status: { es: 'Disponible', en: 'Available' },
+    toolkitView: 'converter',
+  },
+  {
+    id: 'body-surface',
+    title: { es: 'Superficie corporal', en: 'Body surface area' },
+    description: {
+      es: 'Calculadora por especie con tabla desplegable para perro, gato, conejo y huron.',
+      en: 'Species-aware calculator with expandable tables for dog, cat, rabbit, and ferret.',
+    },
+    status: { es: 'Disponible', en: 'Available' },
+    toolkitView: 'surface',
+  },
+  {
+    id: 'clinical-assistant',
+    title: { es: 'Formulario clinico rapido', en: 'Quick clinical form' },
+    description: {
+      es: 'Genera una orientacion inicial a partir de especie, patologia y notas clinicas desde el propio toolkit.',
+      en: 'Generates an initial orientation from species, pathology, and clinical notes directly inside the toolkit.',
+    },
+    status: { es: 'Disponible', en: 'Available' },
+    toolkitView: 'assistant',
   },
   {
     id: 'anesthesia',
