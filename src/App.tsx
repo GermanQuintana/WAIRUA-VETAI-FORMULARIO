@@ -2020,7 +2020,7 @@ function App() {
         )}
       </main>
 
-      {(activeTab === 'otc' || activeTab === 'toolkit') && (
+      {(activeTab === 'otc' || (activeTab === 'toolkit' && activeToolkitView === 'overview')) && (
         <footer className="footer-grid footer-grid-single">
           <section>
             <h3>{t.contribute}</h3>

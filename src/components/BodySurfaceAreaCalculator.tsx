@@ -38,7 +38,7 @@ const SPECIES_CONFIG: Record<BsaSpeciesKey, SpeciesDefinition> = {
     label: { es: 'Perro', en: 'Dog' },
     coefficient: 0.101,
     formulaLabel: 'BSA = 0.101 x kg^(2/3)',
-    weightOptions: [...buildWeightRange(0.5, 5, 0.5), ...buildWeightRange(6, 55, 1)],
+    weightOptions: [...buildWeightRange(0.5, 5, 0.5), ...buildWeightRange(6, 56, 2)],
     source: {
       label: 'Merck Veterinary Manual',
       url: 'https://www.merckvetmanual.com/multimedia/table/weight-to-body-surface-area-conversion-for-dogs',
@@ -96,10 +96,19 @@ const calculateBodySurfaceArea = (weight: number, coefficient: number) => coeffi
 
 const formatNumber = (value: number, decimals = 3) => Number(value.toFixed(decimals)).toString();
 
-const chunkRows = <T,>(values: T[], size: number) => {
+const buildColumnRows = <T,>(values: T[], columns: number) => {
+  const rowCount = Math.ceil(values.length / columns);
   const rows: T[][] = [];
-  for (let index = 0; index < values.length; index += size) {
-    rows.push(values.slice(index, index + size));
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    const row: T[] = [];
+    for (let columnIndex = 0; columnIndex < columns; columnIndex += 1) {
+      const valueIndex = columnIndex * rowCount + rowIndex;
+      if (valueIndex < values.length) {
+        row.push(values[valueIndex]);
+      }
+    }
+    rows.push(row);
   }
   return rows;
 };
@@ -124,7 +133,7 @@ export default function BodySurfaceAreaCalculator({ lang }: Props) {
     [activeSpecies],
   );
   const referenceColumns = species === 'dog' || species === 'cat' ? 3 : 2;
-  const referenceRows = useMemo(() => chunkRows(referenceTable, referenceColumns), [referenceColumns, referenceTable]);
+  const referenceRows = useMemo(() => buildColumnRows(referenceTable, referenceColumns), [referenceColumns, referenceTable]);
 
   return (
     <section className="toolkit-utility">
