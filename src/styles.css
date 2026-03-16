@@ -1003,6 +1003,54 @@ select:focus-visible {
   font-size: 0.82rem;
 }
 
+.status-pill-available {
+  background: #e9f8f1;
+  color: #21634b;
+}
+
+.status-pill-soon {
+  background: #fde9e9;
+  color: #9f2f35;
+}
+
+.feature-card-link {
+  margin-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.34rem 0.68rem;
+  border: 1px solid #b9d5c7;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #21634b;
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.feature-card-link::after {
+  content: '›';
+  font-size: 1rem;
+  line-height: 1;
+  transform: translateX(0);
+  transition: transform 160ms ease;
+}
+
+.feature-card-link:hover {
+  background: #eef9f3;
+  border-color: #9ec6b1;
+  box-shadow: 0 6px 16px rgba(72, 116, 94, 0.12);
+  transform: translateY(-1px);
+}
+
+.feature-card-link:hover::after {
+  transform: translateX(3px);
+}
+
 .feature-callout {
   padding: 1rem 1.1rem;
   border-radius: 1rem;
@@ -1921,6 +1969,268 @@ select:focus-visible {
   background: rgba(26, 39, 43, 0.65);
 }
 
+.haemo-metrics,
+.haemo-guidance-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.haemo-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.haemo-guidance-grid {
+  grid-template-columns: 1fr;
+}
+
+.haemo-metric-card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.haemo-metric-card span,
+.haemo-metric-card p {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.haemo-metric-card strong {
+  font-size: 1.05rem;
+}
+
+.haemo-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.haemo-source-links {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.haemo-source-links a {
+  color: var(--accent-light);
+  word-break: break-word;
+}
+
+.accordion-card {
+  overflow: hidden;
+}
+
+.accordion-summary {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-summary::after {
+  content: '▾';
+  flex: 0 0 auto;
+  color: var(--muted-light);
+  font-size: 1rem;
+  line-height: 1;
+  transform: rotate(-90deg);
+  transition: transform 160ms ease;
+}
+
+.accordion-summary p,
+.accordion-summary h4,
+.accordion-summary strong,
+.accordion-summary span {
+  margin: 0;
+}
+
+.accordion-card[open] > .accordion-summary {
+  margin-bottom: 0.85rem;
+}
+
+.accordion-card[open] > .accordion-summary::after {
+  transform: rotate(0deg);
+}
+
+.nested-accordion {
+  padding: 0;
+  background: transparent;
+}
+
+.nested-accordion[open] > .accordion-summary {
+  margin-bottom: 0.65rem;
+}
+
+.haemo-typing-card {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.haemo-typing-card .haemo-list {
+  padding-left: 1.35rem;
+  margin-top: 0.15rem;
+}
+
+.haemo-typing-card .toolkit-table-shell {
+  margin-top: 0.85rem;
+}
+
+.app.dark .haemo-metric-card {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .haemo-metric-card span,
+.app.dark .haemo-metric-card p,
+.app.dark .haemo-list {
+  color: var(--muted-dark);
+}
+
+.app.dark .haemo-source-links a {
+  color: var(--accent-dark);
+}
+
+.endo-system-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.endo-system-row button {
+  padding: 0.65rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid #d7dfca;
+  background: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+  color: inherit;
+}
+
+.endo-system-row button.active {
+  border-color: rgba(71, 122, 104, 0.38);
+  background: linear-gradient(135deg, rgba(223, 241, 234, 0.92) 0%, rgba(249, 252, 247, 0.98) 100%);
+}
+
+.endo-helper-title {
+  margin: 0;
+}
+
+.endo-helper-text {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.endo-helper-note {
+  margin-top: 0.5rem;
+}
+
+.endo-helper-note strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.endo-card-grid,
+.endo-detail-grid,
+.endo-step-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.endo-card-grid {
+  grid-template-columns: 1fr;
+}
+
+.endo-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.endo-step-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.endo-step-list.compact {
+  grid-template-columns: 1fr;
+}
+
+.endo-step-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.endo-step-card span {
+  font-weight: 700;
+}
+
+.endo-step-card p {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.endo-helper-form {
+  grid-template-columns: 1fr;
+}
+
+.endo-protocol {
+  padding-top: 0.95rem;
+}
+
+.endo-protocol-summary {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.endo-protocol-test,
+.endo-protocol-summary-text,
+.endo-protocol-block p {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.endo-protocol-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.endo-protocol-block {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.1rem;
+}
+
+.endo-protocol-block strong {
+  font-size: 0.95rem;
+}
+
+.app.dark .endo-system-row button,
+.app.dark .endo-step-card {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .endo-system-row button.active {
+  background: linear-gradient(135deg, rgba(29, 62, 53, 0.95) 0%, rgba(24, 35, 41, 0.98) 100%);
+}
+
+.app.dark .endo-helper-text,
+.app.dark .endo-step-card p,
+.app.dark .endo-protocol-test,
+.app.dark .endo-protocol-summary-text,
+.app.dark .endo-protocol-block p {
+  color: var(--muted-dark);
+}
+
 @media (max-width: 840px) {
   .dose-calculator-header {
     flex-direction: column;
@@ -1966,6 +2276,16 @@ select:focus-visible {
   }
 
   .toolkit-utility-form {
+    grid-template-columns: 1fr;
+  }
+
+  .haemo-metrics,
+  .haemo-guidance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .endo-detail-grid,
+  .endo-step-list {
     grid-template-columns: 1fr;
   }
 }

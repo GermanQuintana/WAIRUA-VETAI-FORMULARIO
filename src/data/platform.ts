@@ -9,7 +9,8 @@ export interface LocalizedCollectionCard {
     en: string[];
   };
   status?: LocalizedText;
-  toolkitView?: 'overview' | 'dose' | 'infusion' | 'converter' | 'surface' | 'assistant';
+  statusTone?: 'available' | 'soon';
+  toolkitView?: 'overview' | 'dose' | 'infusion' | 'haemotherapy' | 'endocrine' | 'converter' | 'surface' | 'assistant';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -144,7 +145,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Conversion rapida de mg/kg a mg, mL o comprimidos segun peso, concentracion y presentacion.',
       en: 'Fast conversion from mg/kg to mg, mL, or tablets based on weight, concentration, and presentation.',
     },
-    status: { es: 'Prioridad alta', en: 'High priority' },
+    status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
     toolkitView: 'dose',
   },
   {
@@ -155,7 +157,30 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       en: 'Includes the specific MLK/FLK CRI to prepare bags, adjust concentrations, and estimate rates.',
     },
     status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
     toolkitView: 'infusion',
+  },
+  {
+    id: 'haemotherapy',
+    title: { es: 'Hemoterapia', en: 'Haemotherapy' },
+    description: {
+      es: 'Calculadora transfusional orientativa con pautas de uso, compatibilidad y grupos sanguineos para perro y gato.',
+      en: 'Guidance transfusion calculator with use notes, compatibility, and blood-group references for dogs and cats.',
+    },
+    status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
+    toolkitView: 'haemotherapy',
+  },
+  {
+    id: 'endocrine',
+    title: { es: 'Endocrino', en: 'Endocrinology' },
+    description: {
+      es: 'Guia de pruebas endocrinas por especie con cronogramas, ayuno, revisiones y ayuda de calculo para protocolos frecuentes.',
+      en: 'Species-first endocrine testing guide with timelines, fasting notes, rechecks, and dose help for common protocols.',
+    },
+    status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
+    toolkitView: 'endocrine',
   },
   {
     id: 'unit-converter',
@@ -165,6 +190,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       en: 'Direct conversion between mass, volume, and clinically relevant concentration units for medication and infusions.',
     },
     status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
     toolkitView: 'converter',
   },
   {
@@ -175,7 +201,18 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       en: 'Species-aware calculator with expandable tables for dog, cat, rabbit, and ferret.',
     },
     status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
     toolkitView: 'surface',
+  },
+  {
+    id: 'fluid-therapy',
+    title: { es: 'Fluidoterapia', en: 'Fluid therapy' },
+    description: {
+      es: 'Modulo reservado para calculos de mantenimiento, deficit, perdidas y planes de rehidratacion.',
+      en: 'Reserved module for maintenance, deficit, ongoing-loss, and rehydration planning calculations.',
+    },
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
   },
   {
     id: 'clinical-assistant',
@@ -185,6 +222,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       en: 'Generates an initial orientation from species, pathology, and clinical notes directly inside the toolkit.',
     },
     status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
     toolkitView: 'assistant',
   },
   {
@@ -194,7 +232,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Constructor de protocolos con premedicacion, induccion, mantenimiento, rescate y monitorizacion.',
       en: 'Protocol builder with premedication, induction, maintenance, rescue, and monitoring.',
     },
-    status: { es: 'Planificado', en: 'Planned' },
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
   },
   {
     id: 'recover',
@@ -203,7 +242,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Accesos rapidos a tablas de RCP, desfibrilacion, reversores y recordatorios de emergencias.',
       en: 'Quick access to CPR, defibrillation, reversal, and emergency reminder charts.',
     },
-    status: { es: 'Planificado', en: 'Planned' },
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
   },
   {
     id: 'custom-workflows',
@@ -212,7 +252,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Atajos hacia formularios y guias internas para que el veterinario resuelva tareas frecuentes desde un mismo lugar.',
       en: 'Shortcuts into internal forms and guides so veterinarians can solve recurring tasks from one place.',
     },
-    status: { es: 'Evolutivo', en: 'Iterative' },
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
   },
 ];
 

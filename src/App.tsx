@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import DoseCalculator from './components/DoseCalculator';
+import EndocrineToolkit from './components/EndocrineToolkit';
 import EntryCard from './components/EntryCard';
+import HaemotherapyCalculator from './components/HaemotherapyCalculator';
 import InfusionCalculator from './components/InfusionCalculator';
 import UnitConverter from './components/UnitConverter';
 import {
@@ -41,7 +43,7 @@ import { TherapeuticEntry } from './types';
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
-const toolkitViews = ['overview', 'dose', 'infusion', 'converter', 'surface', 'assistant'] as const;
+const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
@@ -788,7 +790,7 @@ function App() {
         <article key={card.id} className="feature-card">
           <h3>{card.title[lang]}</h3>
           <p>{card.description[lang]}</p>
-          {card.status && <span className="status-pill">{card.status[lang]}</span>}
+          {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}
           {card.bullets?.[lang]?.length ? (
             <ul>
               {card.bullets[lang].map((bullet) => (
@@ -799,13 +801,13 @@ function App() {
           {card.toolkitView ? (
             <button
               type="button"
-              className="secondary-button feature-card-action"
+              className="feature-card-link"
               onClick={() => {
                 setActiveTab('toolkit');
                 setActiveToolkitView(card.toolkitView!);
               }}
             >
-              {t.openToolkitModule}
+              <span>{t.openToolkitModule}</span>
             </button>
           ) : null}
         </article>
@@ -1660,10 +1662,6 @@ function App() {
                     : 'Module to gather calculators, conversions, protocols, and shortcuts that are currently spread across different apps and worksheets.'}
                 </p>
               </div>
-              <div className="module-note">
-                <strong>{lang === 'es' ? 'Objetivo' : 'Goal'}</strong>
-                <p>{lang === 'es' ? 'Unificar utilidades clinicas' : 'Unify clinical utilities'}</p>
-              </div>
             </div>
 
             <div className="subtabs" role="tablist" aria-label="Toolkit views">
@@ -1675,6 +1673,15 @@ function App() {
               </button>
               <button onClick={() => setActiveToolkitView('infusion')} className={activeToolkitView === 'infusion' ? 'active' : ''}>
                 {t.infusionCalculatorNav}
+              </button>
+              <button
+                onClick={() => setActiveToolkitView('haemotherapy')}
+                className={activeToolkitView === 'haemotherapy' ? 'active' : ''}
+              >
+                {t.haemotherapyNav}
+              </button>
+              <button onClick={() => setActiveToolkitView('endocrine')} className={activeToolkitView === 'endocrine' ? 'active' : ''}>
+                {t.endocrineNav}
               </button>
               <button onClick={() => setActiveToolkitView('converter')} className={activeToolkitView === 'converter' ? 'active' : ''}>
                 {t.unitConverterNav}
@@ -1690,14 +1697,6 @@ function App() {
             {activeToolkitView === 'overview' && (
               <>
                 {renderLocalizedCards(toolkitModules)}
-                <div className="feature-callout">
-                  <h3>{lang === 'es' ? 'Direccion del toolkit' : 'Toolkit direction'}</h3>
-                  <p>
-                    {lang === 'es'
-                      ? 'La estructura ya queda pensada para integrar calculadoras propias, modulos heredados que ya tienes desarrollados y atajos hacia protocolos recurrentes.'
-                      : 'The structure is already designed to integrate proprietary calculators, legacy modules you already built, and shortcuts to recurrent protocols.'}
-                  </p>
-                </div>
               </>
             )}
 
@@ -1710,6 +1709,10 @@ function App() {
             )}
 
             {activeToolkitView === 'infusion' && <InfusionCalculator lang={lang} />}
+
+            {activeToolkitView === 'haemotherapy' && <HaemotherapyCalculator lang={lang} />}
+
+            {activeToolkitView === 'endocrine' && <EndocrineToolkit lang={lang} />}
 
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
