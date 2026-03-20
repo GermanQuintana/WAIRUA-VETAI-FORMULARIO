@@ -13,6 +13,8 @@ export type Species =
   | 'Poultry'
   | 'Equine';
 
+export type OtcSpecies = Species | 'Bovine' | 'Ovine' | 'Caprine' | 'Porcine' | 'Fish' | 'Bee';
+
 export type EvidenceLevel = 'High' | 'Moderate' | 'Low' | 'Expert Consensus';
 export type EditorialStatus = 'draft' | 'under_review' | 'approved';
 
@@ -166,4 +168,26 @@ export interface FoodIngredientRecord {
     zincMg: number;
     taurineMg: number;
   };
+}
+
+export interface OtcFacet {
+  key: string;
+  label: LocalizedText;
+}
+
+export interface OtcProductRecord {
+  id: string;
+  manufacturer: string;
+  portfolio?: string;
+  productName: string;
+  productType: OtcFacet;
+  category: OtcFacet;
+  species: OtcSpecies[];
+  format: string;
+  presentations: string[];
+  activeCompounds: string;
+  summary: LocalizedText;
+  sourceUrl: string;
+  sourceRegion: 'es' | 'global';
+  searchTerms?: string[];
 }

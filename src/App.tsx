@@ -15,6 +15,7 @@ import {
   otcWorkflowCards,
   toolkitModules,
 } from './data/platform';
+import { otcProducts } from './data/otcProducts';
 import { therapeuticEntries } from './data/entries';
 import { labels, Language } from './i18n';
 import {
@@ -44,7 +45,7 @@ import {
 } from './services/cimavet';
 import { createClinicalNutritionService } from './services/clinicalNutrition';
 import { createSupabaseEditorialService } from './services/supabase';
-import { TherapeuticEntry } from './types';
+import { OtcProductRecord, TherapeuticEntry } from './types';
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
@@ -168,6 +169,29 @@ const getVetPresentationFilterText = (medication: CimavetMedicationSummary, deta
     .join(' ')
     .trim();
 
+const getOtcSearchableText = (product: OtcProductRecord) =>
+  [
+    product.productName,
+    product.manufacturer,
+    product.portfolio ?? '',
+    product.productType.label.es,
+    product.productType.label.en,
+    product.category.label.es,
+    product.category.label.en,
+    product.format,
+    product.presentations.join(' '),
+    product.activeCompounds,
+    product.summary.es,
+    product.summary.en,
+    ...product.species,
+    ...(product.searchTerms ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const hasLongOtcBadgeRow = (product: OtcProductRecord, lang: Language) =>
+  [product.productType.label[lang], product.category.label[lang]].some((label) => label.length > 18);
+
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
   query: string,
@@ -269,6 +293,15 @@ function App() {
   const [humanPageSize, setHumanPageSize] = useState<(typeof livePageSizeOptions)[number]>(24);
   const [humanPage, setHumanPage] = useState(1);
 
+  const [otcQuery, setOtcQuery] = useState('');
+  const [otcManufacturer, setOtcManufacturer] = useState('');
+  const [otcSpecies, setOtcSpecies] = useState('');
+  const [otcCategory, setOtcCategory] = useState('');
+  const [otcType, setOtcType] = useState('');
+  const [otcPageSize, setOtcPageSize] = useState<(typeof livePageSizeOptions)[number]>(24);
+  const [otcPage, setOtcPage] = useState(1);
+  const [isOtcWorkflowExpanded, setIsOtcWorkflowExpanded] = useState(false);
+
   const [liveResults, setLiveResults] = useState<CimavetMedicationSummary[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveError, setLiveError] = useState<string | null>(null);
@@ -333,6 +366,31 @@ function App() {
   const pathologyOptions = useMemo(
     () => Array.from(new Set(entryCatalog.flatMap((entry) => entry.pathologies))).sort((a, b) => a.localeCompare(b)),
     [entryCatalog],
+  );
+  const otcManufacturerOptions = useMemo(
+    () => Array.from(new Set(otcProducts.map((product) => product.manufacturer))).sort((a, b) => a.localeCompare(b)),
+    [],
+  );
+  const otcSpeciesOptions = useMemo(
+    () =>
+      Array.from(new Set(otcProducts.flatMap((product) => product.species))).sort((left, right) =>
+        translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en'),
+      ),
+    [lang],
+  );
+  const otcCategoryOptions = useMemo(
+    () =>
+      Array.from(new Map(otcProducts.map((product) => [product.category.key, product.category])).values()).sort((left, right) =>
+        left.label[lang].localeCompare(right.label[lang], lang === 'es' ? 'es' : 'en'),
+      ),
+    [lang],
+  );
+  const otcTypeOptions = useMemo(
+    () =>
+      Array.from(new Map(otcProducts.map((product) => [product.productType.key, product.productType])).values()).sort(
+        (left, right) => left.label[lang].localeCompare(right.label[lang], lang === 'es' ? 'es' : 'en'),
+      ),
+    [lang],
   );
 
   const openKnowledgeRecord = (entryId?: string, ingredientName?: string) => {
@@ -539,6 +597,44 @@ function App() {
   );
   const humanResultsForDetails = useMemo(() => visibleHumanResults, [visibleHumanResults]);
 
+  const filteredOtcProducts = useMemo(() => {
+    const normalizedQuery = normalizeFilterText(otcQuery);
+
+    return otcProducts.filter((product) => {
+      if (otcManufacturer && product.manufacturer !== otcManufacturer) return false;
+      if (otcSpecies && !product.species.includes(otcSpecies as OtcProductRecord['species'][number])) return false;
+      if (otcCategory && product.category.key !== otcCategory) return false;
+      if (otcType && product.productType.key !== otcType) return false;
+      if (!normalizedQuery) return true;
+
+      return normalizeFilterText(getOtcSearchableText(product)).includes(normalizedQuery);
+    });
+  }, [otcCategory, otcManufacturer, otcQuery, otcSpecies, otcType]);
+  const otcTotalPages = useMemo(() => {
+    if (otcPageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(filteredOtcProducts.length / otcPageSize));
+  }, [filteredOtcProducts.length, otcPageSize]);
+  const hasOtcSearchCriteria = useMemo(
+    () => Boolean(normalizeFilterText(otcQuery) || otcManufacturer || otcSpecies || otcCategory || otcType),
+    [otcCategory, otcManufacturer, otcQuery, otcSpecies, otcType],
+  );
+  const otcPageBounds = useMemo(() => {
+    if (filteredOtcProducts.length === 0) return { start: 0, end: 0 };
+    if (otcPageSize === 'all') return { start: 1, end: filteredOtcProducts.length };
+
+    const start = (otcPage - 1) * otcPageSize + 1;
+    const end = Math.min(filteredOtcProducts.length, otcPage * otcPageSize);
+    return { start, end };
+  }, [filteredOtcProducts.length, otcPage, otcPageSize]);
+  const visibleOtcProducts = useMemo(
+    () =>
+      otcPageSize === 'all'
+        ? filteredOtcProducts
+        : filteredOtcProducts.slice((otcPage - 1) * otcPageSize, otcPage * otcPageSize),
+    [filteredOtcProducts, otcPage, otcPageSize],
+  );
+  const isSingleVisibleOtcProduct = visibleOtcProducts.length === 1;
+
   const activeVetTotalPages = useMemo(() => {
     if (activeOfficialPageSize === 'all') return 1;
     return Math.max(1, Math.ceil(activeVetResults.length / activeOfficialPageSize));
@@ -613,6 +709,14 @@ function App() {
   useEffect(() => {
     setHumanPage((current) => Math.min(current, humanTotalPages));
   }, [humanTotalPages]);
+
+  useEffect(() => {
+    setOtcPage(1);
+  }, [otcCategory, otcManufacturer, otcPageSize, otcQuery, otcSpecies, otcType]);
+
+  useEffect(() => {
+    setOtcPage((current) => Math.min(current, otcTotalPages));
+  }, [otcTotalPages]);
 
   useEffect(() => {
     setActiveVetPage(1);
@@ -1481,30 +1585,246 @@ function App() {
                 <h2>{t.otcHub}</h2>
                 <p>
                   {lang === 'es'
-                    ? 'Espacio reservado para productos sin prescripcion que los laboratorios quieran incluir activamente bajo un formato comun y revisable.'
-                    : 'Reserved space for non-prescription products that manufacturers proactively want to include under a shared, reviewable format.'}
+                    ? 'Busqueda curada de soluciones no sujetas a prescripcion, con suplementos, higiene, diagnostico y monitorizacion enlazados a paginas oficiales.'
+                    : 'Curated search for non-prescription solutions, covering supplements, hygiene, diagnostics, and monitoring entries linked to official sources.'}
                 </p>
               </div>
-              <div className="module-note pending-note">
-                <strong>{lang === 'es' ? 'Estado actual' : 'Current state'}</strong>
-                <p>{lang === 'es' ? 'Sin catalogo publico cargado todavia' : 'No public catalog loaded yet'}</p>
+              <div className="module-note">
+                <strong>{lang === 'es' ? 'Catalogo inicial' : 'Starter catalog'}</strong>
+                <p>
+                  {lang === 'es'
+                    ? `${otcProducts.length} fichas enlazadas a fuentes oficiales`
+                    : `${otcProducts.length} records linked to official sources`}
+                </p>
               </div>
             </div>
 
-            <h3>{lang === 'es' ? 'Como entran los productos OTC' : 'How OTC products enter the catalog'}</h3>
-            {renderLocalizedCards(otcWorkflowCards)}
+            <div className="search-grid otc-search-grid">
+              <label>
+                {t.search}
+                <input
+                  type="search"
+                  placeholder={
+                    lang === 'es'
+                      ? 'Buscar por producto, laboratorio, activo, categoria o indicacion...'
+                      : 'Search by product, manufacturer, actives, category, or indication...'
+                  }
+                  title={
+                    lang === 'es'
+                      ? 'Buscar por producto, laboratorio, activo, categoria o indicacion'
+                      : 'Search by product, manufacturer, actives, category, or indication'
+                  }
+                  value={otcQuery}
+                  onChange={(event) => setOtcQuery(event.target.value)}
+                />
+              </label>
 
-            <h3>{lang === 'es' ? 'Formato minimo de entrega' : 'Minimum submission format'}</h3>
-            {renderLocalizedCards(otcSubmissionFields)}
+              <label>
+                {lang === 'es' ? 'Laboratorio' : 'Manufacturer'}
+                <select value={otcManufacturer} onChange={(event) => setOtcManufacturer(event.target.value)}>
+                  <option value="">{t.all}</option>
+                  {otcManufacturerOptions.map((manufacturer) => (
+                    <option key={manufacturer} value={manufacturer}>
+                      {manufacturer}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <div className="feature-callout">
-              <h3>{lang === 'es' ? 'Criterio editorial' : 'Editorial gate'}</h3>
-              <p>
-                {lang === 'es'
-                  ? 'La app no publicara OTC por defecto ni por scraping. Solo se incorporaran si la marca los solicita, entrega documentacion verificable y acepta el mantenimiento conjunto del registro.'
-                  : 'The app will not publish OTC products by default or by scraping. They will only be included if the brand requests it, provides verifiable documentation, and accepts shared maintenance of the record.'}
-              </p>
+              <label>
+                {t.species}
+                <select value={otcSpecies} onChange={(event) => setOtcSpecies(event.target.value)}>
+                  <option value="">{t.all}</option>
+                  {otcSpeciesOptions.map((species) => (
+                    <option key={species} value={species}>
+                      {translateMedicalTerm(species, lang)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                {lang === 'es' ? 'Categoria' : 'Category'}
+                <select value={otcCategory} onChange={(event) => setOtcCategory(event.target.value)}>
+                  <option value="">{t.all}</option>
+                  {otcCategoryOptions.map((category) => (
+                    <option key={category.key} value={category.key}>
+                      {category.label[lang]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                {lang === 'es' ? 'Tipo' : 'Type'}
+                <select value={otcType} onChange={(event) => setOtcType(event.target.value)}>
+                  <option value="">{t.all}</option>
+                  {otcTypeOptions.map((type) => (
+                    <option key={type.key} value={type.key}>
+                      {type.label[lang]}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
+
+            <section className="panel live-results-panel otc-results-panel">
+              <div className="live-panel-header">
+                <div>
+                  <h3>{lang === 'es' ? 'Resultados OTC curados' : 'Curated OTC results'}</h3>
+                  <p>{lang === 'es' ? 'Busqueda filtrable con fichas enlazadas a fuente oficial.' : 'Filterable search with cards linked to official sources.'}</p>
+                </div>
+                {hasOtcSearchCriteria && (
+                  <div className="live-panel-tools">
+                    <div className="live-page-size">
+                      <span>{t.visibleCards}</span>
+                      {livePageSizeOptions.map((option) => {
+                        const label = option === 'all' ? (lang === 'es' ? 'Todas' : 'All') : option;
+                        return (
+                          <button
+                            key={`otc-page-size-${option}`}
+                            type="button"
+                            className={otcPageSize === option ? 'active' : ''}
+                            onClick={() => setOtcPageSize(option)}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {hasOtcSearchCriteria ? (
+                <>
+                  <div className="live-pagination">
+                    <p>
+                      {lang === 'es' ? 'Resultados catalogados' : 'Catalog results'}: <strong>{filteredOtcProducts.length}</strong>
+                    </p>
+                    {otcPageSize !== 'all' && filteredOtcProducts.length > otcPageSize && (
+                      <p>
+                        {otcPageBounds.start}-{otcPageBounds.end} {t.ofLabel} {filteredOtcProducts.length}. {t.pageLabel}{' '}
+                        {otcPage} {t.ofLabel} {otcTotalPages}
+                      </p>
+                    )}
+                  </div>
+
+                  {visibleOtcProducts.length > 0 ? (
+                    <div className="feature-grid otc-grid">
+                      {visibleOtcProducts.map((product) => (
+                        <article key={product.id} className="feature-card otc-card">
+                          <div className="otc-card-header">
+                            <div>
+                              <p className="section-kicker">{product.portfolio ?? product.manufacturer}</p>
+                              <h3>{product.productName}</h3>
+                            </div>
+                          </div>
+
+                          <div
+                            className={`otc-badge-row ${hasLongOtcBadgeRow(product, lang) ? 'otc-badge-row-long' : ''} ${
+                              isSingleVisibleOtcProduct ? 'otc-badge-row-single' : ''
+                            }`}
+                          >
+                            <span className="otc-badge otc-badge-type" title={product.productType.label[lang]}>
+                              {product.productType.label[lang]}
+                            </span>
+                            <span className="otc-badge otc-badge-category" title={product.category.label[lang]}>
+                              {product.category.label[lang]}
+                            </span>
+                          </div>
+
+                          <p>{product.summary[lang]}</p>
+
+                          <div className="otc-card-meta">
+                            <div>
+                              <strong>{lang === 'es' ? 'Laboratorio' : 'Manufacturer'}</strong>
+                              <span>{product.manufacturer}</span>
+                            </div>
+                            <div>
+                              <strong>{t.species}</strong>
+                              <span>{translateMedicalTerms(product.species, lang).join(', ')}</span>
+                            </div>
+                            <div>
+                              <strong>{lang === 'es' ? 'Formato' : 'Format'}</strong>
+                              <span>{product.format}</span>
+                            </div>
+                            <div>
+                              <strong>{lang === 'es' ? 'Presentaciones' : 'Presentations'}</strong>
+                              <span>{product.presentations.join(', ')}</span>
+                            </div>
+                            <div className="otc-card-meta-full">
+                              <strong>{lang === 'es' ? 'Composicion / activos' : 'Composition / actives'}</strong>
+                              <span>{product.activeCompounds}</span>
+                            </div>
+                          </div>
+
+                          <a href={product.sourceUrl} target="_blank" rel="noreferrer" className="feature-card-link">
+                            <span>{lang === 'es' ? 'Abrir ficha oficial' : 'Open official page'}</span>
+                          </a>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="empty-state">{t.noResults}</p>
+                  )}
+
+                  {otcPageSize !== 'all' && filteredOtcProducts.length > otcPageSize && (
+                    <div className="live-pagination otc-pagination">
+                      <button type="button" onClick={() => setOtcPage((current) => Math.max(1, current - 1))} disabled={otcPage === 1}>
+                        {t.previousPage}
+                      </button>
+                      <p>
+                        {otcPageBounds.start}-{otcPageBounds.end} {t.ofLabel} {filteredOtcProducts.length}. {t.pageLabel} {otcPage}{' '}
+                        {t.ofLabel} {otcTotalPages}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setOtcPage((current) => Math.min(otcTotalPages, current + 1))}
+                        disabled={otcPage === otcTotalPages}
+                      >
+                        {t.nextPage}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="empty-state">
+                  {lang === 'es'
+                    ? 'Empieza escribiendo o aplicando un filtro para mostrar productos OTC.'
+                    : 'Start typing or apply a filter to display OTC products.'}
+                </p>
+              )}
+            </section>
+
+            <section className="embedded-section otc-onboarding-section">
+              <button
+                type="button"
+                className={`secondary-button otc-disclosure ${isOtcWorkflowExpanded ? 'active' : ''}`}
+                onClick={() => setIsOtcWorkflowExpanded((current) => !current)}
+              >
+                <span>{lang === 'es' ? 'Como entran nuevas marcas OTC' : 'How new OTC brands are added'}</span>
+                <span className={`otc-disclosure-caret ${isOtcWorkflowExpanded ? 'open' : ''}`}>▸</span>
+              </button>
+
+              {isOtcWorkflowExpanded && (
+                <>
+                  {renderLocalizedCards(otcWorkflowCards)}
+
+                  <h3>{lang === 'es' ? 'Formato minimo de entrega' : 'Minimum submission format'}</h3>
+                  {renderLocalizedCards(otcSubmissionFields)}
+
+                  <div className="feature-callout otc-editorial-callout">
+                    <h3>{lang === 'es' ? 'Criterio editorial' : 'Editorial gate'}</h3>
+                    <p>
+                      {lang === 'es'
+                        ? 'Este catalogo se esta cargando de forma curada con fichas oficiales verificables. Sigue abierto para crecer con nuevas marcas siempre que haya trazabilidad, pagina fuente y mantenimiento conjunto del registro.'
+                        : 'This catalog is being added as a curated layer from verifiable official pages. It remains open to new manufacturers as long as the source page, traceability, and shared maintenance are preserved.'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </section>
           </section>
         )}
 
@@ -2434,7 +2754,7 @@ function App() {
         )}
       </main>
 
-      {(activeTab === 'otc' || (activeTab === 'toolkit' && activeToolkitView === 'overview')) && (
+      {activeTab === 'toolkit' && activeToolkitView === 'overview' && (
         <footer className="footer-grid footer-grid-single">
           <section>
             <h3>{t.contribute}</h3>
