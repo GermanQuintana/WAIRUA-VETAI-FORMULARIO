@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
+import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
 import DoseCalculator from './components/DoseCalculator';
 import EndocrineToolkit from './components/EndocrineToolkit';
 import EntryCard from './components/EntryCard';
@@ -33,17 +34,21 @@ import {
 } from './services/cima';
 import {
   buildCimavetRecordUrl,
+  getCimavetMaxWithdrawalDays,
+  getCimavetWithdrawalTimeItems,
   CimavetMedicationDetail,
   CimavetMedicationSummary,
+  CimavetWithdrawalTimeItem,
   createCimavetServiceFromEnv,
   resolveCimavetBaseUrl,
 } from './services/cimavet';
+import { createClinicalNutritionService } from './services/clinicalNutrition';
 import { createSupabaseEditorialService } from './services/supabase';
 import { TherapeuticEntry } from './types';
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
-const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant'] as const;
+const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
@@ -72,6 +77,39 @@ const normalizeFilterText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const structuredFilterTokenPattern = /[a-z]+|\d+(?:[.,]\d+)?/gi;
+
+const getStructuredFilterTokens = (value: string) => normalizeFilterText(value).match(structuredFilterTokenPattern) ?? [];
+
+const normalizeNumericToken = (value: string) => {
+  const normalized = value.replace(',', '.');
+  const amount = Number.parseFloat(normalized);
+  if (!Number.isFinite(amount)) return normalized;
+  return String(amount);
+};
+
+const matchesStructuredFilter = (text: string, query: string) => {
+  const normalizedQuery = normalizeFilterText(query);
+  if (!normalizedQuery) return true;
+
+  const normalizedText = normalizeFilterText(text);
+  const textTokens = getStructuredFilterTokens(normalizedText);
+  const queryTokens = getStructuredFilterTokens(normalizedQuery);
+
+  if (queryTokens.length === 0) return normalizedText.includes(normalizedQuery);
+
+  return queryTokens.every((token) => {
+    if (/^\d+(?:[.,]\d+)?$/.test(token)) {
+      const normalizedToken = normalizeNumericToken(token);
+      return textTokens.some(
+        (candidate) => /^\d+(?:[.,]\d+)?$/.test(candidate) && normalizeNumericToken(candidate) === normalizedToken,
+      );
+    }
+
+    return normalizedText.includes(token);
+  });
+};
+
 const formatDelimitedText = (value: string) =>
   value
     .split(',')
@@ -91,6 +129,44 @@ const toggleEquivalentTag = (current: string[], value: string) => {
   }
   return [...current, value];
 };
+
+const productionSpeciesOptions = ['Bovine', 'Ovine', 'Caprine', 'Porcine', 'Poultry', 'Equine', 'Fish', 'Bee'] as const;
+
+const formatDecimal = (value: number) => {
+  const rounded = value >= 10 || Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
+  return rounded.replace(/\.0$/, '');
+};
+
+const formatWithdrawalSummary = (days: number, lang: Language) => {
+  if (days < 1) return `${formatDecimal(days * 24)} h`;
+  return `${formatDecimal(days)} ${lang === 'es' ? 'dias' : 'days'}`;
+};
+
+const formatWithdrawalTimeItem = (item: CimavetWithdrawalTimeItem) => {
+  const prefix = item.especie?.nombre ? `${item.especie.nombre} · ` : '';
+  const tissue = item.tejido?.nombre ?? 'Tejido no especificado';
+
+  if (item.observaciones) return `${prefix}${tissue}: ${item.observaciones}`;
+
+  const amount = item.cantidad?.trim();
+  const unit = item.unidadTiempo?.nombre?.trim();
+  if (amount && unit) return `${prefix}${tissue}: ${amount} ${unit}`;
+  if (amount) return `${prefix}${tissue}: ${amount}`;
+  return `${prefix}${tissue}`;
+};
+
+const getVetDoseFilterText = (medication: CimavetMedicationSummary) => medication.nombre;
+
+const getVetPresentationFilterText = (medication: CimavetMedicationSummary, detail?: CimavetMedicationDetail | null) =>
+  [
+    medication.forma?.nombre,
+    medication.formasFarmaceuticas?.map((item) => item.nombre).join(' '),
+    medication.viasAdministracion?.map((item) => item.nombre).join(' '),
+    detail?.presentaciones?.map((item) => item.nombre).join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
 
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
@@ -168,7 +244,10 @@ function App() {
   const [rxQuery, setRxQuery] = useState('');
   const [rxSpecies, setRxSpecies] = useState('');
   const [rxIndication, setRxIndication] = useState('');
+  const [rxDoseFilter, setRxDoseFilter] = useState('');
+  const [rxPresentationFilter, setRxPresentationFilter] = useState('');
   const [rxOnlyCommercialized, setRxOnlyCommercialized] = useState(false);
+  const [rxSortByShortestWithdrawal, setRxSortByShortestWithdrawal] = useState(false);
   const [livePageSize, setLivePageSize] = useState<(typeof livePageSizeOptions)[number]>(24);
   const [livePage, setLivePage] = useState(1);
 
@@ -187,6 +266,8 @@ function App() {
   const [humanDoseFilter, setHumanDoseFilter] = useState('');
   const [humanPresentationFilter, setHumanPresentationFilter] = useState('');
   const [humanOnlyCommercialized, setHumanOnlyCommercialized] = useState(false);
+  const [humanPageSize, setHumanPageSize] = useState<(typeof livePageSizeOptions)[number]>(24);
+  const [humanPage, setHumanPage] = useState(1);
 
   const [liveResults, setLiveResults] = useState<CimavetMedicationSummary[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -204,6 +285,9 @@ function App() {
   const [activeHumanLoading, setActiveHumanLoading] = useState(false);
   const [activeHumanError, setActiveHumanError] = useState<string | null>(null);
   const [activeHumanDetails, setActiveHumanDetails] = useState<Record<string, CimaMedicationDetail>>({});
+  const [activeOfficialPageSize, setActiveOfficialPageSize] = useState<(typeof livePageSizeOptions)[number]>(12);
+  const [activeVetPage, setActiveVetPage] = useState(1);
+  const [activeHumanPage, setActiveHumanPage] = useState(1);
 
   const [assistantSpecies, setAssistantSpecies] = useState('');
   const [assistantPathology, setAssistantPathology] = useState('');
@@ -214,11 +298,19 @@ function App() {
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
   const cimavetService = useMemo(() => createCimavetServiceFromEnv(), []);
+  const clinicalNutritionService = useMemo(() => createClinicalNutritionService(), []);
   const supabaseEditorialService = useMemo(() => createSupabaseEditorialService(), []);
   const t = labels[lang];
   const activeConcentrationPlaceholder = lang === 'es' ? 'Ejemplo: 10 mg/mL, 50 mg...' : 'Example: 10 mg/mL, 50 mg...';
 
   const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
+  const prescriptionSpeciesOptions = useMemo(
+    () =>
+      Array.from(new Set([...speciesOptions, ...productionSpeciesOptions])).sort((left, right) =>
+        translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en'),
+      ),
+    [lang, speciesOptions],
+  );
   const systemOptions = useMemo(() => getSystemOptions(entryCatalog), [entryCatalog]);
   const localIndicationOptions = useMemo(() => getIndicationOptions(entryCatalog), [entryCatalog]);
   const tagOptions = useMemo(() => getTagOptions(entryCatalog), [entryCatalog]);
@@ -318,26 +410,69 @@ function App() {
   const rxIndicationOptions = useMemo(() => {
     const values = new Set<string>();
 
-    Object.values(liveDetails).forEach((detail) => {
+    liveResults.forEach((medication) => {
+      const detail = liveDetails[medication.nregistro];
+      if (!detail) return;
       detail.indicaciones?.forEach((item) => {
         values.add(item.nombre);
       });
     });
 
     return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [liveDetails]);
+  }, [liveDetails, liveResults]);
+
+  const rxSpeciesLabel = useMemo(() => (rxSpecies ? translateMedicalTerm(rxSpecies, 'es') : undefined), [rxSpecies]);
 
   const filteredLiveResults = useMemo(() => {
-    const commercialized = rxOnlyCommercialized ? liveResults.filter((medication) => medication.comerc) : liveResults;
+    const normalizedDose = normalizeFilterText(rxDoseFilter);
+    const normalizedPresentation = normalizeFilterText(rxPresentationFilter);
+    let results = rxOnlyCommercialized ? liveResults.filter((medication) => medication.comerc) : liveResults;
 
-    return rxIndication
-      ? commercialized.filter((medication) => {
-          const detail = liveDetails[medication.nregistro];
-          if (!detail?.indicaciones?.length) return false;
-          return detail.indicaciones.some((item) => item.nombre === rxIndication);
-        })
-      : commercialized;
-  }, [liveDetails, liveResults, rxIndication, rxOnlyCommercialized]);
+    if (rxIndication) {
+      results = results.filter((medication) => {
+        const detail = liveDetails[medication.nregistro];
+        if (!detail?.indicaciones?.length) return false;
+        return detail.indicaciones.some((item) => item.nombre === rxIndication);
+      });
+    }
+
+    if (normalizedDose) {
+      results = results.filter((medication) => {
+        const doseText = getVetDoseFilterText(medication);
+        return matchesStructuredFilter(doseText, rxDoseFilter);
+      });
+    }
+
+    if (normalizedPresentation) {
+      results = results.filter((medication) => {
+        const detail = liveDetails[medication.nregistro];
+        const presentationText = getVetPresentationFilterText(medication, detail);
+        return matchesStructuredFilter(presentationText, rxPresentationFilter);
+      });
+    }
+
+    if (!rxSortByShortestWithdrawal) return results;
+
+    return [...results].sort((left, right) => {
+      const leftDays = getCimavetMaxWithdrawalDays(liveDetails[left.nregistro], rxSpeciesLabel);
+      const rightDays = getCimavetMaxWithdrawalDays(liveDetails[right.nregistro], rxSpeciesLabel);
+
+      if (leftDays == null && rightDays == null) return left.nombre.localeCompare(right.nombre);
+      if (leftDays == null) return 1;
+      if (rightDays == null) return -1;
+      if (leftDays === rightDays) return left.nombre.localeCompare(right.nombre);
+      return leftDays - rightDays;
+    });
+  }, [
+    liveDetails,
+    liveResults,
+    rxDoseFilter,
+    rxIndication,
+    rxOnlyCommercialized,
+    rxPresentationFilter,
+    rxSortByShortestWithdrawal,
+    rxSpeciesLabel,
+  ]);
 
   const liveTotalPages = useMemo(() => {
     if (livePageSize === 'all') return 1;
@@ -383,10 +518,69 @@ function App() {
     humanResults,
     humanOnlyCommercialized,
   ]);
+  const humanTotalPages = useMemo(() => {
+    if (humanPageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(filteredHumanResults.length / humanPageSize));
+  }, [filteredHumanResults.length, humanPageSize]);
+  const humanPageBounds = useMemo(() => {
+    if (filteredHumanResults.length === 0) return { start: 0, end: 0 };
+    if (humanPageSize === 'all') return { start: 1, end: filteredHumanResults.length };
 
-  const humanResultsForDetails = useMemo(() => filteredHumanResults.slice(0, 24), [filteredHumanResults]);
-  const activeVetResultsForDetails = useMemo(() => activeVetResults.slice(0, 12), [activeVetResults]);
-  const activeHumanResultsForDetails = useMemo(() => activeHumanResults.slice(0, 12), [activeHumanResults]);
+    const start = (humanPage - 1) * humanPageSize + 1;
+    const end = Math.min(filteredHumanResults.length, humanPage * humanPageSize);
+    return { start, end };
+  }, [filteredHumanResults.length, humanPage, humanPageSize]);
+  const visibleHumanResults = useMemo(
+    () =>
+      humanPageSize === 'all'
+        ? filteredHumanResults
+        : filteredHumanResults.slice((humanPage - 1) * humanPageSize, humanPage * humanPageSize),
+    [filteredHumanResults, humanPage, humanPageSize],
+  );
+  const humanResultsForDetails = useMemo(() => visibleHumanResults, [visibleHumanResults]);
+
+  const activeVetTotalPages = useMemo(() => {
+    if (activeOfficialPageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(activeVetResults.length / activeOfficialPageSize));
+  }, [activeOfficialPageSize, activeVetResults.length]);
+  const activeVetPageBounds = useMemo(() => {
+    if (activeVetResults.length === 0) return { start: 0, end: 0 };
+    if (activeOfficialPageSize === 'all') return { start: 1, end: activeVetResults.length };
+
+    const start = (activeVetPage - 1) * activeOfficialPageSize + 1;
+    const end = Math.min(activeVetResults.length, activeVetPage * activeOfficialPageSize);
+    return { start, end };
+  }, [activeOfficialPageSize, activeVetPage, activeVetResults.length]);
+  const activeVetResultsForDetails = useMemo(
+    () =>
+      activeOfficialPageSize === 'all'
+        ? activeVetResults
+        : activeVetResults.slice((activeVetPage - 1) * activeOfficialPageSize, activeVetPage * activeOfficialPageSize),
+    [activeOfficialPageSize, activeVetPage, activeVetResults],
+  );
+
+  const activeHumanTotalPages = useMemo(() => {
+    if (activeOfficialPageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(activeHumanResults.length / activeOfficialPageSize));
+  }, [activeHumanResults.length, activeOfficialPageSize]);
+  const activeHumanPageBounds = useMemo(() => {
+    if (activeHumanResults.length === 0) return { start: 0, end: 0 };
+    if (activeOfficialPageSize === 'all') return { start: 1, end: activeHumanResults.length };
+
+    const start = (activeHumanPage - 1) * activeOfficialPageSize + 1;
+    const end = Math.min(activeHumanResults.length, activeHumanPage * activeOfficialPageSize);
+    return { start, end };
+  }, [activeHumanPage, activeHumanResults.length, activeOfficialPageSize]);
+  const activeHumanResultsForDetails = useMemo(
+    () =>
+      activeOfficialPageSize === 'all'
+        ? activeHumanResults
+        : activeHumanResults.slice(
+            (activeHumanPage - 1) * activeOfficialPageSize,
+            activeHumanPage * activeOfficialPageSize,
+          ),
+    [activeHumanPage, activeHumanResults, activeOfficialPageSize],
+  );
 
   useEffect(() => {
     const warmup = window.setTimeout(() => {
@@ -398,7 +592,7 @@ function App() {
 
   useEffect(() => {
     setLivePage(1);
-  }, [rxQuery, rxSpecies, rxIndication, rxOnlyCommercialized, livePageSize]);
+  }, [livePageSize, rxDoseFilter, rxIndication, rxOnlyCommercialized, rxPresentationFilter, rxQuery, rxSortByShortestWithdrawal, rxSpecies]);
 
   useEffect(() => {
     setLivePage((current) => Math.min(current, liveTotalPages));
@@ -411,6 +605,30 @@ function App() {
   useEffect(() => {
     setActiveRecordPage((current) => Math.min(current, activeRecordTotalPages));
   }, [activeRecordTotalPages]);
+
+  useEffect(() => {
+    setHumanPage(1);
+  }, [humanDoseFilter, humanOnlyCommercialized, humanPageSize, humanPresentationFilter, humanQuery]);
+
+  useEffect(() => {
+    setHumanPage((current) => Math.min(current, humanTotalPages));
+  }, [humanTotalPages]);
+
+  useEffect(() => {
+    setActiveVetPage(1);
+  }, [activeOfficialPageSize, activeQuery, activeSpecies]);
+
+  useEffect(() => {
+    setActiveVetPage((current) => Math.min(current, activeVetTotalPages));
+  }, [activeVetTotalPages]);
+
+  useEffect(() => {
+    setActiveHumanPage(1);
+  }, [activeKnowledgeView, activeOfficialPageSize, activeQuery, activeTab]);
+
+  useEffect(() => {
+    setActiveHumanPage((current) => Math.min(current, activeHumanTotalPages));
+  }, [activeHumanTotalPages]);
 
   useEffect(() => {
     if (!supabaseEditorialService) return;
@@ -640,6 +858,7 @@ function App() {
         const results = await cimavetService.searchMedications(q, {
           species: activeSpecies ? translateMedicalTerm(activeSpecies, 'es') : undefined,
           includeActiveIngredientSearch: true,
+          preferExactActiveIngredient: true,
         });
 
         if (!ignore) {
@@ -722,6 +941,7 @@ function App() {
         const results = await cimaService.searchMedications(q, {
           includeActiveIngredientSearch: true,
           includeTradeNameSearch: false,
+          preferExactActiveIngredient: true,
         });
 
         if (!ignore) {
@@ -1029,7 +1249,7 @@ function App() {
                 {t.species}
                 <select value={rxSpecies} onChange={(event) => setRxSpecies(event.target.value)}>
                   <option value="">{t.all}</option>
-                  {speciesOptions.map((species) => (
+                  {prescriptionSpeciesOptions.map((species) => (
                     <option key={species} value={species}>
                       {translateMedicalTerm(species, lang)}
                     </option>
@@ -1046,20 +1266,50 @@ function App() {
                       {indication}
                     </option>
                   ))}
-                </select>
+                  </select>
               </label>
 
-              <div className="search-grid-checkboxes">
-                <span>{t.results}</span>
-                <label className="checkbox-inline">
-                  <input
-                    type="checkbox"
-                    checked={rxOnlyCommercialized}
-                    onChange={(event) => setRxOnlyCommercialized(event.target.checked)}
-                  />
-                  {t.commercializedOnly}
-                </label>
-              </div>
+              <label>
+                {t.dose}
+                <input
+                  type="search"
+                  placeholder={t.humanDosePlaceholder}
+                  title={t.humanDosePlaceholder}
+                  value={rxDoseFilter}
+                  onChange={(event) => setRxDoseFilter(event.target.value)}
+                />
+              </label>
+
+              <label>
+                {t.presentation}
+                <input
+                  type="search"
+                  placeholder={t.humanPresentationPlaceholder}
+                  title={t.humanPresentationPlaceholder}
+                  value={rxPresentationFilter}
+                  onChange={(event) => setRxPresentationFilter(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="search-grid-checkboxes">
+              <strong>{t.results}</strong>
+              <label className="checkbox-inline">
+                <input
+                  type="checkbox"
+                  checked={rxOnlyCommercialized}
+                  onChange={(event) => setRxOnlyCommercialized(event.target.checked)}
+                />
+                {t.commercializedOnly}
+              </label>
+              <label className="checkbox-inline">
+                <input
+                  type="checkbox"
+                  checked={rxSortByShortestWithdrawal}
+                  onChange={(event) => setRxSortByShortestWithdrawal(event.target.checked)}
+                />
+                {t.withdrawalSortAscending}
+              </label>
             </div>
 
             <section className="live-panel">
@@ -1127,66 +1377,95 @@ function App() {
                     </div>
                   )}
                   <ul className="live-results-list">
-                    {visibleLiveResults.map((medication) => (
-                      <li key={medication.nregistro}>
-                        <article className="live-card">
-                          <header className="live-card-header">
-                            <h4>{medication.nombre}</h4>
-                            <div className="live-badges">
-                              {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
-                              {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
-                              {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                    {visibleLiveResults.map((medication) => {
+                      const detail = liveDetails[medication.nregistro];
+                      const withdrawalItems = getCimavetWithdrawalTimeItems(detail, rxSpeciesLabel);
+                      const withdrawalMaxDays = getCimavetMaxWithdrawalDays(detail, rxSpeciesLabel);
+                      const speciesLabel = detail?.especies?.map((item) => item.nombre).join(', ') ?? '-';
+                      const formLabel = medication.forma?.nombre ?? medication.formasFarmaceuticas?.[0]?.nombre ?? '-';
+                      const routeLabel =
+                        medication.administracion?.nombre ?? medication.viasAdministracion?.[0]?.nombre ?? '-';
+
+                      return (
+                        <li key={medication.nregistro}>
+                          <article className="live-card">
+                            <header className="live-card-header">
+                              <h4>{medication.nombre}</h4>
+                              <div className="live-badges">
+                                {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
+                                {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
+                                {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                              </div>
+                            </header>
+
+                            <div className="live-meta-grid">
+                              <p>
+                                <span>{t.laboratory}</span>
+                                <strong>{medication.labtitular || '-'}</strong>
+                              </p>
+                              <p>
+                                <span>{t.pharmaceuticalForm}</span>
+                                <strong>{formLabel}</strong>
+                              </p>
+                              <p>
+                                <span>{t.activeIngredient}</span>
+                                <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
+                              </p>
+                              <p>
+                                <span>{t.administrationRoute}</span>
+                                <strong>{routeLabel}</strong>
+                              </p>
+                              <p>
+                                <span>{t.species}</span>
+                                <strong>{speciesLabel}</strong>
+                              </p>
+                              <p>
+                                <span>{t.withdrawalMax}</span>
+                                <strong>{withdrawalMaxDays != null ? formatWithdrawalSummary(withdrawalMaxDays, lang) : '-'}</strong>
+                              </p>
                             </div>
-                          </header>
 
-                          <div className="live-meta-grid">
-                            <p>
-                              <span>{t.laboratory}</span>
-                              <strong>{medication.labtitular || '-'}</strong>
-                            </p>
-                            <p>
-                              <span>{t.pharmaceuticalForm}</span>
-                              <strong>{medication.forma?.nombre || '-'}</strong>
-                            </p>
-                            <p>
-                              <span>{t.activeIngredient}</span>
-                              <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
-                            </p>
-                            <p>
-                              <span>{t.administrationRoute}</span>
-                              <strong>{medication.administracion?.nombre || '-'}</strong>
-                            </p>
-                          </div>
+                            {withdrawalItems.length > 0 ? (
+                              <section className="live-indications">
+                                <h5>{t.withdrawalTimes}</h5>
+                                <ul>
+                                  {withdrawalItems.slice(0, 6).map((item, index) => (
+                                    <li key={`${medication.nregistro}-withdrawal-${index}`}>{formatWithdrawalTimeItem(item)}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            ) : null}
 
-                          {liveDetails[medication.nregistro]?.indicaciones?.length ? (
-                            <section className="live-indications">
-                              <h5>{t.indications}</h5>
-                              <ul>
-                                {liveDetails[medication.nregistro].indicaciones!.slice(0, 4).map((indication, index) => (
-                                  <li key={`${medication.nregistro}-indication-${index}`}>
-                                    {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
-                                    {indication.nombre}
-                                  </li>
-                                ))}
-                              </ul>
-                            </section>
-                          ) : null}
+                            {detail?.indicaciones?.length ? (
+                              <section className="live-indications">
+                                <h5>{t.indications}</h5>
+                                <ul>
+                                  {detail.indicaciones.slice(0, 4).map((indication, index) => (
+                                    <li key={`${medication.nregistro}-indication-${index}`}>
+                                      {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
+                                      {indication.nombre}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </section>
+                            ) : null}
 
-                          <footer className="live-card-footer">
-                            <span>
-                              {t.registration}: {medication.nregistro}
-                            </span>
-                            <a
-                              href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {t.openRecord}
-                            </a>
-                          </footer>
-                        </article>
-                      </li>
-                    ))}
+                            <footer className="live-card-footer">
+                              <span>
+                                {t.registration}: {medication.nregistro}
+                              </span>
+                              <a
+                                href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {t.openRecord}
+                              </a>
+                            </footer>
+                          </article>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </>
               )}
@@ -1342,9 +1621,27 @@ function App() {
                         <h3>{t.liveResults}</h3>
                         <p className="live-hint">{t.liveHint}</p>
                       </div>
-                      <button className="live-toggle" onClick={() => setIsActiveVetExpanded((value) => !value)} type="button">
-                        {isActiveVetExpanded ? t.collapseLive : t.expandLive}
-                      </button>
+                      <div className="live-panel-tools">
+                        <div className="live-page-size" aria-label={t.visibleCards}>
+                          <span>{t.visibleCards}</span>
+                          {livePageSizeOptions.map((option) => {
+                            const label = option === 'all' ? t.all : String(option);
+                            return (
+                              <button
+                                key={`active-official-vet-size-${option}`}
+                                type="button"
+                                className={activeOfficialPageSize === option ? 'active' : ''}
+                                onClick={() => setActiveOfficialPageSize(option)}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button className="live-toggle" onClick={() => setIsActiveVetExpanded((value) => !value)} type="button">
+                          {isActiveVetExpanded ? t.collapseLive : t.expandLive}
+                        </button>
+                      </div>
                     </div>
 
                     {isActiveVetExpanded && activeVetLoading && <p>{t.liveLoading}</p>}
@@ -1359,6 +1656,30 @@ function App() {
                         <p className="live-summary">
                           {t.liveShowing}: <strong>{activeVetResults.length}</strong>
                         </p>
+                        {activeOfficialPageSize !== 'all' && activeVetResults.length > activeOfficialPageSize && (
+                          <div className="live-pagination">
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => setActiveVetPage((page) => Math.max(1, page - 1))}
+                              disabled={activeVetPage === 1}
+                            >
+                              {t.previousPage}
+                            </button>
+                            <p>
+                              {activeVetPageBounds.start}-{activeVetPageBounds.end} {t.ofLabel} {activeVetResults.length}. {t.pageLabel}{' '}
+                              {activeVetPage} {t.ofLabel} {activeVetTotalPages}
+                            </p>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => setActiveVetPage((page) => Math.min(activeVetTotalPages, page + 1))}
+                              disabled={activeVetPage === activeVetTotalPages}
+                            >
+                              {t.nextPage}
+                            </button>
+                          </div>
+                        )}
                         <ul className="live-results-list">
                           {activeVetResultsForDetails.map((medication) => (
                             <li key={`active-vet-${medication.nregistro}`}>
@@ -1431,9 +1752,27 @@ function App() {
                         <h3>{t.humanLiveResults}</h3>
                         <p className="live-hint">{t.humanLiveHint}</p>
                       </div>
-                      <button className="live-toggle" onClick={() => setIsActiveHumanExpanded((value) => !value)} type="button">
-                        {isActiveHumanExpanded ? t.collapseLive : t.expandLive}
-                      </button>
+                      <div className="live-panel-tools">
+                        <div className="live-page-size" aria-label={t.visibleCards}>
+                          <span>{t.visibleCards}</span>
+                          {livePageSizeOptions.map((option) => {
+                            const label = option === 'all' ? t.all : String(option);
+                            return (
+                              <button
+                                key={`active-official-human-size-${option}`}
+                                type="button"
+                                className={activeOfficialPageSize === option ? 'active' : ''}
+                                onClick={() => setActiveOfficialPageSize(option)}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button className="live-toggle" onClick={() => setIsActiveHumanExpanded((value) => !value)} type="button">
+                          {isActiveHumanExpanded ? t.collapseLive : t.expandLive}
+                        </button>
+                      </div>
                     </div>
 
                     {isActiveHumanExpanded && activeHumanLoading && <p>{t.humanLiveLoading}</p>}
@@ -1450,6 +1789,30 @@ function App() {
                         <p className="live-summary">
                           {t.humanLiveShowing}: <strong>{activeHumanResults.length}</strong>
                         </p>
+                        {activeOfficialPageSize !== 'all' && activeHumanResults.length > activeOfficialPageSize && (
+                          <div className="live-pagination">
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => setActiveHumanPage((page) => Math.max(1, page - 1))}
+                              disabled={activeHumanPage === 1}
+                            >
+                              {t.previousPage}
+                            </button>
+                            <p>
+                              {activeHumanPageBounds.start}-{activeHumanPageBounds.end} {t.ofLabel} {activeHumanResults.length}. {t.pageLabel}{' '}
+                              {activeHumanPage} {t.ofLabel} {activeHumanTotalPages}
+                            </p>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() => setActiveHumanPage((page) => Math.min(activeHumanTotalPages, page + 1))}
+                              disabled={activeHumanPage === activeHumanTotalPages}
+                            >
+                              {t.nextPage}
+                            </button>
+                          </div>
+                        )}
                         <ul className="live-results-list">
                           {activeHumanResultsForDetails.map((medication) => {
                             const detail = activeHumanDetails[medication.nregistro];
@@ -1689,6 +2052,9 @@ function App() {
               <button onClick={() => setActiveToolkitView('surface')} className={activeToolkitView === 'surface' ? 'active' : ''}>
                 {t.bodySurfaceNav}
               </button>
+              <button onClick={() => setActiveToolkitView('nutrition')} className={activeToolkitView === 'nutrition' ? 'active' : ''}>
+                {t.clinicalNutritionNav}
+              </button>
               <button onClick={() => setActiveToolkitView('assistant')} className={activeToolkitView === 'assistant' ? 'active' : ''}>
                 {t.assistantForm}
               </button>
@@ -1717,6 +2083,8 @@ function App() {
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
             {activeToolkitView === 'surface' && <BodySurfaceAreaCalculator lang={lang} />}
+
+            {activeToolkitView === 'nutrition' && <ClinicalNutritionToolkit lang={lang} service={clinicalNutritionService} />}
 
             {activeToolkitView === 'assistant' && (
               <section className="embedded-section">
@@ -1876,17 +2244,18 @@ function App() {
                   onChange={(event) => setHumanPresentationFilter(event.target.value)}
                 />
               </label>
+            </div>
 
-              <div className="search-grid-checkboxes">
-                <label className="checkbox-inline">
-                  <input
-                    type="checkbox"
-                    checked={humanOnlyCommercialized}
-                    onChange={(event) => setHumanOnlyCommercialized(event.target.checked)}
-                  />
-                  {t.commercializedOnly}
-                </label>
-              </div>
+            <div className="search-grid-checkboxes">
+              <strong>{t.results}</strong>
+              <label className="checkbox-inline">
+                <input
+                  type="checkbox"
+                  checked={humanOnlyCommercialized}
+                  onChange={(event) => setHumanOnlyCommercialized(event.target.checked)}
+                />
+                {t.commercializedOnly}
+              </label>
             </div>
 
             <section className="live-panel">
@@ -1894,6 +2263,24 @@ function App() {
                 <div>
                   <h3>{t.humanLiveResults}</h3>
                   <p className="live-hint">{t.humanLiveHint}</p>
+                </div>
+                <div className="live-panel-tools">
+                  <div className="live-page-size" aria-label={t.visibleCards}>
+                    <span>{t.visibleCards}</span>
+                    {livePageSizeOptions.map((option) => {
+                      const label = option === 'all' ? t.all : String(option);
+                      return (
+                        <button
+                          key={`human-size-${option}`}
+                          type="button"
+                          className={humanPageSize === option ? 'active' : ''}
+                          onClick={() => setHumanPageSize(option)}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -1910,15 +2297,39 @@ function App() {
                     {t.humanLiveShowing}: <strong>{filteredHumanResults.length}</strong>
                     {filteredHumanResults.length !== humanResults.length ? ` / ${humanResults.length}` : ''}
                   </p>
+                  {humanPageSize !== 'all' && filteredHumanResults.length > humanPageSize && (
+                    <div className="live-pagination">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setHumanPage((page) => Math.max(1, page - 1))}
+                        disabled={humanPage === 1}
+                      >
+                        {t.previousPage}
+                      </button>
+                      <p>
+                        {humanPageBounds.start}-{humanPageBounds.end} {t.ofLabel} {filteredHumanResults.length}. {t.pageLabel}{' '}
+                        {humanPage} {t.ofLabel} {humanTotalPages}
+                      </p>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setHumanPage((page) => Math.min(humanTotalPages, page + 1))}
+                        disabled={humanPage === humanTotalPages}
+                      >
+                        {t.nextPage}
+                      </button>
+                    </div>
+                  )}
                   {filteredHumanResults.length > humanResultsForDetails.length && (
                     <p className="live-summary-note">
                       {lang === 'es'
-                        ? `Se cargan presentaciones ampliadas para los primeros ${humanResultsForDetails.length} resultados.`
-                        : `Expanded presentations are loaded for the first ${humanResultsForDetails.length} results.`}
+                        ? 'Se cargan presentaciones ampliadas para los resultados visibles.'
+                        : 'Expanded presentations are loaded for the visible results.'}
                     </p>
                   )}
                   <ul className="live-results-list">
-                    {filteredHumanResults.map((medication) => {
+                    {visibleHumanResults.map((medication) => {
                       const detail = humanDetails[medication.nregistro];
                       const activeIngredient =
                         detail?.principiosActivos

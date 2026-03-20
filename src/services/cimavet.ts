@@ -5,6 +5,7 @@ interface CimavetNameItem {
 }
 
 interface CimavetSpeciesItem {
+  id?: number;
   nombre: string;
 }
 
@@ -20,9 +21,34 @@ interface CimavetPrincipioActivo {
   unidad?: string;
 }
 
+interface CimavetPresentationItem {
+  cn?: string;
+  nombre: string;
+  comerc?: boolean;
+  psum?: boolean;
+}
+
 interface CimavetClinicalItem {
   nombre: string;
   especie?: CimavetSpeciesItem;
+}
+
+interface CimavetWithdrawalTissueItem {
+  id?: number;
+  nombre: string;
+}
+
+interface CimavetWithdrawalUnitItem {
+  id?: number;
+  nombre: string;
+}
+
+export interface CimavetWithdrawalTimeItem {
+  especie?: CimavetSpeciesItem;
+  tejido?: CimavetWithdrawalTissueItem;
+  cantidad?: string;
+  observaciones?: string;
+  unidadTiempo?: CimavetWithdrawalUnitItem;
 }
 
 export interface CimavetMedicationSummary {
@@ -35,18 +61,22 @@ export interface CimavetMedicationSummary {
   labtitular?: string;
   forma?: CimavetNameItem;
   administracion?: CimavetNameItem;
+  formasFarmaceuticas?: CimavetNameItem[];
+  viasAdministracion?: CimavetNameItem[];
   dispensacion?: CimavetNameItem;
 }
 
 export interface CimavetMedicationDetail extends CimavetMedicationSummary {
   especies?: CimavetSpeciesItem[];
   principiosActivos?: CimavetPrincipioActivo[];
+  presentaciones?: CimavetPresentationItem[];
   indicaciones?: CimavetClinicalItem[];
   contraindicaciones?: CimavetClinicalItem[];
   atcs?: CimavetAtcItem[];
   dispensacion?: CimavetNameItem;
   administracion?: CimavetNameItem;
   labtitular?: string;
+  tiemposEspera?: CimavetWithdrawalTimeItem[];
 }
 
 interface CimavetListResponse {
@@ -72,6 +102,7 @@ export interface CimavetSearchOptions {
   maxPages?: number;
   species?: string;
   includeActiveIngredientSearch?: boolean;
+  preferExactActiveIngredient?: boolean;
 }
 
 const DEFAULT_CIMAVET_BASE_URL = 'https://cimavet.aemps.es/cimavet/rest';
@@ -99,6 +130,90 @@ const normalizeSearchText = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+
+const getCimavetActiveIngredientParts = (value?: string) =>
+  (value ?? '')
+    .split(/[;+]/)
+    .map((part) => normalizeSearchText(part))
+    .filter(Boolean);
+
+const getCimavetExactActiveIngredientMatchLevel = (medication: CimavetMedicationSummary, query: string) => {
+  const q = normalizeSearchText(query);
+  const ingredients = getCimavetActiveIngredientParts(medication.pactivos);
+  if (ingredients.length === 0) return 0;
+  if (!ingredients.includes(q)) return 0;
+  return ingredients.length === 1 ? 2 : 1;
+};
+
+const cimavetSpeciesAliasGroups = [
+  ['dog', 'perro', 'perros', 'canino', 'caninos'],
+  ['cat', 'gato', 'gatos', 'felino', 'felinos'],
+  ['rabbit', 'conejo', 'conejos'],
+  ['ferret', 'huron', 'hurones'],
+  ['guinea pig', 'cobaya', 'cobayas'],
+  ['chinchilla'],
+  ['poultry', 'ave', 'aves', 'aves de produccion', 'pollo', 'pollos', 'gallina', 'gallinas', 'pavo', 'pavos', 'pato', 'patos'],
+  ['equine', 'caballo', 'caballos', 'equino', 'equinos'],
+  ['bovine', 'bovino', 'bovinos', 'vacuno', 'vacunos', 'ternero', 'terneros', 'vaca', 'vacas'],
+  ['ovine', 'ovino', 'ovinos', 'oveja', 'ovejas', 'cordero', 'corderos'],
+  ['caprine', 'caprino', 'caprinos', 'cabra', 'cabras', 'chivo', 'chivos'],
+  ['porcine', 'porcino', 'porcinos', 'cerdo', 'cerdos', 'lechon', 'lechones', 'suino', 'suinos'],
+  ['fish', 'pez', 'peces', 'acuicultura'],
+  ['bee', 'abeja', 'abejas', 'apicola'],
+] as const;
+
+const expandCimavetSpeciesAliases = (value: string) => {
+  const normalized = normalizeSearchText(value);
+  const matchedGroup = cimavetSpeciesAliasGroups.find((group) => group.some((alias) => alias === normalized));
+
+  return matchedGroup ? [...matchedGroup] : [normalized];
+};
+
+const cimavetSpeciesMatches = (query: string, candidate?: string) => {
+  const normalizedCandidate = normalizeSearchText(candidate ?? '');
+  if (!normalizedCandidate) return false;
+
+  return expandCimavetSpeciesAliases(query).some(
+    (alias) => normalizedCandidate.includes(alias) || alias.includes(normalizedCandidate),
+  );
+};
+
+const parseNumericAmount = (value?: string) => {
+  if (!value) return null;
+
+  const normalized = value.replace(',', '.').trim();
+  const amount = Number.parseFloat(normalized);
+  return Number.isFinite(amount) ? amount : null;
+};
+
+export const getCimavetWithdrawalTimeItems = (detail?: CimavetMedicationDetail | null, species?: string) => {
+  const items = detail?.tiemposEspera ?? [];
+  if (!species) return items;
+
+  return items.filter((item) => cimavetSpeciesMatches(species, item.especie?.nombre));
+};
+
+export const getCimavetWithdrawalTimeDays = (item: CimavetWithdrawalTimeItem) => {
+  const amount = parseNumericAmount(item.cantidad);
+  if (amount == null) return null;
+
+  const unit = normalizeSearchText(item.unidadTiempo?.nombre ?? '');
+  if (unit.startsWith('hora')) return amount / 24;
+  if (unit.startsWith('dia')) return amount;
+  if (unit.startsWith('semana')) return amount * 7;
+  if (unit.startsWith('mes')) return amount * 30;
+
+  return null;
+};
+
+export const getCimavetMaxWithdrawalDays = (detail?: CimavetMedicationDetail | null, species?: string) => {
+  const days = getCimavetWithdrawalTimeItems(detail, species)
+    .map((item) => getCimavetWithdrawalTimeDays(item))
+    .filter((value): value is number => value != null);
+
+  if (days.length === 0) return null;
+  return Math.max(...days);
+};
 
 export class CimavetService {
   private catalogCache: CimavetMedicationSummary[] | null = null;
@@ -245,11 +360,25 @@ export class CimavetService {
       basicMatch = await this.searchByTradeName(query).catch(() => []);
     }
 
-    if (!options.species) return basicMatch;
+    let results = basicMatch;
 
-    const speciesQuery = options.species.toLowerCase();
+    if (options.preferExactActiveIngredient) {
+      const exactSingleMatches = results.filter((medication) => getCimavetExactActiveIngredientMatchLevel(medication, query) === 2);
+      if (exactSingleMatches.length > 0) {
+        results = exactSingleMatches;
+      } else {
+        const exactCombinationMatches = results.filter(
+          (medication) => getCimavetExactActiveIngredientMatchLevel(medication, query) === 1,
+        );
+        if (exactCombinationMatches.length > 0) results = exactCombinationMatches;
+      }
+    }
+
+    if (!options.species) return results;
+
+    const speciesQuery = options.species;
     const details = await Promise.all(
-      basicMatch.map(async (medication) => ({
+      results.map(async (medication) => ({
         summary: medication,
         detail: await this.getMedicationByRegistration(medication.nregistro).catch(() => null),
       })),
@@ -258,7 +387,7 @@ export class CimavetService {
     return details
       .filter((item) => {
         if (!item.detail?.especies?.length) return true;
-        return item.detail.especies.some((species) => species.nombre.toLowerCase().includes(speciesQuery));
+        return item.detail.especies.some((species) => cimavetSpeciesMatches(speciesQuery, species.nombre));
       })
       .map((item) => item.summary);
   }

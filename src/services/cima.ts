@@ -87,6 +87,7 @@ export interface CimaConfig {
 export interface CimaSearchOptions {
   includeTradeNameSearch?: boolean;
   includeActiveIngredientSearch?: boolean;
+  preferExactActiveIngredient?: boolean;
 }
 
 const DEFAULT_CIMA_BASE_URL = 'https://cima.aemps.es/cima/rest';
@@ -115,15 +116,34 @@ const normalizeSearchText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const getActiveIngredientParts = (value?: string) =>
+  (value ?? '')
+    .split(/[;+]/)
+    .map((part) => normalizeSearchText(part))
+    .filter(Boolean);
+
+const getPrimaryActiveIngredientText = (medication: CimaMedicationSummary) => medication.pactivos ?? medication.vtm?.nombre ?? '';
+
+const getExactActiveIngredientMatchLevel = (medication: CimaMedicationSummary, query: string) => {
+  const q = normalizeSearchText(query);
+  const ingredients = getActiveIngredientParts(getPrimaryActiveIngredientText(medication));
+  if (ingredients.length === 0) return 0;
+  if (!ingredients.includes(q)) return 0;
+  return ingredients.length === 1 ? 2 : 1;
+};
+
 const scoreMedication = (medication: CimaMedicationSummary, query: string) => {
   const q = normalizeSearchText(query);
   const tradeName = normalizeSearchText(medication.nombre);
-  const activeIngredient = normalizeSearchText(medication.pactivos ?? medication.vtm?.nombre ?? '');
+  const activeIngredient = normalizeSearchText(getPrimaryActiveIngredientText(medication));
+  const exactActiveIngredientLevel = getExactActiveIngredientMatchLevel(medication, q);
 
   let score = 0;
 
   if (tradeName === q) score += 120;
   if (activeIngredient === q) score += 110;
+  if (exactActiveIngredientLevel === 2) score += 90;
+  if (exactActiveIngredientLevel === 1) score += 25;
   if (tradeName.startsWith(q)) score += 40;
   if (activeIngredient.startsWith(q)) score += 35;
   if (tradeName.includes(q)) score += 25;
@@ -236,7 +256,17 @@ export class CimaService {
       }
     });
 
-    return Array.from(merged.values()).sort((left, right) => scoreMedication(right, q) - scoreMedication(left, q));
+    const ranked = Array.from(merged.values()).sort((left, right) => scoreMedication(right, q) - scoreMedication(left, q));
+
+    if (!options.preferExactActiveIngredient) return ranked;
+
+    const exactSingleMatches = ranked.filter((medication) => getExactActiveIngredientMatchLevel(medication, q) === 2);
+    if (exactSingleMatches.length > 0) return exactSingleMatches;
+
+    const exactCombinationMatches = ranked.filter((medication) => getExactActiveIngredientMatchLevel(medication, q) === 1);
+    if (exactCombinationMatches.length > 0) return exactCombinationMatches;
+
+    return ranked;
   }
 
   async getMedicationByRegistration(nregistro: string): Promise<CimaMedicationDetail> {

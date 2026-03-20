@@ -134,19 +134,40 @@ body {
 }
 
 button,
-input,
+input:not([type='checkbox']):not([type='radio']),
 select {
   font: inherit;
   border-radius: 0.65rem;
   border: 1px solid var(--border-light);
   padding: 0.6rem 0.75rem;
+  min-height: 2.8rem;
   background: #ffffff;
   color: inherit;
   outline: none;
 }
 
+.search-grid input,
+.search-grid select {
+  height: 3rem;
+  line-height: 1.2;
+}
+
+.search-grid select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-light) 50%),
+    linear-gradient(135deg, var(--muted-light) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2.4rem;
+}
+
 button:focus-visible,
-input:focus-visible,
+input:not([type='checkbox']):not([type='radio']):focus-visible,
 select:focus-visible {
   border-color: var(--accent-light);
   box-shadow: 0 0 0 3px rgba(4, 126, 131, 0.16);
@@ -214,6 +235,13 @@ select:focus-visible {
   color: white;
 }
 
+.product-tabs button.active {
+  background: linear-gradient(120deg, var(--accent-light), var(--accent-secondary-light));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(4, 126, 131, 0.18);
+}
+
 .panel {
   background: var(--surface-light);
   border: 1px solid var(--border-light);
@@ -236,26 +264,44 @@ select:focus-visible {
 
 .search-grid-checkboxes {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.85rem;
   font-weight: 600;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
+  min-height: 3rem;
+}
+
+.search-grid-checkboxes strong {
+  font-weight: 800;
 }
 
 .checkbox-inline {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.55rem;
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.search-grid .checkbox-inline {
+  flex-direction: row;
+  display: inline-flex;
+  gap: 0.55rem;
 }
 
 .checkbox-inline input {
   margin: 0;
   width: 1rem;
   height: 1rem;
+  min-height: 1rem;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 0.25rem;
+  background: #fff;
+  flex: 0 0 auto;
   accent-color: var(--accent-light);
 }
 
@@ -476,8 +522,8 @@ select:focus-visible {
   font-size: 0.96rem;
   color: #26344f;
   line-height: 1.35;
-  overflow-wrap: normal;
-  word-break: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .live-card-footer {
@@ -596,11 +642,14 @@ select:focus-visible {
   align-items: start;
   justify-content: space-between;
   gap: 0.9rem;
+  flex-wrap: wrap;
 }
 
 .entry-card-title {
   min-width: 0;
   flex: 1 1 auto;
+  display: grid;
+  gap: 0.35rem;
 }
 
 .entry-card-actions {
@@ -613,6 +662,7 @@ select:focus-visible {
 
 .entry-card h3 {
   margin-top: 0;
+  margin-bottom: 0;
   font-family: var(--font-serif);
   color: var(--accent-light);
   overflow-wrap: anywhere;
@@ -653,6 +703,8 @@ select:focus-visible {
 
 .entry-card p {
   margin: 0.45rem 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .entry-dose-summary {
@@ -674,6 +726,8 @@ select:focus-visible {
   border: 1px solid #dfe5d2;
   border-radius: 0.8rem;
   background: #f9fbf5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .entry-dose-summary li span:first-child {
@@ -901,6 +955,27 @@ select:focus-visible {
 
 .product-tabs {
   margin-top: 0;
+}
+
+.product-tabs button {
+  background: #f3eddc;
+  color: var(--text-light);
+  border-color: var(--border-light);
+  box-shadow: none;
+}
+
+.product-tabs button:not(.active) {
+  background: #f3eddc;
+  color: var(--text-light);
+  border-color: var(--border-light);
+}
+
+.product-tabs button.active {
+  background-color: var(--accent-light);
+  background-image: linear-gradient(120deg, var(--accent-light), var(--accent-secondary-light));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(4, 126, 131, 0.18);
 }
 
 .module-panel {
@@ -1214,6 +1289,19 @@ select:focus-visible {
   color: var(--accent-dark);
 }
 
+.app.dark .product-tabs button {
+  background: #203038;
+  color: var(--text-dark);
+  border-color: #33535d;
+  box-shadow: none;
+}
+
+.app.dark .product-tabs button:not(.active) {
+  background: #203038;
+  color: var(--text-dark);
+  border-color: #33535d;
+}
+
 .app.dark .subtabs button {
   background: #203038;
   border-color: #33535d;
@@ -1227,6 +1315,14 @@ select:focus-visible {
 .app.dark .subtabs button.active {
   color: #0d1617;
   background: linear-gradient(120deg, var(--accent-dark), #4ca5b4);
+}
+
+.app.dark .product-tabs button.active {
+  background-color: var(--accent-dark);
+  color: #0d1617;
+  background: linear-gradient(120deg, var(--accent-dark), #4ca5b4);
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(76, 165, 180, 0.18);
 }
 
 .app.dark .tag-chip-list button.active {
@@ -1969,6 +2065,164 @@ select:focus-visible {
   background: rgba(26, 39, 43, 0.65);
 }
 
+.nutrition-toolkit {
+  gap: 1rem;
+}
+
+.nutrition-profile-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.nutrition-subtabs {
+  flex-wrap: wrap;
+}
+
+.nutrition-metric-grid,
+.nutrition-micro-grid,
+.nutrition-copy-grid,
+.nutrition-target-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.nutrition-metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.nutrition-diet-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.nutrition-filter-panel,
+.nutrition-diet-detail {
+  align-content: start;
+}
+
+.nutrition-diet-list {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 620px;
+  overflow-y: auto;
+  padding-right: 0.1rem;
+}
+
+.nutrition-diet-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.82);
+  text-align: left;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.nutrition-diet-card span,
+.nutrition-target-summary span {
+  color: var(--muted-light);
+}
+
+.nutrition-diet-card p {
+  margin: 0;
+}
+
+.nutrition-diet-card:hover,
+.nutrition-diet-card.is-selected {
+  transform: translateY(-1px);
+  border-color: #90b8a7;
+  box-shadow: 0 12px 24px rgba(34, 61, 54, 0.08);
+}
+
+.nutrition-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.nutrition-chip-row span {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted-light);
+  font-size: 0.92rem;
+}
+
+.nutrition-copy-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nutrition-span-full {
+  grid-column: 1 / -1;
+}
+
+.nutrition-micro-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nutrition-target-grid {
+  grid-template-columns: 0.95fr 1.05fr;
+}
+
+.nutrition-target-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  gap: 0.55rem 1rem;
+  align-items: center;
+}
+
+.nutrition-micronutrient-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.nutrition-micronutrient-form label,
+.nutrition-ration-row label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.nutrition-ration-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.nutrition-ration-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(120px, 0.8fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.nutrition-food-search {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app.dark .nutrition-diet-card,
+.app.dark .nutrition-chip-row span {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .nutrition-diet-card span,
+.app.dark .nutrition-target-summary span {
+  color: var(--muted-dark);
+}
+
+.app.dark .nutrition-diet-card:hover,
+.app.dark .nutrition-diet-card.is-selected {
+  border-color: #4ca5b4;
+  box-shadow: none;
+}
+
 .haemo-metrics,
 .haemo-guidance-grid {
   display: grid;
@@ -2275,7 +2529,14 @@ select:focus-visible {
     width: 100%;
   }
 
-  .toolkit-utility-form {
+  .toolkit-utility-form,
+  .nutrition-diet-layout,
+  .nutrition-copy-grid,
+  .nutrition-metric-grid,
+  .nutrition-micro-grid,
+  .nutrition-target-grid,
+  .nutrition-micronutrient-form,
+  .nutrition-ration-row {
     grid-template-columns: 1fr;
   }
 

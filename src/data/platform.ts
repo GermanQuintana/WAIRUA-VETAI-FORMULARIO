@@ -10,7 +10,7 @@ export interface LocalizedCollectionCard {
   };
   status?: LocalizedText;
   statusTone?: 'available' | 'soon';
-  toolkitView?: 'overview' | 'dose' | 'infusion' | 'haemotherapy' | 'endocrine' | 'converter' | 'surface' | 'assistant';
+  toolkitView?: 'overview' | 'dose' | 'infusion' | 'haemotherapy' | 'endocrine' | 'converter' | 'surface' | 'assistant' | 'nutrition';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -203,6 +203,17 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     status: { es: 'Disponible', en: 'Available' },
     statusTone: 'available',
     toolkitView: 'surface',
+  },
+  {
+    id: 'clinical-nutrition',
+    title: { es: 'Nutricion clinica', en: 'Clinical nutrition' },
+    description: {
+      es: 'Linea con calculadoras energeticas y de nutrientes, base de datos de dietas terapeuticas y constructor de dieta casera para perro y gato.',
+      en: 'Lane with energy and nutrient calculators, a therapeutic-diet database, and a homemade-diet builder for dogs and cats.',
+    },
+    status: { es: 'Disponible', en: 'Available' },
+    statusTone: 'available',
+    toolkitView: 'nutrition',
   },
   {
     id: 'fluid-therapy',
