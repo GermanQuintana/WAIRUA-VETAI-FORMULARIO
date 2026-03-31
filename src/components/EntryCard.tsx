@@ -8,10 +8,12 @@ interface Props {
   lang: Language;
   onEdit?: (entry: TherapeuticEntry) => void;
   onDelete?: (entry: TherapeuticEntry) => void;
+  canManage?: boolean;
 }
 
-export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
+export default function EntryCard({ entry, lang, onEdit, onDelete, canManage = false }: Props) {
   const t = labels[lang];
+  const hasValue = (value?: string) => Boolean(value?.trim());
   const validatedReferences = useMemo(() => {
     const aggregated = new Map<
       string,
@@ -89,7 +91,7 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
             {translateEditorialStatus(entry.editorialStatus, lang)}
           </span>
         </div>
-        {(onEdit || onDelete) && (
+        {canManage && (onEdit || onDelete) && (
           <div className="entry-card-actions">
             {onEdit && (
               <button type="button" className="secondary-button entry-card-edit" onClick={() => onEdit(entry)}>
@@ -104,36 +106,56 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
           </div>
         )}
       </div>
-      <p>
-        <strong>{t.species}:</strong> {speciesLabel}
-      </p>
-      <p>
-        <strong>{t.pathologies}:</strong> {pathologiesLabel}
-      </p>
-      <p>
-        <strong>{t.tagsLabel}:</strong> {tagsLabel}
-      </p>
-      <p>
-        <strong>{t.concentrationsLabel}:</strong> {entry.concentrations.join(', ')}
-      </p>
-      <p>
-        <strong>{t.indications}:</strong> {entry.indications[lang]}
-      </p>
-      <p className="multiline-text">
-        <strong>{t.dosage}:</strong> {entry.dosage[lang]}
-      </p>
-      <p>
-        <strong>{t.administrationConditions}:</strong> {entry.administrationConditions[lang]}
-      </p>
-      <p>
-        <strong>{t.adverseEffects}:</strong> {entry.adverseEffects[lang]}
-      </p>
-      <p>
-        <strong>{t.contraindications}:</strong> {entry.contraindications[lang]}
-      </p>
-      <p>
-        <strong>{t.interactions}:</strong> {entry.interactions[lang]}
-      </p>
+      {entry.species.length > 0 && (
+        <p>
+          <strong>{t.species}:</strong> {speciesLabel}
+        </p>
+      )}
+      {entry.pathologies.length > 0 && (
+        <p>
+          <strong>{t.pathologies}:</strong> {pathologiesLabel}
+        </p>
+      )}
+      {hasValue(tagsLabel) && (
+        <p>
+          <strong>{t.tagsLabel}:</strong> {tagsLabel}
+        </p>
+      )}
+      {entry.concentrations.length > 0 && (
+        <p>
+          <strong>{t.concentrationsLabel}:</strong> {entry.concentrations.join(', ')}
+        </p>
+      )}
+      {hasValue(entry.indications[lang]) && (
+        <p>
+          <strong>{t.indications}:</strong> {entry.indications[lang]}
+        </p>
+      )}
+      {hasValue(entry.dosage[lang]) && (
+        <p className="multiline-text">
+          <strong>{t.dosage}:</strong> {entry.dosage[lang]}
+        </p>
+      )}
+      {hasValue(entry.administrationConditions[lang]) && (
+        <p>
+          <strong>{t.administrationConditions}:</strong> {entry.administrationConditions[lang]}
+        </p>
+      )}
+      {hasValue(entry.adverseEffects[lang]) && (
+        <p>
+          <strong>{t.adverseEffects}:</strong> {entry.adverseEffects[lang]}
+        </p>
+      )}
+      {hasValue(entry.contraindications[lang]) && (
+        <p>
+          <strong>{t.contraindications}:</strong> {entry.contraindications[lang]}
+        </p>
+      )}
+      {hasValue(entry.interactions[lang]) && (
+        <p>
+          <strong>{t.interactions}:</strong> {entry.interactions[lang]}
+        </p>
+      )}
       {structuredDoseRows.length > 0 && (
         <div className="entry-dose-summary">
           <strong>{t.doseBySpeciesIndication}:</strong>
@@ -162,10 +184,10 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
         <strong>{t.editorialStatus}:</strong> {translateEditorialStatus(entry.editorialStatus, lang)}
       </p>
 
-      <div className="reference-list">
-        <strong>{t.references}:</strong>
-        <p className="reference-note">{t.validatedReferencesOnly}</p>
-        {validatedReferences.length > 0 ? (
+      {validatedReferences.length > 0 && (
+        <div className="reference-list">
+          <strong>{t.references}:</strong>
+          <p className="reference-note">{t.validatedReferencesOnly}</p>
           <ul>
             {validatedReferences.map((reference) => (
               <li key={reference.id}>
@@ -177,10 +199,8 @@ export default function EntryCard({ entry, lang, onEdit, onDelete }: Props) {
               </li>
             ))}
           </ul>
-        ) : (
-          <p>{t.noValidatedReferences}</p>
-        )}
-      </div>
+        </div>
+      )}
       <p className="updated-at">
         {t.updated}: {entry.lastUpdated}
       </p>

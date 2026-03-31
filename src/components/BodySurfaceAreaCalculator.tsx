@@ -139,7 +139,6 @@ export default function BodySurfaceAreaCalculator({ lang }: Props) {
     <section className="toolkit-utility">
       <div className="toolkit-utility-header">
         <div>
-          <p className="section-kicker">{t.bodySurfaceKicker}</p>
           <h3>{t.bodySurfaceTitle}</h3>
           <p>{t.bodySurfaceText}</p>
         </div>
