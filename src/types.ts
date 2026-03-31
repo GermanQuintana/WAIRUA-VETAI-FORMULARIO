@@ -17,6 +17,12 @@ export type OtcSpecies = Species | 'Bovine' | 'Ovine' | 'Caprine' | 'Porcine' | 
 
 export type EvidenceLevel = 'High' | 'Moderate' | 'Low' | 'Expert Consensus';
 export type EditorialStatus = 'draft' | 'under_review' | 'approved';
+export type PublicationStatus = 'pending_activation' | 'active' | 'rejected';
+export type BillingCycle = 'monthly' | 'annual';
+export type MembershipStatus = 'trialing' | 'pending_payment' | 'active' | 'expired' | 'cancelled';
+export type AuthProvider = 'google' | 'email' | 'unknown';
+export type DiscountMode = 'fixed_amount' | 'override_price';
+export type UserRole = 'viewer' | 'contributor' | 'editor' | 'reviewer' | 'admin';
 
 export interface LocalizedText {
   es: string;
@@ -30,6 +36,14 @@ export interface ScientificReference {
   year: number;
   source: string;
   url?: string;
+}
+
+export interface EntryReviewSummary {
+  approvalCount: number;
+  approvalScore: number;
+  currentUserApproved?: boolean;
+  currentUserApprovalLevel?: number;
+  currentUserNote?: string;
 }
 
 export interface TherapeuticEntry {
@@ -50,6 +64,8 @@ export interface TherapeuticEntry {
   notes?: LocalizedText;
   evidenceLevel: EvidenceLevel;
   editorialStatus: EditorialStatus;
+  publicationStatus?: PublicationStatus;
+  reviewSummary?: EntryReviewSummary;
   calculatorPresets?: DoseCalculatorPreset[];
   references: ScientificReference[];
   cimavet?: {
@@ -84,7 +100,10 @@ export interface DoseCalculatorEntry {
   id: string;
   activeIngredient: string;
   category: LocalizedText;
+  subcategory?: LocalizedText;
+  antibioticCategory?: string;
   species: Species[];
+  speciesLabel?: string;
   route: string;
   indication: LocalizedText;
   doseRangeMgKg: {
@@ -92,6 +111,12 @@ export interface DoseCalculatorEntry {
     max: number;
   };
   defaultDoseMgKg: number;
+  doseText?: string;
+  doseUnit?: string;
+  frequency?: string;
+  duration?: string;
+  observations?: string;
+  bibliography?: string;
   concentration: {
     es: string;
     en: string;
@@ -99,6 +124,8 @@ export interface DoseCalculatorEntry {
     mgPerTablet?: number;
   };
   linkedEntryId?: string;
+  publicationStatus?: PublicationStatus;
+  reviewSummary?: EntryReviewSummary;
 }
 
 export type ClinicalDietFormat = 'dry' | 'wet' | 'mixed';
@@ -190,4 +217,79 @@ export interface OtcProductRecord {
   sourceUrl: string;
   sourceRegion: 'es' | 'global';
   searchTerms?: string[];
+}
+
+export interface DiscountCodeRecord {
+  id: string;
+  code: string;
+  label: string;
+  description?: string;
+  partnerName?: string;
+  appliesTo: BillingCycle | 'both';
+  discountMode: DiscountMode;
+  discountAmountCents?: number;
+  overridePriceCents?: number;
+  discountMonths: number;
+  grantDays?: number;
+  grantedRoles?: UserRole[];
+  stripeCouponId?: string;
+  stripePromotionCodeId?: string;
+  active: boolean;
+}
+
+export interface MembershipSelection {
+  billingCycle: BillingCycle;
+  discountCode?: string;
+  discountCodeId?: string;
+  discountMonths?: number;
+  finalPriceCents: number;
+  listPriceCents: number;
+  discountAmountCents?: number;
+  overridePriceCents?: number;
+  grantDays?: number;
+}
+
+export interface UserMembership {
+  id: string;
+  userId: string;
+  signupMethod: AuthProvider;
+  billingCycle: BillingCycle;
+  status: MembershipStatus;
+  listPriceCents: number;
+  finalPriceCents: number;
+  currency: string;
+  trialDays: number;
+  trialStartedAt?: string;
+  trialEndsAt?: string;
+  discountCode?: string;
+  discountCodeId?: string;
+  discountMonths?: number;
+  discountAmountCents?: number;
+  overridePriceCents?: number;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripePriceId?: string;
+  stripeCheckoutSessionId?: string;
+  stripeStatus?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  email?: string;
+  role: UserRole;
+  roles: UserRole[];
+  authProvider: AuthProvider;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthAccountSnapshot {
+  profile: UserProfile | null;
+  membership: UserMembership | null;
+  email: string | null;
 }

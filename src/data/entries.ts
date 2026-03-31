@@ -1,21 +1,34 @@
 import { TherapeuticEntry } from '../types';
+import { cardiovascularEntries, cardiovascularEntryNames } from './cardiovascularEntries';
+import { digestiveEntries, digestiveEntryNames } from './digestiveEntries';
+import { hematologyOncologyEntries, hematologyOncologyEntryNames } from './hematologyOncologyEntries';
+import { antiinfectiveEntries, antiinfectiveEntryNames } from './antiinfectiveEntries';
+import { antiparasiticEntries, antiparasiticEntryNames } from './antiparasiticEntries';
+import { importedIndexEntries } from './indexedActiveIngredients';
 
-export const therapeuticEntries: TherapeuticEntry[] = [
+const normalizeIngredient = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+const baseEntries: TherapeuticEntry[] = [
   {
     id: 'amoxicillin-clavulanate',
-    activeIngredient: 'Amoxicillin + Clavulanic Acid',
+    activeIngredient: 'Amoxicilina + acido clavulanico',
     tradeNames: ['Clavamox', 'Synulox'],
     species: ['Dog', 'Cat', 'Rabbit'],
-    tags: ['Medicina interna', 'Dermatologia', 'Respiratorio', 'Antibioticos'],
+    tags: ['Medicina interna', 'Dermatologia', 'Respiratorio', 'Antibioticos', 'Antiinfecciosos sistemicos', 'Penicilinas'],
     systems: ['Infectious Diseases', 'Dermatology', 'Respiratory'],
     pathologies: ['Pyoderma', 'Upper Respiratory Infection', 'Soft Tissue Infection'],
     concentrations: ['50 mg/mL suspension oral', '62.5 mg tablets', '250 mg tablets'],
     indications: {
-      es: 'Tratamiento empirico de infecciones bacterianas susceptibles mientras se esperan cultivo y antibiograma.',
+      es: 'Asociacion betalactamica de referencia para piel, aparato respiratorio, urogenital y procesos hepatobiliares sensibles.',
       en: 'Empirical treatment of susceptible bacterial infections while culture and susceptibility are pending.',
     },
     dosage: {
-      es: 'Perros: 12.5-25 mg/kg VO cada 12 h.\nGatos: 12.5-25 mg/kg VO cada 12 h.\nConejos: usar con precaucion y monitorizacion veterinaria estricta.',
+      es: 'Perros/Gatos: 12.5-25 mg/kg VO cada 12 h.\nPerros/Gatos: en pioderma, colangitis neutrofilica, pancreatitis felina, hepatitis cronica canina no asociada al cobre y ITU, usar el extremo alto del rango segun gravedad y cultivo.\nPerros: en neumonia bacteriana, 10-20 mg/kg VO cada 8 h segun criterio clinico.',
       en: 'Dogs: 12.5-25 mg/kg PO q12h.\nCats: 12.5-25 mg/kg PO q12h.\nRabbits: use with caution and only under strict veterinary monitoring.',
     },
     administrationConditions: {
@@ -35,7 +48,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       en: 'Use caution with bacteriostatic antibiotics and review compatibility with probiotics or GI support when prolonged therapy is used.',
     },
     notes: {
-      es: 'Se recomienda desescalado dirigido por cultivo cuando este disponible la sensibilidad.',
+      es: 'Se recomienda una relacion amoxicilina-acido clavulanico de 4:1 y desescalado dirigido por cultivo cuando este disponible la sensibilidad.',
       en: 'Culture-directed de-escalation is recommended once susceptibility testing becomes available.',
     },
     evidenceLevel: 'Moderate',
@@ -76,7 +89,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Maropitant',
     tradeNames: ['Cerenia'],
     species: ['Dog', 'Cat', 'Ferret'],
-    tags: ['Urgencias', 'Anestesia', 'Oncologia', 'Antiemeticos'],
+    tags: ['Urgencias', 'Anestesia', 'Oncologia', 'Antiemeticos', 'Aparato digestivo y metabolismo'],
     systems: ['Gastroenterology', 'Oncology Support'],
     pathologies: ['Acute Vomiting', 'Motion Sickness', 'Chemotherapy-Induced Nausea'],
     concentrations: ['10 mg/mL injectable', '16 mg tablets', '24 mg tablets', '60 mg tablets'],
@@ -148,7 +161,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Meloxicam',
     tradeNames: ['Metacam', 'Meloxidyl'],
     species: ['Dog', 'Cat', 'Rabbit', 'Guinea Pig', 'Chinchilla', 'Equine'],
-    tags: ['Analgesicos', 'AINEs', 'Anestesia', 'Cirugia'],
+    tags: ['Analgesicos', 'AINEs', 'Anestesia', 'Cirugia', 'Aparato muscular', 'Antiinflamatorios no esteroideos (AINE)'],
     systems: ['Analgesia', 'Orthopedics', 'Inflammation'],
     pathologies: ['Postoperative Pain', 'Osteoarthritis', 'Inflammatory Conditions'],
     concentrations: ['1.5 mg/mL suspension oral', '0.5 mg/mL suspension oral', '5 mg/mL injectable'],
@@ -202,10 +215,10 @@ export const therapeuticEntries: TherapeuticEntry[] = [
   },
   {
     id: 'itraconazole',
-    activeIngredient: 'Itraconazole',
+    activeIngredient: 'Itraconazol',
     tradeNames: ['Sporanox', 'Itrafungol'],
     species: ['Dog', 'Cat', 'Psittacines', 'Reptiles'],
-    tags: ['Dermatologia', 'Antifungicos', 'Medicina interna', 'Respiratorio'],
+    tags: ['Dermatologia', 'Antifungicos', 'Medicina interna', 'Respiratorio', 'Antiinfecciosos sistemicos'],
     systems: ['Dermatology', 'Infectious Diseases', 'Avian Medicine', 'Exotics'],
     pathologies: ['Dermatophytosis', 'Aspergillosis', 'Systemic Mycoses'],
     concentrations: ['10 mg/mL solucion oral', '100 mg capsules'],
@@ -214,7 +227,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       en: 'Systemic antifungal for yeast and mold infections, often long-course and monitoring-intensive.',
     },
     dosage: {
-      es: 'Perros: 5 mg/kg VO cada 24 h en pauta continua o pulsada.\nGatos: 5 mg/kg VO cada 24 h en pauta continua o pulsada.',
+      es: 'Perros: dermatofitosis 5-10 mg/kg VO cada 24 h; al mes puede pasarse a semanas alternas.\nGatos: dermatofitosis 5 mg/kg VO cada 24 h en semanas alternas.\nPerros: dermatitis por Malassezia 5 mg/kg VO cada 24 h, dos dias consecutivos a la semana.\nPerros/Gatos: aspergilosis y rinitis alergica o linfoplasmocitaria 5-10 mg/kg VO cada 24-12 h durante 3-6 meses.\nGatos: criptococosis 50-100 mg/gato VO cada 24 h durante 8-9 meses.',
       en: 'Dogs: 5 mg/kg PO q24h in pulse or continuous protocols.\nCats: 5 mg/kg PO q24h in pulse or continuous protocols.',
     },
     administrationConditions: {
@@ -226,7 +239,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       en: 'Hepatotoxicity, anorexia, vomiting, and gastrointestinal reactions during prolonged treatment.',
     },
     contraindications: {
-      es: 'Monitorizar riesgo de hepatotoxicidad y posibles interacciones por metabolismo CYP.',
+      es: 'No administrar a pacientes con insuficiencia hepatica o renal, ni a hembras gestantes ni lactantes. Monitorizar riesgo de hepatotoxicidad e interacciones CYP.',
       en: 'Monitor hepatotoxicity risk. Adjust strategy when interacting with CYP-metabolized drugs.',
     },
     interactions: {
@@ -259,19 +272,19 @@ export const therapeuticEntries: TherapeuticEntry[] = [
   },
   {
     id: 'enrofloxacin',
-    activeIngredient: 'Enrofloxacin',
+    activeIngredient: 'Enrofloxacino',
     tradeNames: ['Baytril'],
     species: ['Dog', 'Cat', 'Rabbit', 'Ferret', 'Reptiles', 'Poultry', 'Equine'],
-    tags: ['UCI', 'Respiratorio', 'Urinario y nefrologia', 'Antibioticos'],
+    tags: ['UCI', 'Respiratorio', 'Urinario y nefrologia', 'Antibioticos', 'Antiinfecciosos sistemicos', 'Fluoroquinolonas'],
     systems: ['Infectious Diseases', 'Respiratory', 'Urology'],
     pathologies: ['Complicated UTI', 'Pneumonia', 'Gram-negative infections'],
     concentrations: ['22.7 mg tablets', '50 mg tablets', '100 mg tablets', '25 mg/mL injectable'],
     indications: {
-      es: 'Fluoroquinolona reservada para infecciones con sensibilidad documentada y uso bajo criterios de stewardship.',
+      es: 'Fluoroquinolona reservada para infecciones con sensibilidad documentada, especialmente en urinario, piel, respiratorio y hepatobiliar.',
       en: 'Fluoroquinolone reserved for infections with documented susceptibility and stewardship oversight.',
     },
     dosage: {
-      es: 'Perros: 5-20 mg/kg VO cada 24 h segun indicacion.\nGatos: evitar dosis altas por riesgo de toxicidad retiniana.',
+      es: 'Perros/Gatos: piodermas, piometra, orquitis-epididimitis, prostatitis e infecciones urinarias 5 mg/kg VO/SC cada 24 h; en piodermas intensas hasta 20 mg/kg al dia.\nPerros: otitis intensa 5 mg/kg VO/SC cada 24 h; frente a Pseudomonas aeruginosa, 20 mg/kg cada 24 h.\nPerros/Gatos: diarrea aguda 5 mg/kg SC/IV lento cada 24 h.\nPerros: enteritis cronica 10-15 mg/kg VO cada 24 h.\nPerros/Gatos: colangitis neutrofilica y pancreatitis felinas o hepatitis cronica canina no asociada al cobre 5 mg/kg VO cada 24 h, combinado con metronidazol.\nPerros/Gatos: infecciones respiratorias 2.7-5.5 mg/kg VO cada 24 h.\nGatos: hemoplasmosis 2 mg/kg VO cada 24 h.',
       en: 'Dogs: 5-20 mg/kg PO q24h depending on indication.\nCats: avoid high doses due to retinal toxicity risk.',
     },
     administrationConditions: {
@@ -283,7 +296,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
       en: 'Gastrointestinal upset, arthropathy in growing animals, and retinal toxicity in cats at high doses.',
     },
     contraindications: {
-      es: 'Evitar uso empirico de primera linea cuando existan alternativas. Precaucion en animales en crecimiento.',
+      es: 'Evitar uso empirico de primera linea cuando existan alternativas. No administrar a animales en crecimiento menores de 8 meses, gatos menores de 16 semanas, perros de razas pequenas/medianas antes de 12 meses o gigantes antes de 18 meses; precaucion en epilepticos. En gatos, dosis > 5 mg/kg cada 24 h elevan el riesgo de dano retiniano.',
       en: 'Avoid empirical first-line use when alternatives are available. Use caution in growing animals.',
     },
     interactions: {
@@ -319,7 +332,7 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     activeIngredient: 'Phenobarbital',
     tradeNames: ['Luminal', 'Gardenal'],
     species: ['Dog', 'Cat'],
-    tags: ['Neurologia', 'Anticonvulsivantes', 'Medicina interna', 'UCI'],
+    tags: ['Neurologia', 'Anticonvulsivantes', 'Medicina interna', 'UCI', 'Sistema nervioso', 'Antiepilepticos'],
     systems: ['Neurology', 'Internal Medicine'],
     pathologies: ['Seizure Control', 'Epilepsy Management'],
     concentrations: ['15 mg/mL oral solution', '25 mg tablets', '50 mg tablets'],
@@ -381,4 +394,31 @@ export const therapeuticEntries: TherapeuticEntry[] = [
     ],
     lastUpdated: '2026-03-06',
   },
+];
+
+const detailedIngredientNames = new Set(
+  [
+    ...baseEntries.map((entry) => entry.activeIngredient),
+    ...cardiovascularEntryNames,
+    ...digestiveEntryNames,
+    ...hematologyOncologyEntryNames,
+    ...antiinfectiveEntryNames,
+    ...antiparasiticEntryNames,
+  ].map(
+    normalizeIngredient,
+  ),
+);
+
+const filteredImportedIndexEntries = importedIndexEntries.filter(
+  (entry) => !detailedIngredientNames.has(normalizeIngredient(entry.activeIngredient)),
+);
+
+export const therapeuticEntries: TherapeuticEntry[] = [
+  ...baseEntries,
+  ...cardiovascularEntries,
+  ...digestiveEntries,
+  ...hematologyOncologyEntries,
+  ...antiinfectiveEntries,
+  ...antiparasiticEntries,
+  ...filteredImportedIndexEntries,
 ];

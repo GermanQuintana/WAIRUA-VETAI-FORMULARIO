@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import { labels, Language } from '../i18n';
-import { translateEditorialStatus, translateEvidenceLevel, translateMedicalTerm, translateMedicalTerms } from '../lib/terms';
+import {
+  translateEditorialStatus,
+  translateEvidenceLevel,
+  translateMedicalTerm,
+  translateMedicalTerms,
+  translatePublicationStatus,
+} from '../lib/terms';
 import { TherapeuticEntry } from '../types';
 
 interface Props {
@@ -8,11 +14,32 @@ interface Props {
   lang: Language;
   onEdit?: (entry: TherapeuticEntry) => void;
   onDelete?: (entry: TherapeuticEntry) => void;
+  onReview?: (entry: TherapeuticEntry, approvalLevel: number) => void;
+  onPublicationChange?: (entry: TherapeuticEntry, status: TherapeuticEntry['publicationStatus']) => void;
   canManage?: boolean;
+  canReview?: boolean;
+  canActivate?: boolean;
 }
 
-export default function EntryCard({ entry, lang, onEdit, onDelete, canManage = false }: Props) {
+const renderApprovalIcons = (count: number, score: number) => {
+  if (count <= 0) return 'Sin revision';
+  const stars = score > 0 ? '⭐'.repeat(Math.min(3, Math.max(1, Math.round(score / count)))) : '👍';
+  return `${stars} x${count}`;
+};
+
+export default function EntryCard({
+  entry,
+  lang,
+  onEdit,
+  onDelete,
+  onReview,
+  onPublicationChange,
+  canManage = false,
+  canReview = false,
+  canActivate = false,
+}: Props) {
   const t = labels[lang];
+  const publicationStatus = entry.publicationStatus ?? 'active';
   const hasValue = (value?: string) => Boolean(value?.trim());
   const validatedReferences = useMemo(() => {
     const aggregated = new Map<
@@ -87,24 +114,55 @@ export default function EntryCard({ entry, lang, onEdit, onDelete, canManage = f
       <div className="entry-card-header">
         <div className="entry-card-title">
           <h3>{entry.activeIngredient}</h3>
-          <span className={`editorial-status editorial-status-${entry.editorialStatus}`}>
-            {translateEditorialStatus(entry.editorialStatus, lang)}
-          </span>
+          <div className="entry-card-badges">
+            <span className={`editorial-status editorial-status-${entry.editorialStatus}`}>
+              {translateEditorialStatus(entry.editorialStatus, lang)}
+            </span>
+            <span className={`editorial-status editorial-status-${publicationStatus}`}>
+              {translatePublicationStatus(publicationStatus, lang)}
+            </span>
+            <span className="entry-review-pill">
+              {renderApprovalIcons(entry.reviewSummary?.approvalCount ?? 0, entry.reviewSummary?.approvalScore ?? 0)}
+            </span>
+          </div>
         </div>
-        {canManage && (onEdit || onDelete) && (
+        {(canManage && (onEdit || onDelete)) || (canReview && onReview) || (canActivate && onPublicationChange) ? (
           <div className="entry-card-actions">
             {onEdit && (
               <button type="button" className="secondary-button entry-card-edit" onClick={() => onEdit(entry)}>
                 {lang === 'es' ? 'Editar' : 'Edit'}
               </button>
             )}
+            {canReview && onReview ? (
+              <>
+                <button type="button" className="secondary-button" onClick={() => onReview(entry, 1)}>
+                  👍
+                </button>
+                <button type="button" className="secondary-button" onClick={() => onReview(entry, 2)}>
+                  👍👍
+                </button>
+                <button type="button" className="secondary-button" onClick={() => onReview(entry, 3)}>
+                  ⭐⭐⭐
+                </button>
+              </>
+            ) : null}
+            {canActivate && onPublicationChange ? (
+              <>
+                <button type="button" className="secondary-button" onClick={() => onPublicationChange(entry, 'active')}>
+                  {t.activateEntry}
+                </button>
+                <button type="button" className="secondary-button" onClick={() => onPublicationChange(entry, 'rejected')}>
+                  {t.rejectEntry}
+                </button>
+              </>
+            ) : null}
             {onDelete && (
               <button type="button" className="secondary-button entry-card-delete" onClick={() => onDelete(entry)}>
                 {t.deleteRecord}
               </button>
             )}
           </div>
-        )}
+        ) : null}
       </div>
       {entry.species.length > 0 && (
         <p>
@@ -182,6 +240,13 @@ export default function EntryCard({ entry, lang, onEdit, onDelete, canManage = f
       </p>
       <p>
         <strong>{t.editorialStatus}:</strong> {translateEditorialStatus(entry.editorialStatus, lang)}
+      </p>
+      <p>
+        <strong>{t.publicationStatus}:</strong> {translatePublicationStatus(publicationStatus, lang)}
+      </p>
+      <p>
+        <strong>{t.reviewStatus}:</strong>{' '}
+        {renderApprovalIcons(entry.reviewSummary?.approvalCount ?? 0, entry.reviewSummary?.approvalScore ?? 0)}
       </p>
 
       {validatedReferences.length > 0 && (

@@ -4726,3 +4726,29 @@ select {
     top: 7.8rem;
   }
 }
+
+.entry-card-badges,
+.dose-entry-actions,
+.dose-entry-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.entry-review-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  background: rgba(13, 71, 98, 0.08);
+  color: #0d4762;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.dose-entry-review-meta {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: rgba(34, 34, 34, 0.72);
+}

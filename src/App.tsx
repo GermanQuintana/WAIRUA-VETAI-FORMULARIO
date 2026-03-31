@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
+import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
 import DoseCalculator from './components/DoseCalculator';
@@ -15,6 +18,7 @@ import {
   otcWorkflowCards,
   toolkitModules,
 } from './data/platform';
+import wairuaLogo from './assets/wairua-logo.jpg';
 import { otcProducts } from './data/otcProducts';
 import { therapeuticEntries } from './data/entries';
 import { labels, Language } from './i18n';
@@ -44,10 +48,13 @@ import {
   resolveCimavetBaseUrl,
 } from './services/cimavet';
 import { createClinicalNutritionService } from './services/clinicalNutrition';
-import { createSupabaseEditorialService } from './services/supabase';
-import { OtcProductRecord, TherapeuticEntry } from './types';
+import { createSupabaseAccessService, createSupabaseEditorialService } from './services/supabase';
+import { AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry } from './types';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
+const premiumTabs = ['human', 'active', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
 const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
@@ -56,6 +63,8 @@ const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE
 type ProductTab = (typeof productTabs)[number];
 type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
+
+const premiumTabSet = new Set<ProductTab>(premiumTabs);
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -142,6 +151,13 @@ const formatWithdrawalSummary = (days: number, lang: Language) => {
   if (days < 1) return `${formatDecimal(days * 24)} h`;
   return `${formatDecimal(days)} ${lang === 'es' ? 'dias' : 'days'}`;
 };
+
+const formatAccessDate = (lang: Language, isoDate?: string) =>
+  isoDate
+    ? new Intl.DateTimeFormat(lang === 'es' ? 'es-ES' : 'en-US', {
+        dateStyle: 'medium',
+      }).format(new Date(isoDate))
+    : '--';
 
 const formatWithdrawalTimeItem = (item: CimavetWithdrawalTimeItem) => {
   const prefix = item.especie?.nombre ? `${item.especie.nombre} · ` : '';
@@ -328,13 +344,77 @@ function App() {
   const [assistantNotes, setAssistantNotes] = useState('');
   const [assistantGenerated, setAssistantGenerated] = useState(false);
   const [remoteSyncMessage, setRemoteSyncMessage] = useState('');
+  const [authAccount, setAuthAccount] = useState<AuthAccountSnapshot | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const appShellRef = useRef<HTMLDivElement | null>(null);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
   const cimavetService = useMemo(() => createCimavetServiceFromEnv(), []);
   const clinicalNutritionService = useMemo(() => createClinicalNutritionService(), []);
+  const supabaseAccessService = useMemo(() => createSupabaseAccessService(), []);
   const supabaseEditorialService = useMemo(() => createSupabaseEditorialService(), []);
   const t = labels[lang];
   const activeConcentrationPlaceholder = lang === 'es' ? 'Ejemplo: 10 mg/mL, 50 mg...' : 'Example: 10 mg/mL, 50 mg...';
+  const accessText =
+    lang === 'es'
+      ? {
+          loading: 'Comprobando acceso seguro...',
+          loadingBody: 'Estamos validando la sesión y preparando tu acceso a la guía terapéutica.',
+          freeBadge: 'Gratis',
+          premiumBadge: 'Premium',
+          lockedBadge: 'Bloqueado',
+          lockedTitle: 'Disponible con premium',
+          accessKicker: 'Acceso del usuario',
+          accessTitle: 'Tu cuenta entra primero. Después decides hasta dónde llega el acceso.',
+          accessBody:
+            'Las áreas gratuitas quedan disponibles siempre tras iniciar sesión. La prueba gratuita abre también las funciones premium durante unos días y después se limita el acceso si no hay plan activo.',
+          freeTitle: 'Incluido con tu cuenta',
+          freeBody: 'Puedes consultar medicación veterinaria oficial y el catálogo OTC siempre que tengas sesión iniciada.',
+          premiumTitle: 'Premium clínica',
+          premiumBodyActive: 'Tu prueba o plan activo mantiene desbloqueadas la base colaborativa, la parte humana y el toolkit.',
+          premiumBodyLocked: 'La prueba premium ha terminado o todavía no está activada. Mantienes acceso a la parte gratuita.',
+          freeFeatureOne: t.prescriptionHub,
+          freeFeatureTwo: t.otcHub,
+          premiumFeatureOne: t.humanHub,
+          premiumFeatureTwo: t.activeHub,
+          premiumFeatureThree: t.toolkitHub,
+          statusTrial: 'Prueba activa hasta',
+          statusPremium: 'Premium activa',
+          statusLimited: 'Acceso limitado a la zona gratuita',
+          statusNoPlan: 'Cuenta autenticada sin prueba activada',
+          activateHint: 'Puedes activar o cambiar el plan desde el panel "Mi acceso".',
+          limitedHint: 'Las pestañas premium quedan visibles, pero bloqueadas hasta reactivar el plan.',
+        }
+      : {
+          loading: 'Checking secure access...',
+          loadingBody: 'We are validating the session and preparing your access to the therapeutic guide.',
+          freeBadge: 'Free',
+          premiumBadge: 'Premium',
+          lockedBadge: 'Locked',
+          lockedTitle: 'Available with premium',
+          accessKicker: 'User access',
+          accessTitle: 'Your account enters first. Then access is shaped by the plan.',
+          accessBody:
+            'Free areas remain available after sign-in. The free trial also opens premium functions for a few days and later access becomes limited unless a paid plan stays active.',
+          freeTitle: 'Included with your account',
+          freeBody: 'You can always use the official veterinary medication search and the OTC catalog once you are signed in.',
+          premiumTitle: 'Clinical premium',
+          premiumBodyActive: 'Your trial or active plan keeps the collaborative knowledge base, human section, and toolkit unlocked.',
+          premiumBodyLocked: 'The premium trial has ended or is not active yet. Free areas remain available.',
+          freeFeatureOne: t.prescriptionHub,
+          freeFeatureTwo: t.otcHub,
+          premiumFeatureOne: t.humanHub,
+          premiumFeatureTwo: t.activeHub,
+          premiumFeatureThree: t.toolkitHub,
+          statusTrial: 'Trial active until',
+          statusPremium: 'Premium active',
+          statusLimited: 'Access limited to free areas',
+          statusNoPlan: 'Signed-in account without active trial',
+          activateHint: 'You can activate or change the plan from the "My access" panel.',
+          limitedHint: 'Premium tabs remain visible but locked until the plan is reactivated.',
+        };
 
   const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
   const prescriptionSpeciesOptions = useMemo(
@@ -393,6 +473,124 @@ function App() {
     [lang],
   );
 
+  useEffect(() => {
+    if (!supabaseAccessService) {
+      setAuthAccount(null);
+      setAuthLoading(false);
+      return;
+    }
+
+    let ignore = false;
+
+    const loadAuthAccount = async () => {
+      if (!ignore) setAuthLoading(true);
+
+      try {
+        const snapshot = await supabaseAccessService.getAccountSnapshot();
+        if (!ignore) setAuthAccount(snapshot);
+      } catch {
+        if (!ignore) setAuthAccount({ profile: null, membership: null, email: null });
+      } finally {
+        if (!ignore) setAuthLoading(false);
+      }
+    };
+
+    void loadAuthAccount();
+
+    const {
+      data: { subscription },
+    } = supabaseAccessService.onAuthStateChange(() => {
+      void loadAuthAccount();
+    });
+
+    return () => {
+      ignore = true;
+      subscription.unsubscribe();
+    };
+  }, [supabaseAccessService]);
+
+  useEffect(() => {
+    if (!authAccount?.profile || !appShellRef.current) return;
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const ctx = gsap.context(() => {
+      const revealTargets = [
+        '.app-topbar > *',
+        '.product-tabs button',
+        '.workspace-main > *',
+      ];
+
+      gsap.set(revealTargets, { willChange: 'transform, opacity' });
+
+      const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      intro
+        .from('.app-topbar > *', { y: 22, opacity: 0, stagger: 0.08, duration: 0.58 })
+        .from('.product-tabs button', { y: 14, opacity: 0, stagger: 0.05, duration: 0.32 }, '-=0.26')
+        .from('.workspace-main > *', { y: 24, opacity: 0, stagger: 0.06, duration: 0.5 }, '-=0.12');
+
+      if (backdropRef.current) {
+        gsap.to(backdropRef.current, {
+          yPercent: -10,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: appShellRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        });
+      }
+    }, appShellRef);
+
+    return () => ctx.revert();
+  }, [authAccount, lang, theme]);
+
+  const refreshAuthAccount = async () => {
+    if (!supabaseAccessService) {
+      setAuthAccount(null);
+      setAuthLoading(false);
+      return;
+    }
+
+    try {
+      const snapshot = await supabaseAccessService.getAccountSnapshot();
+      setAuthAccount(snapshot);
+    } catch {
+      setAuthAccount({ profile: null, membership: null, email: null });
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const membership = authAccount?.membership ?? null;
+  const isAuthenticated = Boolean(authAccount?.profile);
+  const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
+  const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
+  const hasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
+  const accessStatusMessage = hasPremiumAccess
+    ? membership?.status === 'active'
+      ? accessText.statusPremium
+      : `${accessText.statusTrial} ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
+    : membership
+      ? accessText.statusLimited
+      : accessText.statusNoPlan;
+  const profileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
+  const canCreateEditorial = profileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
+  const canManageEditorial = profileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
+  const canReviewEditorial = profileRoles.some((role) => ['reviewer', 'admin'].includes(role));
+  const canActivateEditorial = profileRoles.includes('admin');
+  const currentWorkspaceLabel =
+    activeTab === 'prescription'
+      ? t.prescriptionHub
+      : activeTab === 'human'
+        ? t.humanHub
+        : activeTab === 'active'
+          ? t.activeHub
+          : activeTab === 'otc'
+            ? t.otcHub
+            : t.toolkitHub;
+
   const openKnowledgeRecord = (entryId?: string, ingredientName?: string) => {
     setActiveTab('active');
     setActiveKnowledgeView('records');
@@ -410,6 +608,7 @@ function App() {
   };
 
   const openEntryEditor = (entry: TherapeuticEntry) => {
+    if (!canCreateEditorial) return;
     setActiveTab('active');
     setActiveKnowledgeView('create');
     setEditingEntry(entry);
@@ -435,7 +634,14 @@ function App() {
       ),
     [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeTags, entryCatalog],
   );
-  const shouldShowActiveRecords = activeQuery.trim().length > 0;
+  const hasActiveSearchCriteria = Boolean(
+    activeQuery.trim().length > 0 ||
+      activeSpecies ||
+      activeIndication ||
+      activeConcentrationQuery.trim().length > 0 ||
+      activeTags.length > 0,
+  );
+  const shouldShowActiveRecords = true;
   const activeFilteredCount = filteredEntries.length;
   const activeRecordTotalPages = useMemo(() => {
     if (activeRecordPageSize === 'all') return 1;
@@ -826,6 +1032,13 @@ function App() {
   }, [activeTab, cimavetService, rxQuery, rxSpecies]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    if (hasPremiumAccess) return;
+    if (!premiumTabSet.has(activeTab)) return;
+    setActiveTab('prescription');
+  }, [activeTab, hasPremiumAccess, isAuthenticated]);
+
+  useEffect(() => {
     if (activeTab !== 'prescription' || liveResults.length === 0) return;
 
     const missing = liveResults.filter((item) => !liveDetails[item.nregistro]).map((item) => item.nregistro);
@@ -1108,8 +1321,8 @@ function App() {
     };
   }, [activeHumanDetails, activeHumanResultsForDetails, activeKnowledgeView, activeTab, cimaService]);
 
-  const renderLocalizedCards = (cards: LocalizedCollectionCard[]) => (
-    <div className="feature-grid">
+  const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => (
+    <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
       {cards.map((card) => (
         <article key={card.id} className="feature-card">
           <h3>{card.title[lang]}</h3>
@@ -1155,39 +1368,61 @@ function App() {
   };
 
   const handleSaveEntry = async (entry: TherapeuticEntry, mode: 'create' | 'edit') => {
+    if (!canCreateEditorial) {
+      setRemoteSyncMessage(
+        lang === 'es'
+          ? 'La edición está restringida a perfiles autorizados por el administrador.'
+          : 'Editing is restricted to profiles authorized by the administrator.',
+      );
+      return {
+        persisted: false,
+        entry,
+        message:
+          lang === 'es'
+            ? 'La edición está restringida a perfiles autorizados por el administrador.'
+            : 'Editing is restricted to profiles authorized by the administrator.',
+      };
+    }
     setRemoteSyncMessage('');
+    const normalizedEntry: TherapeuticEntry = {
+      ...entry,
+      publicationStatus: canActivateEditorial ? entry.publicationStatus : 'pending_activation',
+    };
 
     if (mode === 'create') {
       if (!supabaseEditorialService) {
-        replaceCatalogEntry(entry);
+        replaceCatalogEntry(normalizedEntry);
         setEditingEntry(null);
         return {
           persisted: false,
-          entry,
+          entry: normalizedEntry,
           message:
             lang === 'es'
-              ? 'Ficha creada en local. Para persistirla, configura Supabase y aplica el schema.'
-              : 'Record created locally. Configure Supabase and apply the schema to persist it.',
+              ? 'Ficha creada como propuesta local. Para persistirla, configura Supabase y aplica el schema.'
+              : 'Record created locally as a proposal. Configure Supabase and apply the schema to persist it.',
         };
       }
 
       try {
-        const savedEntry = await supabaseEditorialService.createTherapeuticEntry(entry);
+        const savedEntry = await supabaseEditorialService.createTherapeuticEntry(normalizedEntry);
         replaceCatalogEntry(savedEntry, entry.id);
         setEditingEntry(null);
         return {
           persisted: true,
           entry: savedEntry,
-          message: lang === 'es' ? 'Ficha creada y guardada en Supabase.' : 'Record created and saved to Supabase.',
+          message:
+            lang === 'es'
+              ? 'Ficha creada y enviada al flujo editorial.'
+              : 'Record created and sent to the editorial workflow.',
         };
       } catch (error) {
         const detail = getErrorMessage(error);
         setRemoteSyncMessage(detail);
-        replaceCatalogEntry(entry);
+        replaceCatalogEntry(normalizedEntry);
         setEditingEntry(null);
         return {
           persisted: false,
-          entry,
+          entry: normalizedEntry,
           message:
             lang === 'es'
               ? `Ficha creada en local, pero no se pudo guardar en Supabase (${detail}).`
@@ -1197,11 +1432,11 @@ function App() {
     }
 
     if (!supabaseEditorialService || !isUuid(entry.id)) {
-      replaceCatalogEntry(entry);
-      setEditingEntry(entry);
+      replaceCatalogEntry(normalizedEntry);
+      setEditingEntry(normalizedEntry);
       return {
         persisted: false,
-        entry,
+        entry: normalizedEntry,
         message:
           lang === 'es'
             ? 'Ficha actualizada en local. La edicion remota requiere un registro persistido en Supabase.'
@@ -1210,7 +1445,7 @@ function App() {
     }
 
     try {
-      const savedEntry = await supabaseEditorialService.updateTherapeuticEntry(entry);
+      const savedEntry = await supabaseEditorialService.updateTherapeuticEntry(normalizedEntry);
       replaceCatalogEntry(savedEntry, entry.id);
       setEditingEntry(savedEntry);
       return {
@@ -1221,11 +1456,11 @@ function App() {
     } catch (error) {
       const detail = getErrorMessage(error);
       setRemoteSyncMessage(detail);
-      replaceCatalogEntry(entry);
-      setEditingEntry(entry);
+      replaceCatalogEntry(normalizedEntry);
+      setEditingEntry(normalizedEntry);
       return {
         persisted: false,
-        entry,
+        entry: normalizedEntry,
         message:
           lang === 'es'
             ? `Ficha actualizada en local, pero no se pudo sincronizar con Supabase (${detail}).`
@@ -1235,6 +1470,14 @@ function App() {
   };
 
   const handleDeleteEntry = async (entry: TherapeuticEntry) => {
+    if (!canManageEditorial) {
+      setRemoteSyncMessage(
+        lang === 'es'
+          ? 'La eliminación está restringida a perfiles autorizados por el administrador.'
+          : 'Deletion is restricted to profiles authorized by the administrator.',
+      );
+      return;
+    }
     const confirmed = window.confirm(t.deleteConfirm);
     if (!confirmed) return;
 
@@ -1253,72 +1496,185 @@ function App() {
     }
   };
 
+  const handleReviewEntry = async (entry: TherapeuticEntry, approvalLevel: number) => {
+    if (!canReviewEditorial || !supabaseEditorialService || !isUuid(entry.id)) return;
+
+    try {
+      const savedEntry = await supabaseEditorialService.saveActiveIngredientReview(entry.id, approvalLevel);
+      replaceCatalogEntry(savedEntry, entry.id);
+    } catch (error) {
+      setRemoteSyncMessage(getErrorMessage(error));
+    }
+  };
+
+  const handlePublicationChange = async (entry: TherapeuticEntry, publicationStatus: TherapeuticEntry['publicationStatus']) => {
+    if (!canActivateEditorial) return;
+
+    if (!supabaseEditorialService || !isUuid(entry.id)) {
+      replaceCatalogEntry({ ...entry, publicationStatus });
+      return;
+    }
+
+    try {
+      const savedEntry = await supabaseEditorialService.updatePublicationStatus(entry.id, publicationStatus);
+      replaceCatalogEntry(savedEntry, entry.id);
+    } catch (error) {
+      setRemoteSyncMessage(getErrorMessage(error));
+    }
+  };
+
+  const renderAppearanceControls = () => (
+    <>
+      <button className="theme-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        {theme === 'light' ? t.dark : t.light}
+      </button>
+      <div className="lang-switch" role="group" aria-label={t.language}>
+        <button onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
+          <span className="flag-emoji" aria-hidden="true">
+            🇪🇸
+          </span>{' '}
+          ES
+        </button>
+        <button onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
+          <span className="flag-emoji" aria-hidden="true">
+            🇬🇧
+          </span>{' '}
+          EN
+        </button>
+      </div>
+    </>
+  );
+
+  if (authLoading) {
+    return (
+      <div className={`app auth-app-shell ${theme}`}>
+        <section className="auth-loading-shell">
+          <div className="auth-loading-card">
+            <p className="badge">WAIRUA VetAI</p>
+            <h1>{accessText.loading}</h1>
+            <p>{accessText.loadingBody}</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className={`app auth-app-shell ${theme}`}>
+        <div className="auth-utility-bar">{renderAppearanceControls()}</div>
+        <AuthAccessPanel
+          lang={lang}
+          service={supabaseAccessService}
+          account={authAccount}
+          onRefreshAccount={refreshAuthAccount}
+          layout="screen"
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className={`app ${theme}`}>
-      <header className="hero hero-shell">
-        <div>
-          <p className="badge">WAIRUA VetAI</p>
-          <h1>{t.appTitle}</h1>
-          <p>{t.appSubtitle}</p>
+    <div className={`app ${theme}`} ref={appShellRef}>
+      <div className="app-backdrop" ref={backdropRef} aria-hidden="true">
+        <div className="app-backdrop-orb app-backdrop-orb-one" />
+        <div className="app-backdrop-orb app-backdrop-orb-two" />
+        <div className="app-backdrop-grid" />
+      </div>
+
+      <header className="app-topbar">
+        <div className="topbar-brand">
+          <img src={wairuaLogo} alt="WAIRUA" className="brand-logo brand-logo-topbar" />
+          <div className="topbar-brand-copy">
+            <strong>{currentWorkspaceLabel}</strong>
+            <span>{lang === 'es' ? 'Aplicación clínica' : 'Clinical application'}</span>
+          </div>
         </div>
-        <div className="controls">
-          <button className="theme-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-            {theme === 'light' ? t.dark : t.light}
-          </button>
-          <div className="lang-switch" role="group" aria-label={t.language}>
-            <button onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
-              <span className="flag-emoji" aria-hidden="true">
-                🇪🇸
-              </span>{' '}
-              ES
+
+        <div className="topbar-utilities">
+          <div className="topbar-status-group">
+            <span className={`topbar-status-chip ${hasPremiumAccess ? 'is-premium' : 'is-free'}`}>{accessStatusMessage}</span>
+            <button
+              type="button"
+              className={`topbar-trial-pill ${membership?.status === 'trialing' ? 'is-warning' : ''}`}
+              onClick={() => setIsAccountMenuOpen((current) => !current)}
+            >
+              {membership?.status === 'trialing'
+                ? lang === 'es'
+                  ? `Prueba · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
+                  : `Trial · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
+                : hasPremiumAccess
+                  ? accessText.premiumBadge
+                  : accessText.freeBadge}
             </button>
-            <button onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
-              <span className="flag-emoji" aria-hidden="true">
-                🇬🇧
-              </span>{' '}
-              EN
+          </div>
+
+          <div className="topbar-actions">
+            <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+              {theme === 'light' ? t.dark : t.light}
             </button>
+            <div className="lang-switch topbar-lang-switch" role="group" aria-label={t.language}>
+              <button onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
+                ES
+              </button>
+              <button onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
+                EN
+              </button>
+            </div>
+            <button type="button" className="topbar-icon-button" onClick={() => setActiveTab('toolkit')}>
+              {lang === 'es' ? 'Settings' : 'Settings'}
+            </button>
+            <div className="account-menu-shell">
+              <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
+                <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
+                <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
+              </button>
+              {isAccountMenuOpen ? (
+                <div className="account-menu-popover">
+                  <AuthAccessPanel
+                    lang={lang}
+                    service={supabaseAccessService}
+                    account={authAccount}
+                    onRefreshAccount={refreshAuthAccount}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>
 
-      <section className="product-strip">
-        <article className="product-strip-card">
-          <span>{lang === 'es' ? 'Medicacion regulada' : 'Regulated medicines'}</span>
-          <strong>{liveResults.length > 0 ? liveResults.length : '-'}</strong>
-          <p>{lang === 'es' ? 'Resultados CIMAVET del termino actual' : 'CIMAVET results for the current term'}</p>
-        </article>
-        <article className="product-strip-card">
-          <span>{lang === 'es' ? 'Fichas colaborativas' : 'Collaborative records'}</span>
-          <strong>{entryCatalog.length}</strong>
-          <p>{lang === 'es' ? 'Principios activos estructurados para crecer con colaboradores' : 'Active ingredient records structured for collaborators'}</p>
-        </article>
-        <article className="product-strip-card">
-          <span>{lang === 'es' ? 'Toolkit' : 'Toolkit'}</span>
-          <strong>{toolkitModules.length}</strong>
-          <p>{lang === 'es' ? 'Modulos previstos para calculo y soporte clinico' : 'Planned modules for calculations and clinical support'}</p>
-        </article>
-      </section>
-
       <nav className="tabs product-tabs" aria-label="Product selector">
-        <button onClick={() => setActiveTab('prescription')} className={activeTab === 'prescription' ? 'active' : ''}>
-          {t.prescriptionHub}
-        </button>
-        <button onClick={() => setActiveTab('human')} className={activeTab === 'human' ? 'active' : ''}>
-          {t.humanHub}
-        </button>
-        <button onClick={() => setActiveTab('active')} className={activeTab === 'active' ? 'active' : ''}>
-          {t.activeHub}
-        </button>
-        <button onClick={() => setActiveTab('otc')} className={activeTab === 'otc' ? 'active' : ''}>
-          {t.otcHub}
-        </button>
-        <button onClick={() => setActiveTab('toolkit')} className={activeTab === 'toolkit' ? 'active' : ''}>
-          {t.toolkitHub}
-        </button>
+        {[
+          { key: 'prescription' as const, label: t.prescriptionHub },
+          { key: 'human' as const, label: t.humanHub },
+          { key: 'active' as const, label: t.activeHub },
+          { key: 'otc' as const, label: t.otcHub },
+          { key: 'toolkit' as const, label: t.toolkitHub },
+        ].map((tab) => {
+          const isLocked = premiumTabSet.has(tab.key) && !hasPremiumAccess;
+          const isToolkitTab = tab.key === 'toolkit';
+
+          return (
+            <button
+              key={tab.key}
+              onClick={() => {
+                if (isLocked) return;
+                setActiveTab(tab.key);
+                if (isToolkitTab) setActiveToolkitView('overview');
+              }}
+              className={`${activeTab === tab.key ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+              disabled={isLocked}
+              title={isLocked ? accessText.lockedTitle : undefined}
+            >
+              <span translate={tab.key === 'otc' ? 'no' : undefined}>{tab.label}</span>
+              <small>{isLocked ? accessText.lockedBadge : premiumTabSet.has(tab.key) ? accessText.premiumBadge : accessText.freeBadge}</small>
+            </button>
+          );
+        })}
       </nav>
 
-      <main>
+      <main className="workspace-main">
         {activeTab === 'prescription' && (
           <section className="panel module-panel">
             <div className="module-header">
@@ -1581,8 +1937,10 @@ function App() {
           <section className="panel module-panel">
             <div className="module-header">
               <div>
-                <p className="section-kicker">{lang === 'es' ? 'Catalogo OTC' : 'OTC catalog'}</p>
-                <h2>{t.otcHub}</h2>
+                <p className="section-kicker" translate="no">
+                  {lang === 'es' ? 'Catalogo OTC veterinario' : 'Veterinary OTC catalog'}
+                </p>
+                <h2 translate="no">{t.otcHub}</h2>
                 <p>
                   {lang === 'es'
                     ? 'Busqueda curada de soluciones no sujetas a prescripcion, con suplementos, higiene, diagnostico y monitorizacion enlazados a paginas oficiales.'
@@ -1809,10 +2167,10 @@ function App() {
 
               {isOtcWorkflowExpanded && (
                 <>
-                  {renderLocalizedCards(otcWorkflowCards)}
+                  {renderLocalizedCards(otcWorkflowCards, 'feature-grid-three-up')}
 
                   <h3>{lang === 'es' ? 'Formato minimo de entrega' : 'Minimum submission format'}</h3>
-                  {renderLocalizedCards(otcSubmissionFields)}
+                  {renderLocalizedCards(otcSubmissionFields, 'feature-grid-four-up')}
 
                   <div className="feature-callout otc-editorial-callout">
                     <h3>{lang === 'es' ? 'Criterio editorial' : 'Editorial gate'}</h3>
@@ -2221,6 +2579,13 @@ function App() {
             <div className="collaborative-callout">
               <h3>{t.collaborativeNoticeTitle}</h3>
               <p>{t.collaborativeNoticeText}</p>
+              {!canCreateEditorial ? (
+                <p className="collaborative-permissions-note">
+                  {lang === 'es'
+                    ? 'Tu perfil actual es de solo lectura. El administrador puede autorizarte como contributor, editor, reviewer o admin.'
+                    : 'Your current profile is read-only. An administrator can authorize you as contributor, editor, reviewer, or admin.'}
+                </p>
+              ) : null}
             </div>
 
             {remoteSyncMessage && <p className="form-message form-error">{remoteSyncMessage}</p>}
@@ -2235,15 +2600,17 @@ function App() {
               >
                 {t.recordsView}
               </button>
-              <button
-                onClick={() => {
-                  setActiveKnowledgeView('create');
-                  setEditingEntry(null);
-                }}
-                className={activeKnowledgeView === 'create' ? 'active' : ''}
-              >
-                {t.createRecordView}
-              </button>
+              {canCreateEditorial ? (
+                <button
+                  onClick={() => {
+                    setActiveKnowledgeView('create');
+                    setEditingEntry(null);
+                  }}
+                  className={activeKnowledgeView === 'create' ? 'active' : ''}
+                >
+                  {t.createRecordView}
+                </button>
+              ) : null}
             </div>
 
             {activeKnowledgeView === 'records' && (
@@ -2251,13 +2618,13 @@ function App() {
                 <div className="live-panel-header active-records-header">
                   <div>
                     <h3>
-                      {t.activeIngredientSummaries}: {shouldShowActiveRecords ? activeFilteredCount : 0}
+                      {t.activeIngredientSummaries}: {activeFilteredCount}
                     </h3>
-                    {!shouldShowActiveRecords && (
+                    {!hasActiveSearchCriteria && (
                       <p className="live-hint">
                         {lang === 'es'
-                          ? 'Las fichas se muestran al buscar un principio activo.'
-                          : 'Records are shown once you search for an active ingredient.'}
+                          ? 'Mostrando toda la base local. Usa busqueda o filtros para acotarla.'
+                          : 'Showing the full local knowledge base. Use search or filters to narrow it down.'}
                       </p>
                     )}
                   </div>
@@ -2310,14 +2677,25 @@ function App() {
                 {shouldShowActiveRecords && (
                   <div className="entry-grid">
                     {visibleActiveEntries.map((entry) => (
-                      <EntryCard key={entry.id} entry={entry} lang={lang} onEdit={openEntryEditor} onDelete={handleDeleteEntry} />
+                      <EntryCard
+                        key={entry.id}
+                        entry={entry}
+                        lang={lang}
+                        onEdit={openEntryEditor}
+                        onDelete={handleDeleteEntry}
+                        canManage={canManageEditorial}
+                        canReview={canReviewEditorial}
+                        canActivate={canActivateEditorial}
+                        onReview={handleReviewEntry}
+                        onPublicationChange={handlePublicationChange}
+                      />
                     ))}
                   </div>
                 )}
               </>
             )}
 
-            {activeKnowledgeView === 'create' && (
+            {activeKnowledgeView === 'create' && canCreateEditorial && (
               <section className="embedded-section">
                 <ActiveIngredientForm
                   lang={lang}
@@ -2348,9 +2726,6 @@ function App() {
             </div>
 
             <div className="subtabs" role="tablist" aria-label="Toolkit views">
-              <button onClick={() => setActiveToolkitView('overview')} className={activeToolkitView === 'overview' ? 'active' : ''}>
-                {t.toolkitOverview}
-              </button>
               <button onClick={() => setActiveToolkitView('dose')} className={activeToolkitView === 'dose' ? 'active' : ''}>
                 {t.doseCalculatorTitle}
               </button>
@@ -2391,6 +2766,16 @@ function App() {
                 entries={doseCalculatorEntries}
                 lang={lang}
                 onOpenKnowledge={(entry) => openKnowledgeRecord(entry.linkedEntryId, entry.activeIngredient)}
+                onReviewEntry={(entry, approvalLevel) => {
+                  const matched = entryCatalog.find((item) => item.id === entry.linkedEntryId);
+                  if (matched) void handleReviewEntry(matched, approvalLevel);
+                }}
+                onPublicationChange={(entry, status) => {
+                  const matched = entryCatalog.find((item) => item.id === entry.linkedEntryId);
+                  if (matched) void handlePublicationChange(matched, status);
+                }}
+                canReview={canReviewEditorial}
+                canActivate={canActivateEditorial}
               />
             )}
 
@@ -2764,6 +3149,7 @@ function App() {
       )}
 
       <section className="app-signature">
+        <img src={wairuaLogo} alt="WAIRUA" className="brand-logo brand-logo-signature" />
         <p>{lang === 'es' ? 'Desarrollado por' : 'Developed by'}</p>
         <strong>PhD LV MSc German Quintana Diez</strong>
         <span>WAIRUA Veterinary Precision Medicine</span>
