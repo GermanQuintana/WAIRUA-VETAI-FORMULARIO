@@ -108,10 +108,6 @@ export default function UnitConverter({ lang }: Props) {
           <h3>{t.unitConverterTitle}</h3>
           <p>{t.unitConverterText}</p>
         </div>
-        <div className="toolkit-utility-note">
-          <strong>{t.unitConverterFormulaTitle}</strong>
-          <p>{activeGroup.examples[lang]}</p>
-        </div>
       </div>
 
       <div className="toolkit-utility-grid">
