@@ -7,6 +7,10 @@ interface Props {
   entries: DoseCalculatorEntry[];
   lang: Language;
   onOpenKnowledge: (entry: DoseCalculatorEntry) => void;
+  onReviewEntry?: (entry: DoseCalculatorEntry, approvalLevel: number) => void;
+  onPublicationChange?: (entry: DoseCalculatorEntry, status: 'active' | 'rejected') => void;
+  canReview?: boolean;
+  canActivate?: boolean;
 }
 
 const KG_TO_LB = 2.2046226218;
@@ -35,7 +39,22 @@ const getAmegReferenceRows = (lang: Language) =>
         { group: 'A', meaning: 'Avoid', use: 'Avoid unless the situation is exceptional or last-resort.', tone: 'a' },
       ];
 
-export default function DoseCalculator({ entries, lang, onOpenKnowledge }: Props) {
+const renderReviewBadge = (entry: DoseCalculatorEntry, lang: Language) => {
+  const review = entry.reviewSummary;
+  if (!review?.approvalCount) return lang === 'es' ? 'Pendiente' : 'Pending';
+  const icon = review.approvalScore / review.approvalCount >= 2.5 ? '⭐⭐⭐' : '👍';
+  return `${icon} x${review.approvalCount}`;
+};
+
+export default function DoseCalculator({
+  entries,
+  lang,
+  onOpenKnowledge,
+  onReviewEntry,
+  onPublicationChange,
+  canReview = false,
+  canActivate = false,
+}: Props) {
   const t = labels[lang];
   const [weightKg, setWeightKg] = useState('');
   const [search, setSearch] = useState('');
@@ -284,6 +303,7 @@ export default function DoseCalculator({ entries, lang, onOpenKnowledge }: Props
           </thead>
           <tbody>
             {filteredEntries.map((entry) => {
+              const publicationStatus = entry.publicationStatus ?? 'active';
               const selectedDose = doseOverrides[entry.id] ?? entry.defaultDoseMgKg;
               const doseUnit = getResolvedDoseUnit(entry.doseUnit);
               const weightBasedDose = isWeightBasedDoseUnit(doseUnit);
@@ -323,6 +343,12 @@ export default function DoseCalculator({ entries, lang, onOpenKnowledge }: Props
                   {visibleColumns.activeIngredient ? (
                     <td>
                       <strong>{entry.activeIngredient}</strong>
+                      <div className="dose-entry-review-meta">
+                        <span>{renderReviewBadge(entry, lang)}</span>
+                        {publicationStatus !== 'active' ? (
+                          <span>{publicationStatus === 'pending_activation' ? t.pendingActivationOnly : t.rejectEntry}</span>
+                        ) : null}
+                      </div>
                     </td>
                   ) : null}
                   {visibleColumns.category ? <td>{entry.category[lang]}</td> : null}
@@ -373,9 +399,26 @@ export default function DoseCalculator({ entries, lang, onOpenKnowledge }: Props
                   {visibleColumns.bibliography ? <td>{entry.bibliography ?? '--'}</td> : null}
                   {visibleColumns.openKnowledge ? (
                     <td>
-                      <button className="secondary-button" type="button" onClick={() => onOpenKnowledge(entry)}>
-                        {t.openKnowledgeRecord}
-                      </button>
+                      <div className="dose-entry-actions">
+                        <button className="secondary-button" type="button" onClick={() => onOpenKnowledge(entry)}>
+                          {t.openKnowledgeRecord}
+                        </button>
+                        {canReview && onReviewEntry && entry.linkedEntryId ? (
+                          <>
+                            <button className="secondary-button" type="button" onClick={() => onReviewEntry(entry, 1)}>
+                              👍
+                            </button>
+                            <button className="secondary-button" type="button" onClick={() => onReviewEntry(entry, 2)}>
+                              👍👍
+                            </button>
+                          </>
+                        ) : null}
+                        {canActivate && onPublicationChange && entry.linkedEntryId && publicationStatus !== 'active' ? (
+                          <button className="secondary-button" type="button" onClick={() => onPublicationChange(entry, 'active')}>
+                            {t.activateEntry}
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   ) : null}
                 </tr>

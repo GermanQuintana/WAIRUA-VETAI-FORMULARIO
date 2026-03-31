@@ -449,6 +449,8 @@ export default function ActiveIngredientForm({
           : undefined,
       evidenceLevel,
       editorialStatus,
+      publicationStatus: initialEntry?.publicationStatus ?? 'pending_activation',
+      reviewSummary: initialEntry?.reviewSummary,
       calculatorPresets,
       references,
       lastUpdated: new Date().toISOString().slice(0, 10),

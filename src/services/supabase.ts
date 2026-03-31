@@ -1,9 +1,32 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import {
+  createClient,
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
+  Session,
+  SupabaseClient,
+  User,
+} from '@supabase/supabase-js';
 import { specialtyTags, therapeuticClassTags } from '../data/taxonomy';
-import { DoseCalculatorPreset, ScientificReference, TherapeuticEntry } from '../types';
+import {
+  AuthAccountSnapshot,
+  AuthProvider,
+  DiscountCodeRecord,
+  DoseCalculatorPreset,
+  EntryReviewSummary,
+  MembershipSelection,
+  ScientificReference,
+  TherapeuticEntry,
+  UserMembership,
+  UserProfile,
+  UserRole,
+} from '../types';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
+const MEMBERSHIP_PENDING_STORAGE_KEY = 'wairua.pending-membership-selection';
+const TRIAL_DAYS = 10;
+const ADMIN_EMAILS = new Set(['gerqd79@gmail.com']);
 
 const isPlaceholder = (value: string) => !value || value.includes('your-project') || value.includes('anon_key');
 
@@ -23,6 +46,141 @@ const slugify = (value: string) =>
     .slice(0, 80);
 
 const uniq = <T,>(values: T[]) => Array.from(new Set(values));
+let cachedClient: SupabaseClient | null = null;
+
+const getSupabaseClient = () => {
+  if (isPlaceholder(SUPABASE_URL) || isPlaceholder(SUPABASE_ANON_KEY)) return null;
+  if (!cachedClient) {
+    cachedClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return cachedClient;
+};
+
+const getAuthProvider = (user?: User | null): AuthProvider => {
+  const provider = user?.app_metadata?.provider ?? user?.identities?.[0]?.provider ?? 'unknown';
+  if (provider === 'google' || provider === 'email') return provider;
+  return 'unknown';
+};
+
+const getFunctionErrorMessage = async (error: unknown, fallback: string) => {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const payload = await error.context.json();
+      if (payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string') {
+        return payload.error;
+      }
+      if (payload && typeof payload === 'object' && 'message' in payload && typeof payload.message === 'string') {
+        return payload.message;
+      }
+      return JSON.stringify(payload);
+    } catch {
+      try {
+        return await error.context.text();
+      } catch {
+        return error.message || fallback;
+      }
+    }
+  }
+
+  if (error instanceof FunctionsRelayError || error instanceof FunctionsFetchError) {
+    return error.message || fallback;
+  }
+
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
+const getUserDisplayName = (user?: User | null) =>
+  user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? '';
+
+const rolePriority: UserRole[] = ['admin', 'reviewer', 'editor', 'contributor', 'viewer'];
+const adminRoles: UserRole[] = ['admin', 'reviewer', 'editor', 'contributor', 'viewer'];
+const isAdminEmail = (value?: string | null) => Boolean(value && ADMIN_EMAILS.has(value.trim().toLowerCase()));
+
+const normalizeRoles = (value: unknown): UserRole[] => {
+  const rawRoles = Array.isArray(value) ? value.map((item) => String(item)) : [];
+  const roles = rawRoles.filter((role): role is UserRole => rolePriority.includes(role as UserRole));
+  if (roles.length === 0) return ['viewer'];
+  return Array.from(new Set(roles)).sort((left, right) => rolePriority.indexOf(left) - rolePriority.indexOf(right));
+};
+
+const getEffectiveRole = (roles: UserRole[], fallback?: unknown): UserRole => {
+  const normalizedFallback = String(fallback ?? 'viewer') as UserRole;
+  return roles[0] ?? (rolePriority.includes(normalizedFallback) ? normalizedFallback : 'viewer');
+};
+
+const mapProfileRow = (row: Record<string, unknown>): UserProfile => ({
+  id: String(row.id),
+  fullName: String(row.full_name ?? ''),
+  email: typeof row.email === 'string' ? row.email : undefined,
+  roles: normalizeRoles(row.roles ?? row.role),
+  role: getEffectiveRole(normalizeRoles(row.roles ?? row.role), row.role),
+  authProvider: String(row.auth_provider ?? 'unknown') as AuthProvider,
+  createdAt: String(row.created_at ?? ''),
+  updatedAt: String(row.updated_at ?? ''),
+});
+
+const mapMembershipRow = (row: Record<string, unknown>): UserMembership => ({
+  id: String(row.id),
+  userId: String(row.user_id),
+  signupMethod: String(row.signup_method ?? 'unknown') as AuthProvider,
+  billingCycle: String(row.billing_cycle) as UserMembership['billingCycle'],
+  status: String(row.status ?? 'trialing') as UserMembership['status'],
+  listPriceCents: Number(row.list_price_cents ?? 0),
+  finalPriceCents: Number(row.final_price_cents ?? 0),
+  currency: String(row.currency ?? 'EUR'),
+  trialDays: Number(row.trial_days ?? TRIAL_DAYS),
+  trialStartedAt: typeof row.trial_started_at === 'string' ? row.trial_started_at : undefined,
+  trialEndsAt: typeof row.trial_ends_at === 'string' ? row.trial_ends_at : undefined,
+  discountCode: typeof row.discount_code === 'string' ? row.discount_code : undefined,
+  discountCodeId: typeof row.discount_code_id === 'string' ? row.discount_code_id : undefined,
+  discountMonths: typeof row.discount_months === 'number' ? row.discount_months : undefined,
+  discountAmountCents: typeof row.discount_amount_cents === 'number' ? row.discount_amount_cents : undefined,
+  overridePriceCents: typeof row.override_price_cents === 'number' ? row.override_price_cents : undefined,
+  stripeCustomerId: typeof row.stripe_customer_id === 'string' ? row.stripe_customer_id : undefined,
+  stripeSubscriptionId: typeof row.stripe_subscription_id === 'string' ? row.stripe_subscription_id : undefined,
+  stripePriceId: typeof row.stripe_price_id === 'string' ? row.stripe_price_id : undefined,
+  stripeCheckoutSessionId: typeof row.stripe_checkout_session_id === 'string' ? row.stripe_checkout_session_id : undefined,
+  stripeStatus: typeof row.stripe_status === 'string' ? row.stripe_status : undefined,
+  currentPeriodEnd: typeof row.current_period_end === 'string' ? row.current_period_end : undefined,
+  cancelAtPeriodEnd: typeof row.cancel_at_period_end === 'boolean' ? row.cancel_at_period_end : undefined,
+  createdAt: String(row.created_at ?? ''),
+  updatedAt: String(row.updated_at ?? ''),
+});
+
+const mapDiscountCodeRow = (row: Record<string, unknown>): DiscountCodeRecord => ({
+  id: String(row.id),
+  code: String(row.code),
+  label: String(row.label),
+  description: typeof row.description === 'string' ? row.description : undefined,
+  partnerName: typeof row.partner_name === 'string' ? row.partner_name : undefined,
+  appliesTo: String(row.applies_to ?? 'monthly') as DiscountCodeRecord['appliesTo'],
+  discountMode: String(row.discount_mode ?? 'override_price') as DiscountCodeRecord['discountMode'],
+  discountAmountCents: typeof row.discount_amount_cents === 'number' ? row.discount_amount_cents : undefined,
+  overridePriceCents: typeof row.override_price_cents === 'number' ? row.override_price_cents : undefined,
+  discountMonths: Number(row.discount_months ?? 1),
+  grantDays: typeof row.grant_days === 'number' ? row.grant_days : undefined,
+  grantedRoles: normalizeRoles(row.granted_roles),
+  stripeCouponId: typeof row.stripe_coupon_id === 'string' ? row.stripe_coupon_id : undefined,
+  stripePromotionCodeId: typeof row.stripe_promotion_code_id === 'string' ? row.stripe_promotion_code_id : undefined,
+  active: Boolean(row.active),
+});
+
+const mapReviewSummary = (
+  rows: Array<{ reviewer_id?: string; approved?: boolean; approval_level?: number; review_note?: string }>,
+  currentUserId?: string,
+): EntryReviewSummary => {
+  const approvedRows = rows.filter((row) => row.approved);
+  const currentUserReview = currentUserId ? rows.find((row) => row.reviewer_id === currentUserId) : undefined;
+
+  return {
+    approvalCount: approvedRows.length,
+    approvalScore: approvedRows.reduce((total, row) => total + Number(row.approval_level ?? 0), 0),
+    currentUserApproved: currentUserReview?.approved,
+    currentUserApprovalLevel: typeof currentUserReview?.approval_level === 'number' ? currentUserReview.approval_level : undefined,
+    currentUserNote: typeof currentUserReview?.review_note === 'string' ? currentUserReview.review_note : undefined,
+  };
+};
 
 const formatDoseLine = (rule: Record<string, unknown>, locale: 'es' | 'en') => {
   const species = String(rule.species ?? '');
@@ -117,6 +275,12 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
   const dosingRules = (Array.isArray(row.dosing_rules) ? row.dosing_rules : []) as Array<Record<string, unknown>>;
   const speciesFromRules = uniq(dosingRules.map((rule) => String(rule.species)).filter(Boolean));
   const pathologiesFromRules = uniq(dosingRules.map((rule) => String(rule.indication)).filter(Boolean));
+  const reviewRows = (Array.isArray(row.active_ingredient_reviews) ? row.active_ingredient_reviews : []) as Array<{
+    reviewer_id?: string;
+    approved?: boolean;
+    approval_level?: number;
+    review_note?: string;
+  }>;
 
   return {
     id: String(row.id),
@@ -159,6 +323,8 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
       : undefined,
     evidenceLevel: String(row.evidence_level) as TherapeuticEntry['evidenceLevel'],
     editorialStatus: String(row.status ?? 'draft') as TherapeuticEntry['editorialStatus'],
+    publicationStatus: String(row.publication_status ?? 'active') as TherapeuticEntry['publicationStatus'],
+    reviewSummary: mapReviewSummary(reviewRows),
     calculatorPresets: dosingRules.map((rule) => mapRuleToPreset(rule, referenceRows)).filter(Boolean) as DoseCalculatorPreset[],
     references: referenceRows
       .filter((reference) => reference.scope !== 'dosing_rule')
@@ -175,11 +341,14 @@ const activeIngredientSelect = `
   pathologies,
   evidence_level,
   status,
+  publication_status,
+  created_by,
   updated_at,
   active_ingredient_trade_names ( trade_name ),
   active_ingredient_tags ( tag_name ),
   active_ingredient_concentrations ( label ),
   active_ingredient_notes ( field_name, locale, body ),
+  active_ingredient_reviews ( reviewer_id, approved, approval_level, review_note ),
   dosing_rules (
     id,
     species,
@@ -394,6 +563,7 @@ class SupabaseEditorialService {
         summary_en: entry.indications.en,
         evidence_level: entry.evidenceLevel,
         status: entry.editorialStatus,
+        publication_status: entry.publicationStatus ?? 'pending_activation',
         species: entry.species,
         systems: entry.systems,
         pathologies: entry.pathologies,
@@ -417,6 +587,7 @@ class SupabaseEditorialService {
         summary_en: entry.indications.en,
         evidence_level: entry.evidenceLevel,
         status: entry.editorialStatus,
+        publication_status: entry.publicationStatus ?? 'pending_activation',
         species: entry.species,
         systems: entry.systems,
         pathologies: entry.pathologies,
@@ -436,9 +607,351 @@ class SupabaseEditorialService {
     const { error } = await this.client.from('active_ingredients').delete().eq('id', id);
     if (error) throw error;
   }
+
+  async saveActiveIngredientReview(activeIngredientId: string, approvalLevel: number, reviewNote?: string) {
+    const user = (await this.client.auth.getUser()).data.user;
+    if (!user) throw new Error('Authentication is required.');
+
+    const { error } = await this.client.from('active_ingredient_reviews').upsert(
+      {
+        active_ingredient_id: activeIngredientId,
+        reviewer_id: user.id,
+        approved: true,
+        approval_level: Math.max(1, Math.min(3, approvalLevel)),
+        review_note: reviewNote ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'active_ingredient_id,reviewer_id' },
+    );
+    if (error) throw error;
+
+    return this.getTherapeuticEntryById(activeIngredientId);
+  }
+
+  async updatePublicationStatus(activeIngredientId: string, publicationStatus: TherapeuticEntry['publicationStatus']) {
+    const { error } = await this.client
+      .from('active_ingredients')
+      .update({
+        publication_status: publicationStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', activeIngredientId);
+    if (error) throw error;
+
+    return this.getTherapeuticEntryById(activeIngredientId);
+  }
+}
+
+export class SupabaseAccessService {
+  private client: SupabaseClient;
+
+  constructor(client: SupabaseClient) {
+    this.client = client;
+  }
+
+  private readPendingMembershipSelection() {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(MEMBERSHIP_PENDING_STORAGE_KEY);
+    if (!raw) return null;
+
+    try {
+      return JSON.parse(raw) as MembershipSelection;
+    } catch {
+      window.localStorage.removeItem(MEMBERSHIP_PENDING_STORAGE_KEY);
+      return null;
+    }
+  }
+
+  private clearPendingMembershipSelection() {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(MEMBERSHIP_PENDING_STORAGE_KEY);
+  }
+
+  savePendingMembershipSelection(selection: MembershipSelection) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(MEMBERSHIP_PENDING_STORAGE_KEY, JSON.stringify(selection));
+  }
+
+  private async ensureProfile(user: User, preferredName?: string) {
+    const payload = {
+      id: user.id,
+      full_name: preferredName || getUserDisplayName(user),
+      email: user.email ?? null,
+      auth_provider: getAuthProvider(user),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await this.client.from('profiles').upsert(payload, { onConflict: 'id' });
+    if (error) throw error;
+
+    if (isAdminEmail(user.email)) {
+      const { error: roleError } = await this.client
+        .from('profiles')
+        .update({
+          role: 'admin',
+          roles: adminRoles,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+      if (roleError) throw roleError;
+    }
+  }
+
+  private async getProfileByUserId(userId: string) {
+    const { data, error } = await this.client.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (error) throw error;
+    return data ? mapProfileRow(data as Record<string, unknown>) : null;
+  }
+
+  async listProfiles() {
+    const { data, error } = await this.client.from('profiles').select('*').order('updated_at', { ascending: false });
+    if (error) throw error;
+    return ((data ?? []) as Array<Record<string, unknown>>).map(mapProfileRow);
+  }
+
+  async updateUserRoles(userId: string, roles: UserRole[]) {
+    const normalizedRoles = normalizeRoles(roles);
+    const { data, error } = await this.client
+      .from('profiles')
+      .update({
+        role: getEffectiveRole(normalizedRoles),
+        roles: normalizedRoles,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return mapProfileRow(data as Record<string, unknown>);
+  }
+
+  private async getMembershipByUserId(userId: string) {
+    const { data, error } = await this.client.from('user_memberships').select('*').eq('user_id', userId).maybeSingle();
+    if (error) throw error;
+    return data ? mapMembershipRow(data as Record<string, unknown>) : null;
+  }
+
+  async getCurrentSession() {
+    const { data, error } = await this.client.auth.getSession();
+    if (error) throw error;
+    return data.session;
+  }
+
+  async syncPendingMembershipSelection(session: Session | null) {
+    const selection = this.readPendingMembershipSelection();
+    if (!selection || !session?.user) return null;
+    return this.saveMembershipSelection(selection, getAuthProvider(session.user), session.user);
+  }
+
+  async getAccountSnapshot(): Promise<AuthAccountSnapshot> {
+    const session = await this.getCurrentSession();
+    if (!session?.user) {
+      return { profile: null, membership: null, email: null };
+    }
+
+    await this.ensureProfile(session.user);
+    await this.syncPendingMembershipSelection(session);
+
+    const [profile, membership] = await Promise.all([
+      this.getProfileByUserId(session.user.id),
+      this.getMembershipByUserId(session.user.id),
+    ]);
+
+    return {
+      profile,
+      membership,
+      email: session.user.email ?? null,
+    };
+  }
+
+  onAuthStateChange(callback: (session: Session | null) => void) {
+    return this.client.auth.onAuthStateChange((_event, session) => {
+      void this.syncPendingMembershipSelection(session);
+      callback(session);
+    });
+  }
+
+  async signInWithGoogle(redirectTo: string, selection?: MembershipSelection) {
+    if (selection) this.savePendingMembershipSelection(selection);
+    const { error } = await this.client.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+    if (error) throw error;
+  }
+
+  async signUpWithEmail({
+    email,
+    password,
+    fullName,
+    selection,
+  }: {
+    email: string;
+    password: string;
+    fullName: string;
+    selection: MembershipSelection;
+  }) {
+    this.savePendingMembershipSelection(selection);
+
+    const { data, error } = await this.client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      await this.ensureProfile(data.user, fullName);
+    }
+
+    if (data.session) {
+      await this.syncPendingMembershipSelection(data.session);
+    }
+
+    return {
+      session: data.session,
+      requiresEmailConfirmation: !data.session,
+    };
+  }
+
+  async signInWithEmail({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }) {
+    const { data, error } = await this.client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    if (data.session?.user) {
+      await this.ensureProfile(data.session.user);
+      await this.syncPendingMembershipSelection(data.session);
+    }
+
+    return data.session;
+  }
+
+  async signOut() {
+    const { error } = await this.client.auth.signOut();
+    if (error) throw error;
+  }
+
+  async getDiscountCode(code: string) {
+    const normalized = code.trim().toUpperCase();
+    if (!normalized) return null;
+
+    const { data, error } = await this.client
+      .from('discount_codes')
+      .select('*')
+      .eq('code', normalized)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? mapDiscountCodeRow(data as Record<string, unknown>) : null;
+  }
+
+  async createStripeCheckoutSession(selection: MembershipSelection, origin: string) {
+    const session = await this.getCurrentSession();
+    if (!session?.access_token) {
+      throw new Error('No active session found. Sign in again and retry.');
+    }
+
+    const { data, error } = await this.client.functions.invoke<{ url: string }>('stripe-create-checkout-session', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: {
+        selection,
+        origin,
+      },
+    });
+
+    if (error) throw new Error(await getFunctionErrorMessage(error, 'Stripe checkout session failed.'));
+    if (!data?.url) throw new Error('Stripe checkout session did not return a URL.');
+    return data.url;
+  }
+
+  async createStripeBillingPortalSession(origin: string) {
+    const session = await this.getCurrentSession();
+    if (!session?.access_token) {
+      throw new Error('No active session found. Sign in again and retry.');
+    }
+
+    const { data, error } = await this.client.functions.invoke<{ url: string }>('stripe-create-billing-portal-session', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: {
+        origin,
+      },
+    });
+
+    if (error) throw new Error(await getFunctionErrorMessage(error, 'Stripe billing portal session failed.'));
+    if (!data?.url) throw new Error('Stripe billing portal did not return a URL.');
+    return data.url;
+  }
+
+  async saveMembershipSelection(selection: MembershipSelection, signupMethod?: AuthProvider, userArg?: User | null) {
+    const user =
+      userArg ??
+      (await this.client.auth.getUser()).data.user;
+
+    if (!user) {
+      this.savePendingMembershipSelection(selection);
+      return null;
+    }
+
+    await this.ensureProfile(user);
+    const existing = await this.getMembershipByUserId(user.id);
+    const now = new Date();
+    const trialStartedAt = existing?.trialStartedAt ?? now.toISOString();
+    const trialEndsAt = existing?.trialEndsAt ?? new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const payload = {
+      user_id: user.id,
+      signup_method: signupMethod ?? existing?.signupMethod ?? getAuthProvider(user),
+      billing_cycle: selection.billingCycle,
+      status: existing?.status ?? 'trialing',
+      list_price_cents: selection.listPriceCents,
+      final_price_cents: selection.finalPriceCents,
+      currency: 'EUR',
+      trial_days: selection.grantDays ?? existing?.trialDays ?? TRIAL_DAYS,
+      trial_started_at: trialStartedAt,
+      trial_ends_at:
+        selection.grantDays && !existing?.trialEndsAt
+          ? new Date(now.getTime() + selection.grantDays * 24 * 60 * 60 * 1000).toISOString()
+          : trialEndsAt,
+      discount_code_id: selection.discountCodeId ?? null,
+      discount_code: selection.discountCode ?? null,
+      discount_months: selection.discountMonths ?? null,
+      discount_amount_cents: selection.discountAmountCents ?? null,
+      override_price_cents: selection.overridePriceCents ?? null,
+      updated_at: now.toISOString(),
+    };
+
+    const { data, error } = await this.client.from('user_memberships').upsert(payload, { onConflict: 'user_id' }).select('*').single();
+    if (error) throw error;
+
+    this.clearPendingMembershipSelection();
+    return mapMembershipRow(data as Record<string, unknown>);
+  }
 }
 
 export const createSupabaseEditorialService = () => {
-  if (isPlaceholder(SUPABASE_URL) || isPlaceholder(SUPABASE_ANON_KEY)) return null;
-  return new SupabaseEditorialService(createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+  const client = getSupabaseClient();
+  if (!client) return null;
+  return new SupabaseEditorialService(client);
+};
+
+export const createSupabaseAccessService = () => {
+  const client = getSupabaseClient();
+  if (!client) return null;
+  return new SupabaseAccessService(client);
 };
