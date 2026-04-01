@@ -3379,31 +3379,30 @@ select:focus-visible {
   align-items: flex-end;
   color: #f5fafb;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 232, 178, 0.55), transparent 18%),
-    radial-gradient(circle at 32% 24%, rgba(255, 214, 132, 0.35), transparent 14%),
-    radial-gradient(circle at 78% 26%, rgba(255, 255, 255, 0.24), transparent 20%),
-    linear-gradient(180deg, #28abd0 0%, #117191 62%, #0c4d61 100%);
+    radial-gradient(circle at 18% 18%, rgba(255, 225, 153, 0.28), transparent 14%),
+    radial-gradient(circle at 72% 20%, rgba(255, 255, 255, 0.14), transparent 18%),
+    linear-gradient(180deg, #5daed0 0%, #3d87b1 38%, #245f86 72%, #174662 100%);
 }
 
 .auth-screen-visual::before,
 .auth-screen-visual::after {
   content: '';
   position: absolute;
-  left: -8%;
-  right: -8%;
+  left: -6%;
+  right: -6%;
   border-radius: 50%;
-  background: rgba(255, 250, 245, 0.92);
+  background: rgba(255, 249, 240, 0.2);
 }
 
 .auth-screen-visual::before {
-  bottom: 12%;
-  height: 24%;
+  bottom: 7%;
+  height: 16%;
 }
 
 .auth-screen-visual::after {
-  bottom: -6%;
-  height: 34%;
-  background: rgba(255, 255, 255, 0.96);
+  bottom: -10%;
+  height: 20%;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .auth-visual-inner {
@@ -3419,12 +3418,13 @@ select:focus-visible {
   font-size: clamp(2.4rem, 5vw, 4.4rem);
   line-height: 0.95;
   font-family: var(--font-serif);
+  text-shadow: 0 10px 32px rgba(7, 37, 52, 0.28);
 }
 
 .auth-visual-inner > p:last-of-type {
   margin: 0;
   max-width: 34ch;
-  color: rgba(245, 250, 251, 0.88);
+  color: rgba(245, 250, 251, 0.94);
   font-size: 1.02rem;
 }
 
@@ -3469,8 +3469,8 @@ select:focus-visible {
   align-items: center;
   padding: 1.4rem;
   background:
-    radial-gradient(circle at top left, rgba(40, 171, 208, 0.08), transparent 30%),
-    linear-gradient(180deg, #f7fbfc 0%, #ffffff 100%);
+    radial-gradient(circle at top left, rgba(40, 171, 208, 0.1), transparent 26%),
+    linear-gradient(180deg, #f5f7f2 0%, #fcfdf9 100%);
 }
 
 .auth-card-screen {
@@ -3479,8 +3479,9 @@ select:focus-visible {
   border-radius: 2rem;
   border: 1px solid #d8e1de;
   background:
-    linear-gradient(180deg, rgba(17, 113, 145, 0.96) 0%, rgba(17, 113, 145, 0.96) 30%, rgba(255, 255, 255, 0.98) 30%, #ffffff 100%);
-  box-shadow: 0 24px 60px rgba(18, 65, 80, 0.16);
+    radial-gradient(circle at top right, rgba(73, 155, 179, 0.16), transparent 28%),
+    linear-gradient(180deg, #fffdfa 0%, #f8fbf5 100%);
+  box-shadow: 0 24px 60px rgba(18, 65, 80, 0.1);
 }
 
 .auth-card-brand {
@@ -3497,12 +3498,21 @@ select:focus-visible {
 }
 
 .auth-card-screen .badge {
-  color: #effbfd;
+  color: #0d6b74;
 }
 
 .auth-card-brand p:last-child {
   margin: 0;
   color: rgba(15, 38, 48, 0.72);
+}
+
+.auth-unavailable {
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(13, 107, 116, 0.08);
+  border: 1px solid rgba(13, 107, 116, 0.12);
+  color: #31545a;
+  line-height: 1.55;
 }
 
 .auth-panel-heading {

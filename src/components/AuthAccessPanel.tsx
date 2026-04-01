@@ -22,7 +22,8 @@ const copy = {
   es: {
     open: 'Acceder / registrarse',
     close: 'Cerrar',
-    unavailable: 'Activa `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` para usar autenticación y membresías.',
+    unavailable: 'Modo demo publicado. El login y las membresias se activaran cuando conectemos Supabase en el despliegue.',
+    unavailableHint: 'Si quieres probar el acceso real, hay que configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en GitHub Pages.',
     signIn: 'Iniciar sesión',
     signUp: 'Crear cuenta',
     withGoogle: 'Continuar con Google',
@@ -123,7 +124,8 @@ const copy = {
   en: {
     open: 'Sign in / sign up',
     close: 'Close',
-    unavailable: 'Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to enable authentication and memberships.',
+    unavailable: 'Published demo mode. Login and memberships will become available once Supabase is connected in deployment.',
+    unavailableHint: 'To enable real access here, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in GitHub Pages.',
     signIn: 'Sign in',
     signUp: 'Create account',
     withGoogle: 'Continue with Google',
@@ -861,7 +863,12 @@ export default function AuthAccessPanel({
           </div>
           <div className="auth-screen-panel">
             <div className="auth-card auth-card-screen">
-              <p className="auth-unavailable">{t.unavailable}</p>
+              <div className="auth-card-brand">
+                <p className="badge">Demo</p>
+                <h2>{lang === 'es' ? 'Acceso temporalmente en modo demostracion' : 'Access currently running in demo mode'}</h2>
+                <p>{t.unavailable}</p>
+              </div>
+              <p className="auth-unavailable">{t.unavailableHint}</p>
             </div>
           </div>
         </section>
