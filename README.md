@@ -27,12 +27,26 @@ npm run dev
 Variables de entorno (copia `.env.example` a `.env`):
 
 ```bash
-VITE_CIMA_BASE_URL=
-VITE_CIMAVET_BASE_URL=
+VITE_APP_BASE_PATH=/
+VITE_CIMA_BASE_URL=https://cima.aemps.es/cima/rest
+VITE_CIMAVET_BASE_URL=https://cimavet.aemps.es/cimavet/rest
 VITE_CIMAVET_API_KEY=
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+Notas rapidas:
+
+- `VITE_APP_BASE_PATH=/` es el valor correcto para Vercel. Solo cambia si publicas en un subdirectorio.
+- Si faltan `VITE_SUPABASE_URL` o `VITE_SUPABASE_ANON_KEY`, la app se publica en modo demo sin login real.
+- `VITE_CIMA_BASE_URL` y `VITE_CIMAVET_BASE_URL` tienen fallback por defecto, pero conviene fijarlos tambien en Vercel para que el build quede explicito.
+
+## Despliegue MVP en Vercel
+
+1. Importa el repositorio en Vercel.
+2. Configura en Vercel las mismas variables del bloque anterior para `Production`, `Preview` y, si quieres, `Development`.
+3. En Supabase Auth define la `Site URL` de produccion y anade las URLs de Vercel permitidas en `Redirect URLs`.
+4. Si vas a activar cobro premium, despliega tambien el esquema y las Edge Functions descritas en `supabase/stripe-setup.md`.
 
 ## Estructura
 
@@ -49,13 +63,19 @@ VITE_SUPABASE_ANON_KEY=
 - Busqueda actual implementada: filtro local sobre catalogo CIMAVet por `nombre` y `pactivos`.
 - Filtro opcional por especie: se apoya en consulta de detalle por `nregistro`.
 
-## Proxima fase recomendada
+## Estado actual del MVP
 
 - Login con Supabase Auth y Google OAuth.
-- Roles (`viewer`, `editor`, `reviewer`, `admin`) para control de cambios.
-- Flujo editorial con estados (`draft`, `under_review`, `approved`).
-- Sincronizacion bidireccional con API de Cimavet.
-- Auditoria de cambios por entrada y trazabilidad de referencias.
+- Roles (`viewer`, `contributor`, `editor`, `reviewer`, `admin`) para control de cambios.
+- Flujo editorial con estados `draft`, `under_review`, `approved` y `publication_status`.
+- Integracion con Stripe lista para Edge Functions de Supabase.
+
+## Siguientes pasos recomendados
+
+- Validar el login OAuth en la URL final de Vercel.
+- Revisar CORS y experiencia real de CIMAVet/CIMA desde produccion.
+- Sembrar contenido editorial inicial en Supabase y ajustar roles del equipo.
+- Activar webhook y portal de Stripe cuando quieras abrir premium.
 
 ## Estado de integracion con CIMA humana
 
