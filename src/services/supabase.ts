@@ -776,7 +776,12 @@ export class SupabaseAccessService {
     if (selection) this.savePendingMembershipSelection(selection);
     const { error } = await this.client.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        queryParams: {
+          prompt: 'select_account',
+        },
+      },
     });
     if (error) throw error;
   }
