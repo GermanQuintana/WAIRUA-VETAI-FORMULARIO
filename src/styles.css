@@ -219,6 +219,7 @@ select:focus-visible {
 
 .lang-switch button.active {
   background: #e8f5f6;
+  color: #162126;
 }
 
 .flag-emoji {
@@ -3834,7 +3835,7 @@ body {
   position: relative;
   max-width: 100%;
   padding: 1.1rem;
-  overflow: clip;
+  overflow: visible;
 }
 
 .app::before {
@@ -3961,6 +3962,7 @@ body {
   width: min(31rem, calc(100vw - 1.5rem));
   max-height: min(80vh, 46rem);
   z-index: 30;
+  overflow: hidden;
 }
 
 .account-menu-popover .auth-panel {
@@ -3973,6 +3975,8 @@ body {
   box-shadow: 0 22px 50px rgba(16, 33, 38, 0.14);
   max-height: inherit;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .auth-account-warning {
@@ -4570,6 +4574,21 @@ select {
 .app.dark .topbar-icon-button {
   background: rgba(18, 33, 38, 0.82);
   border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .lang-switch {
+  background: rgba(18, 33, 38, 0.82);
+  border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .lang-switch button {
+  color: var(--text-dark);
+  border-right-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .lang-switch button.active {
+  background: #f4f7ea;
+  color: #162126;
 }
 
 .app.dark .topbar-trial-pill,

@@ -348,6 +348,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
+  const accountMenuShellRef = useRef<HTMLDivElement | null>(null);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
@@ -590,6 +591,29 @@ function App() {
           : activeTab === 'otc'
             ? t.otcHub
             : t.toolkitHub;
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (accountMenuShellRef.current?.contains(target)) return;
+      setIsAccountMenuOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsAccountMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isAccountMenuOpen]);
 
   const openKnowledgeRecord = (entryId?: string, ingredientName?: string) => {
     setActiveTab('active');
@@ -1614,17 +1638,17 @@ function App() {
               {theme === 'light' ? t.dark : t.light}
             </button>
             <div className="lang-switch topbar-lang-switch" role="group" aria-label={t.language}>
-              <button onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
+              <button type="button" onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
                 ES
               </button>
-              <button onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
+              <button type="button" onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
                 EN
               </button>
             </div>
-            <button type="button" className="topbar-icon-button" onClick={() => setActiveTab('toolkit')}>
+            <button type="button" className="topbar-icon-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
               {lang === 'es' ? 'Settings' : 'Settings'}
             </button>
-            <div className="account-menu-shell">
+            <div className="account-menu-shell" ref={accountMenuShellRef}>
               <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
                 <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
                 <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
