@@ -403,8 +403,8 @@ export default function AuthAccessPanel({
     try {
       const redirectTo = getAppReturnUrl();
       await service.signInWithGoogle(redirectTo, mode === 'sign_up' ? selection : undefined);
-    } catch {
-      setError(t.genericError);
+    } catch (error) {
+      setError(getErrorMessage(error, t.genericError));
       setIsBusy(false);
     }
   };
