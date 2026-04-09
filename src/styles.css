@@ -4016,14 +4016,8 @@ body {
 }
 
 .topbar-status-chip.is-free {
-  background: rgba(79, 84, 67, 0.1);
-  color: #43473b;
-}
-
-.topbar-trial-pill {
-  border: 1px solid rgba(191, 73, 63, 0.2);
-  background: rgba(191, 73, 63, 0.08);
-  color: #992c22;
+  background: rgba(111, 176, 134, 0.14);
+  color: #2d6a43;
 }
 
 .topbar-icon-button {
@@ -4684,6 +4678,11 @@ select {
 .app.dark .topbar-status-chip.is-premium {
   background: rgba(118, 212, 191, 0.16);
   color: var(--accent-dark);
+}
+
+.app.dark .topbar-status-chip.is-free {
+  background: rgba(118, 212, 191, 0.14);
+  color: #90d9b3;
 }
 
 .app.dark .topbar-icon-button {

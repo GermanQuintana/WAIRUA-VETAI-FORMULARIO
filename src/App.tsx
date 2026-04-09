@@ -4,11 +4,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
 import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
-import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
 import DoseCalculator from './components/DoseCalculator';
-import EndocrineToolkit from './components/EndocrineToolkit';
 import EntryCard from './components/EntryCard';
-import HaemotherapyCalculator from './components/HaemotherapyCalculator';
 import InfusionCalculator from './components/InfusionCalculator';
 import UnitConverter from './components/UnitConverter';
 import {
@@ -46,7 +43,6 @@ import {
   createCimavetServiceFromEnv,
   resolveCimavetBaseUrl,
 } from './services/cimavet';
-import { createClinicalNutritionService } from './services/clinicalNutrition';
 import { createSupabaseAccessService, createSupabaseEditorialService } from './services/supabase';
 import { AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry } from './types';
 
@@ -66,25 +62,6 @@ type ToolkitView = (typeof toolkitViews)[number];
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant']);
 
-const topbarRoleLabels = {
-  es: {
-    viewer: 'Lector',
-    contributor: 'Colaborador',
-    editor: 'Editor',
-    reviewer: 'Revisor',
-    admin: 'Administrador',
-  },
-  en: {
-    viewer: 'Viewer',
-    contributor: 'Contributor',
-    editor: 'Editor',
-    reviewer: 'Reviewer',
-    admin: 'Admin',
-  },
-} as const;
-
-const topbarRoleOrder = ['admin', 'reviewer', 'editor', 'contributor', 'viewer'] as const;
-
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
   if (error && typeof error === 'object') {
@@ -93,8 +70,6 @@ const getErrorMessage = (error: unknown) => {
   }
   return 'Unknown error';
 };
-
-const formatTopbarRole = (lang: Language, role: keyof (typeof topbarRoleLabels)['es']) => topbarRoleLabels[lang][role];
 const isToolkitViewAvailable = (view: ToolkitView) => view === 'overview' || availableToolkitViewSet.has(view);
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
@@ -434,7 +409,6 @@ function App() {
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
   const cimavetService = useMemo(() => createCimavetServiceFromEnv(), []);
-  const clinicalNutritionService = useMemo(() => createClinicalNutritionService(), []);
   const supabaseAccessService = useMemo(() => createSupabaseAccessService(), []);
   const supabaseEditorialService = useMemo(() => createSupabaseEditorialService(), []);
   const t = labels[lang];
@@ -666,23 +640,8 @@ function App() {
   const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
   const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
   const hasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
-  const accessStatusMessage = hasPremiumAccess
-    ? membership?.status === 'active'
-      ? accessText.statusPremium
-      : `${accessText.statusTrial} ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
-    : membership
-      ? accessText.statusLimited
-      : accessText.statusNoPlan;
+  const accessStatusMessage = hasPremiumAccess ? accessText.premiumBadge : lang === 'es' ? 'Gratuita' : 'Free';
   const profileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
-  const accountRoleSummary = topbarRoleOrder
-    .filter((role) => profileRoles.includes(role))
-    .map((role) => formatTopbarRole(lang, role))
-    .join(' · ');
-  const accountTypeSummary = hasPremiumAccess
-    ? membership?.status === 'active'
-      ? accessText.statusPremium
-      : accessText.statusTrial
-    : accessText.freeBadge;
   const canCreateEditorial = profileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
   const canManageEditorial = profileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
   const canReviewEditorial = profileRoles.some((role) => ['reviewer', 'admin'].includes(role));
@@ -1753,15 +1712,6 @@ function App() {
         <div className="topbar-utilities">
           <div className="topbar-status-group">
             <span className={`topbar-status-chip ${hasPremiumAccess ? 'is-premium' : 'is-free'}`}>{accessStatusMessage}</span>
-            <span className={`topbar-trial-pill ${membership?.status === 'trialing' ? 'is-warning' : ''}`}>
-              {membership?.status === 'trialing'
-                ? lang === 'es'
-                  ? `Prueba · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
-                  : `Trial · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
-                : hasPremiumAccess
-                  ? accessText.premiumBadge
-                  : accessText.freeBadge}
-            </span>
           </div>
 
           <div className="topbar-actions">
@@ -1780,7 +1730,6 @@ function App() {
               <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
                 <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
                 <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
-                <small>{`${accountTypeSummary} · ${accountRoleSummary}`}</small>
               </button>
               {isAccountMenuOpen ? (
                 <div className="account-menu-popover">
@@ -2907,15 +2856,9 @@ function App() {
 
             {activeToolkitView === 'infusion' && <InfusionCalculator lang={lang} />}
 
-            {activeToolkitView === 'haemotherapy' && <HaemotherapyCalculator lang={lang} />}
-
-            {activeToolkitView === 'endocrine' && <EndocrineToolkit lang={lang} />}
-
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
             {activeToolkitView === 'surface' && <BodySurfaceAreaCalculator lang={lang} />}
-
-            {activeToolkitView === 'nutrition' && <ClinicalNutritionToolkit lang={lang} service={clinicalNutritionService} />}
 
             {activeToolkitView === 'assistant' && (
               <section className="embedded-section">
