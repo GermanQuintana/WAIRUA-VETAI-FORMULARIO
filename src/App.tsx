@@ -207,6 +207,58 @@ const getOtcSearchableText = (product: OtcProductRecord) =>
 const hasLongOtcBadgeRow = (product: OtcProductRecord, lang: Language) =>
   [product.productType.label[lang], product.category.label[lang]].some((label) => label.length > 18);
 
+const getDoseRangeLabel = (min: number, max: number) => (min === max ? `${min} mg/kg` : `${min}-${max} mg/kg`);
+
+const getEntryIndicationFilterValues = (entry: TherapeuticEntry) =>
+  [
+    ...entry.pathologies,
+    entry.indications.es,
+    entry.indications.en,
+    ...(entry.calculatorPresets ?? []).flatMap((preset) => [preset.indication.es, preset.indication.en]),
+  ].filter(Boolean);
+
+const getEntryConcentrationFilterText = (entry: TherapeuticEntry) =>
+  [
+    ...entry.concentrations,
+    entry.dosage.es,
+    entry.dosage.en,
+    ...(entry.calculatorPresets ?? []).flatMap((preset) => [
+      preset.concentration.es,
+      preset.concentration.en,
+      getDoseRangeLabel(preset.doseRangeMgKg.min, preset.doseRangeMgKg.max),
+      `${preset.defaultDoseMgKg} mg/kg`,
+      preset.route,
+    ]),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const getCimavetDetailFilterText = (medication: CimavetMedicationSummary, detail?: CimavetMedicationDetail | null) =>
+  [
+    medication.pactivos ?? '',
+    detail?.principiosActivos
+      ?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim())
+      .join(' '),
+    detail?.presentaciones?.map((item) => item.nombre).join(' '),
+    detail?.indicaciones?.map((item) => `${item.especie?.nombre ?? ''} ${item.nombre}`.trim()).join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const getCimaDetailFilterText = (medication: CimaMedicationSummary, detail?: CimaMedicationDetail | null) =>
+  [
+    medication.pactivos ?? '',
+    medication.dosis ?? '',
+    medication.formaFarmaceuticaSimplificada?.nombre ?? '',
+    medication.formaFarmaceutica?.nombre ?? '',
+    detail?.principiosActivos
+      ?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim())
+      .join(' '),
+    detail?.presentaciones?.map((item) => item.nombre).join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
   query: string,
@@ -220,14 +272,21 @@ const filterTherapeuticEntries = (
 
   return entries.filter((entry) => {
     const inSpecies = selectedSpecies ? entry.species.some((value) => value === selectedSpecies) : true;
-    const inIndication = selectedIndication ? entry.pathologies.includes(selectedIndication) : true;
+    const inIndication = selectedIndication
+      ? getEntryIndicationFilterValues(entry).some(
+          (value) =>
+            matchesStructuredFilter(value, selectedIndication) ||
+            hasEquivalentMedicalTerm(value, selectedIndication) ||
+            hasEquivalentMedicalTerm(selectedIndication, value),
+        )
+      : true;
     const facetValues = Array.from(new Set([...entry.tags, ...entry.systems, ...entry.pathologies]));
     const inTags =
       selectedTags.length > 0
         ? facetValues.some((tag) => selectedTags.some((selectedTag) => hasEquivalentMedicalTerm(selectedTag, tag)))
         : true;
     const inConcentration = loweredConcentration
-      ? entry.concentrations.some((value) => value.toLowerCase().includes(loweredConcentration))
+      ? matchesStructuredFilter(getEntryConcentrationFilterText(entry), concentrationQuery)
       : true;
 
     if (!loweredQuery) return inSpecies && inIndication && inTags && inConcentration;
@@ -426,6 +485,16 @@ function App() {
   );
   const systemOptions = useMemo(() => getSystemOptions(entryCatalog), [entryCatalog]);
   const localIndicationOptions = useMemo(() => getIndicationOptions(entryCatalog), [entryCatalog]);
+  const activeIndicationOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...localIndicationOptions,
+          ...Object.values(activeVetDetails).flatMap((detail) => detail.indicaciones?.map((item) => item.nombre) ?? []),
+        ]),
+      ).sort((left, right) => translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en')),
+    [activeVetDetails, lang, localIndicationOptions],
+  );
   const tagOptions = useMemo(() => getTagOptions(entryCatalog), [entryCatalog]);
   const formTagOptions = useMemo(
     () => Array.from(new Set([...tagOptions, ...systemOptions])).sort((a, b) => a.localeCompare(b)),
@@ -864,47 +933,72 @@ function App() {
   );
   const isSingleVisibleOtcProduct = visibleOtcProducts.length === 1;
 
+  const filteredActiveVetResults = useMemo(
+    () =>
+      activeVetResults.filter((medication) => {
+        const detail = activeVetDetails[medication.nregistro];
+        const indicationMatch = activeIndication
+          ? detail?.indicaciones?.some((item) => matchesStructuredFilter(`${item.especie?.nombre ?? ''} ${item.nombre}`.trim(), activeIndication))
+          : true;
+        const concentrationMatch = activeConcentrationQuery
+          ? matchesStructuredFilter(getCimavetDetailFilterText(medication, detail), activeConcentrationQuery)
+          : true;
+        return indicationMatch && concentrationMatch;
+      }),
+    [activeConcentrationQuery, activeIndication, activeVetDetails, activeVetResults],
+  );
+
   const activeVetTotalPages = useMemo(() => {
     if (activeOfficialPageSize === 'all') return 1;
-    return Math.max(1, Math.ceil(activeVetResults.length / activeOfficialPageSize));
-  }, [activeOfficialPageSize, activeVetResults.length]);
+    return Math.max(1, Math.ceil(filteredActiveVetResults.length / activeOfficialPageSize));
+  }, [activeOfficialPageSize, filteredActiveVetResults.length]);
   const activeVetPageBounds = useMemo(() => {
-    if (activeVetResults.length === 0) return { start: 0, end: 0 };
-    if (activeOfficialPageSize === 'all') return { start: 1, end: activeVetResults.length };
+    if (filteredActiveVetResults.length === 0) return { start: 0, end: 0 };
+    if (activeOfficialPageSize === 'all') return { start: 1, end: filteredActiveVetResults.length };
 
     const start = (activeVetPage - 1) * activeOfficialPageSize + 1;
-    const end = Math.min(activeVetResults.length, activeVetPage * activeOfficialPageSize);
+    const end = Math.min(filteredActiveVetResults.length, activeVetPage * activeOfficialPageSize);
     return { start, end };
-  }, [activeOfficialPageSize, activeVetPage, activeVetResults.length]);
+  }, [activeOfficialPageSize, activeVetPage, filteredActiveVetResults.length]);
   const activeVetResultsForDetails = useMemo(
     () =>
       activeOfficialPageSize === 'all'
-        ? activeVetResults
-        : activeVetResults.slice((activeVetPage - 1) * activeOfficialPageSize, activeVetPage * activeOfficialPageSize),
-    [activeOfficialPageSize, activeVetPage, activeVetResults],
+        ? filteredActiveVetResults
+        : filteredActiveVetResults.slice((activeVetPage - 1) * activeOfficialPageSize, activeVetPage * activeOfficialPageSize),
+    [activeOfficialPageSize, activeVetPage, filteredActiveVetResults],
+  );
+
+  const filteredActiveHumanResults = useMemo(
+    () =>
+      activeHumanResults.filter((medication) => {
+        if (!activeConcentrationQuery) return true;
+        const detail = activeHumanDetails[medication.nregistro];
+        return matchesStructuredFilter(getCimaDetailFilterText(medication, detail), activeConcentrationQuery);
+      }),
+    [activeConcentrationQuery, activeHumanDetails, activeHumanResults],
   );
 
   const activeHumanTotalPages = useMemo(() => {
     if (activeOfficialPageSize === 'all') return 1;
-    return Math.max(1, Math.ceil(activeHumanResults.length / activeOfficialPageSize));
-  }, [activeHumanResults.length, activeOfficialPageSize]);
+    return Math.max(1, Math.ceil(filteredActiveHumanResults.length / activeOfficialPageSize));
+  }, [filteredActiveHumanResults.length, activeOfficialPageSize]);
   const activeHumanPageBounds = useMemo(() => {
-    if (activeHumanResults.length === 0) return { start: 0, end: 0 };
-    if (activeOfficialPageSize === 'all') return { start: 1, end: activeHumanResults.length };
+    if (filteredActiveHumanResults.length === 0) return { start: 0, end: 0 };
+    if (activeOfficialPageSize === 'all') return { start: 1, end: filteredActiveHumanResults.length };
 
     const start = (activeHumanPage - 1) * activeOfficialPageSize + 1;
-    const end = Math.min(activeHumanResults.length, activeHumanPage * activeOfficialPageSize);
+    const end = Math.min(filteredActiveHumanResults.length, activeHumanPage * activeOfficialPageSize);
     return { start, end };
-  }, [activeHumanPage, activeHumanResults.length, activeOfficialPageSize]);
+  }, [activeHumanPage, filteredActiveHumanResults.length, activeOfficialPageSize]);
   const activeHumanResultsForDetails = useMemo(
     () =>
       activeOfficialPageSize === 'all'
-        ? activeHumanResults
-        : activeHumanResults.slice(
+        ? filteredActiveHumanResults
+        : filteredActiveHumanResults.slice(
             (activeHumanPage - 1) * activeOfficialPageSize,
             activeHumanPage * activeOfficialPageSize,
           ),
-    [activeHumanPage, activeHumanResults, activeOfficialPageSize],
+    [activeHumanPage, filteredActiveHumanResults, activeOfficialPageSize],
   );
 
   useEffect(() => {
@@ -949,7 +1043,7 @@ function App() {
 
   useEffect(() => {
     setActiveVetPage(1);
-  }, [activeOfficialPageSize, activeQuery, activeSpecies]);
+  }, [activeOfficialPageSize, activeQuery, activeSpecies, activeIndication, activeConcentrationQuery]);
 
   useEffect(() => {
     setActiveVetPage((current) => Math.min(current, activeVetTotalPages));
@@ -957,7 +1051,7 @@ function App() {
 
   useEffect(() => {
     setActiveHumanPage(1);
-  }, [activeKnowledgeView, activeOfficialPageSize, activeQuery, activeTab]);
+  }, [activeKnowledgeView, activeOfficialPageSize, activeQuery, activeTab, activeIndication, activeConcentrationQuery]);
 
   useEffect(() => {
     setActiveHumanPage((current) => Math.min(current, activeHumanTotalPages));
@@ -2255,7 +2349,7 @@ function App() {
                 {t.indicationFilter}
                 <select value={activeIndication} onChange={(event) => setActiveIndication(event.target.value)}>
                   <option value="">{t.all}</option>
-                  {localIndicationOptions.map((indication) => (
+                  {activeIndicationOptions.map((indication) => (
                     <option key={indication} value={indication}>
                       {translateMedicalTerm(indication, lang)}
                     </option>
@@ -2350,14 +2444,14 @@ function App() {
                     {isActiveVetExpanded && !activeQuery.trim().length && (
                       <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMAVET.' : 'Type an active ingredient to query CIMAVET.'}</p>
                     )}
-                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && activeVetResults.length === 0 && <p>{t.liveEmpty}</p>}
+                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && filteredActiveVetResults.length === 0 && <p>{t.liveEmpty}</p>}
 
-                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && activeVetResults.length > 0 && (
+                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && filteredActiveVetResults.length > 0 && (
                       <>
                         <p className="live-summary">
-                          {t.liveShowing}: <strong>{activeVetResults.length}</strong>
+                          {t.liveShowing}: <strong>{filteredActiveVetResults.length}</strong>
                         </p>
-                        {activeOfficialPageSize !== 'all' && activeVetResults.length > activeOfficialPageSize && (
+                        {activeOfficialPageSize !== 'all' && filteredActiveVetResults.length > activeOfficialPageSize && (
                           <div className="live-pagination">
                             <button
                               type="button"
@@ -2368,7 +2462,7 @@ function App() {
                               {t.previousPage}
                             </button>
                             <p>
-                              {activeVetPageBounds.start}-{activeVetPageBounds.end} {t.ofLabel} {activeVetResults.length}. {t.pageLabel}{' '}
+                              {activeVetPageBounds.start}-{activeVetPageBounds.end} {t.ofLabel} {filteredActiveVetResults.length}. {t.pageLabel}{' '}
                               {activeVetPage} {t.ofLabel} {activeVetTotalPages}
                             </p>
                             <button
@@ -2481,16 +2575,16 @@ function App() {
                     {isActiveHumanExpanded && !activeQuery.trim().length && (
                       <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMA.' : 'Type an active ingredient to query CIMA.'}</p>
                     )}
-                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && activeHumanResults.length === 0 && (
+                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && filteredActiveHumanResults.length === 0 && (
                       <p>{t.humanLiveEmpty}</p>
                     )}
 
-                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && activeHumanResults.length > 0 && (
+                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && filteredActiveHumanResults.length > 0 && (
                       <>
                         <p className="live-summary">
-                          {t.humanLiveShowing}: <strong>{activeHumanResults.length}</strong>
+                          {t.humanLiveShowing}: <strong>{filteredActiveHumanResults.length}</strong>
                         </p>
-                        {activeOfficialPageSize !== 'all' && activeHumanResults.length > activeOfficialPageSize && (
+                        {activeOfficialPageSize !== 'all' && filteredActiveHumanResults.length > activeOfficialPageSize && (
                           <div className="live-pagination">
                             <button
                               type="button"
@@ -2501,7 +2595,7 @@ function App() {
                               {t.previousPage}
                             </button>
                             <p>
-                              {activeHumanPageBounds.start}-{activeHumanPageBounds.end} {t.ofLabel} {activeHumanResults.length}. {t.pageLabel}{' '}
+                              {activeHumanPageBounds.start}-{activeHumanPageBounds.end} {t.ofLabel} {filteredActiveHumanResults.length}. {t.pageLabel}{' '}
                               {activeHumanPage} {t.ofLabel} {activeHumanTotalPages}
                             </p>
                             <button

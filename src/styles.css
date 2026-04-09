@@ -828,9 +828,15 @@ select:focus-visible {
 .entry-card-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: end;
+  justify-content: flex-start;
   gap: 0.5rem;
-  flex: 0 0 auto;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.entry-card-actions button {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .entry-card h3 {
