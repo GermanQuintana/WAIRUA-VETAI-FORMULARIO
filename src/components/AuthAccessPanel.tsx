@@ -881,11 +881,9 @@ export default function AuthAccessPanel({
         <section className="auth-screen">
           <div className="auth-screen-visual">
             <div className="auth-visual-inner">
-              <p className="badge">WAIRUA VetAI</p>
               <div className="auth-visual-art-wrap">
                 <img src={wairuaLoginArt} alt="WAIRUA VetAI" className="auth-visual-art" />
               </div>
-              <p className="auth-visual-note">{t.visualNote}</p>
             </div>
           </div>
           <div className="auth-screen-panel">
@@ -910,11 +908,9 @@ export default function AuthAccessPanel({
       <section className="auth-screen">
         <div className="auth-screen-visual">
           <div className="auth-visual-inner">
-            <p className="badge">WAIRUA VetAI</p>
             <div className="auth-visual-art-wrap">
               <img src={wairuaLoginArt} alt="WAIRUA VetAI" className="auth-visual-art" />
             </div>
-            <p className="auth-visual-note">{t.visualNote}</p>
           </div>
         </div>
 
