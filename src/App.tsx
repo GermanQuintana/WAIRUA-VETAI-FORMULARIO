@@ -1482,7 +1482,7 @@ function App() {
         const isOpenableToolkitCard = card.toolkitView ? isToolkitViewAvailable(card.toolkitView) : false;
 
         return (
-          <article key={card.id} className="feature-card">
+          <article key={card.id} className={`feature-card ${card.statusTone === 'soon' ? 'feature-card-soon' : ''}`.trim()}>
             <h3>{card.title[lang]}</h3>
             <p>{card.description[lang]}</p>
             {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}

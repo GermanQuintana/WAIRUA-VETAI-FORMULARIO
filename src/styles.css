@@ -1274,6 +1274,12 @@ select:focus-visible {
   box-shadow: 0 8px 22px rgba(94, 103, 62, 0.06);
 }
 
+.feature-card-soon {
+  border-color: #efc8cb;
+  background: linear-gradient(180deg, #fff8f8 0%, #fff2f2 100%);
+  box-shadow: 0 8px 22px rgba(159, 47, 53, 0.08);
+}
+
 .feature-card h3,
 .embedded-section h3 {
   margin: 0 0 0.45rem;
@@ -2076,7 +2082,9 @@ select:focus-visible {
 }
 
 .dose-table-shell {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: min(65vh, 42rem);
+  overscroll-behavior: contain;
   border: 1px solid #d9dfcb;
   border-radius: 1rem;
   background: #fffdf7;
@@ -2132,7 +2140,7 @@ select:focus-visible {
 
 .dose-table th {
   position: sticky;
-  top: 8.6rem;
+  top: 0;
   background: #f4f0e5;
   z-index: 6;
   box-shadow: 0 1px 0 #e4ead8;
@@ -2161,6 +2169,12 @@ select:focus-visible {
 .app.dark .ameg-table-shell {
   background: #182329;
   border-color: var(--border-dark);
+}
+
+.app.dark .feature-card-soon {
+  border-color: rgba(170, 83, 89, 0.72);
+  background: linear-gradient(180deg, rgba(74, 31, 35, 0.82) 0%, rgba(52, 22, 25, 0.9) 100%);
+  box-shadow: 0 10px 24px rgba(28, 10, 12, 0.3);
 }
 
 .app.dark .dose-calculator-header p,
@@ -4862,8 +4876,8 @@ select {
     top: 7.8rem;
   }
 
-  .dose-table th {
-    top: 11.35rem;
+  .dose-table-shell {
+    max-height: 58vh;
   }
 }
 
