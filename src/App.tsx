@@ -64,6 +64,7 @@ type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
+const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant']);
 
 const topbarRoleLabels = {
   es: {
@@ -94,6 +95,7 @@ const getErrorMessage = (error: unknown) => {
 };
 
 const formatTopbarRole = (lang: Language, role: keyof (typeof topbarRoleLabels)['es']) => topbarRoleLabels[lang][role];
+const isToolkitViewAvailable = (view: ToolkitView) => view === 'overview' || availableToolkitViewSet.has(view);
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -598,6 +600,12 @@ function App() {
       subscription.unsubscribe();
     };
   }, [supabaseAccessService]);
+
+  useEffect(() => {
+    if (activeTab === 'toolkit' && !isToolkitViewAvailable(activeToolkitView)) {
+      setActiveToolkitView('overview');
+    }
+  }, [activeTab, activeToolkitView]);
 
   useEffect(() => {
     if (!authAccount?.profile || !appShellRef.current) return;
@@ -1470,32 +1478,36 @@ function App() {
 
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => (
     <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
-      {cards.map((card) => (
-        <article key={card.id} className="feature-card">
-          <h3>{card.title[lang]}</h3>
-          <p>{card.description[lang]}</p>
-          {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}
-          {card.bullets?.[lang]?.length ? (
-            <ul>
-              {card.bullets[lang].map((bullet) => (
-                <li key={bullet}>{bullet}</li>
-              ))}
-            </ul>
-          ) : null}
-          {card.toolkitView ? (
-            <button
-              type="button"
-              className="feature-card-link"
-              onClick={() => {
-                setActiveTab('toolkit');
-                setActiveToolkitView(card.toolkitView!);
-              }}
-            >
-              <span>{t.openToolkitModule}</span>
-            </button>
-          ) : null}
-        </article>
-      ))}
+      {cards.map((card) => {
+        const isOpenableToolkitCard = card.toolkitView ? isToolkitViewAvailable(card.toolkitView) : false;
+
+        return (
+          <article key={card.id} className="feature-card">
+            <h3>{card.title[lang]}</h3>
+            <p>{card.description[lang]}</p>
+            {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}
+            {card.bullets?.[lang]?.length ? (
+              <ul>
+                {card.bullets[lang].map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            ) : null}
+            {isOpenableToolkitCard ? (
+              <button
+                type="button"
+                className="feature-card-link"
+                onClick={() => {
+                  setActiveTab('toolkit');
+                  setActiveToolkitView(card.toolkitView!);
+                }}
+              >
+                <span>{t.openToolkitModule}</span>
+              </button>
+            ) : null}
+          </article>
+        );
+      })}
     </div>
   );
 
@@ -2876,13 +2888,17 @@ function App() {
                 {t.infusionCalculatorNav}
               </button>
               <button
-                onClick={() => setActiveToolkitView('haemotherapy')}
-                className={activeToolkitView === 'haemotherapy' ? 'active' : ''}
+                type="button"
+                disabled
+                className="locked"
+                aria-disabled="true"
               >
-                {t.haemotherapyNav}
+                <span>{t.haemotherapyNav}</span>
+                <small>{lang === 'es' ? 'Próximamente' : 'Coming soon'}</small>
               </button>
-              <button onClick={() => setActiveToolkitView('endocrine')} className={activeToolkitView === 'endocrine' ? 'active' : ''}>
-                {t.endocrineNav}
+              <button type="button" disabled className="locked" aria-disabled="true">
+                <span>{t.endocrineNav}</span>
+                <small>{lang === 'es' ? 'Próximamente' : 'Coming soon'}</small>
               </button>
               <button onClick={() => setActiveToolkitView('converter')} className={activeToolkitView === 'converter' ? 'active' : ''}>
                 {t.unitConverterNav}
@@ -2890,8 +2906,9 @@ function App() {
               <button onClick={() => setActiveToolkitView('surface')} className={activeToolkitView === 'surface' ? 'active' : ''}>
                 {t.bodySurfaceNav}
               </button>
-              <button onClick={() => setActiveToolkitView('nutrition')} className={activeToolkitView === 'nutrition' ? 'active' : ''}>
-                {t.clinicalNutritionNav}
+              <button type="button" disabled className="locked" aria-disabled="true">
+                <span>{t.clinicalNutritionNav}</span>
+                <small>{lang === 'es' ? 'Próximamente' : 'Coming soon'}</small>
               </button>
               <button onClick={() => setActiveToolkitView('assistant')} className={activeToolkitView === 'assistant' ? 'active' : ''}>
                 {t.assistantForm}

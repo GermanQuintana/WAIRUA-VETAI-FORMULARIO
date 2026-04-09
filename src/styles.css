@@ -1549,6 +1549,26 @@ select:focus-visible {
   background: #f5f2e7;
 }
 
+.subtabs button.locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0.82;
+  cursor: not-allowed;
+}
+
+.subtabs button small {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(159, 47, 53, 0.12);
+  color: #9f2f35;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .subtabs button.active {
   color: #fff;
   border-color: transparent;
@@ -1696,6 +1716,16 @@ select:focus-visible {
 .app.dark .subtabs button {
   background: #203038;
   border-color: #33535d;
+}
+
+.app.dark .subtabs button.locked {
+  color: var(--text-dark);
+  border-color: #33535d;
+}
+
+.app.dark .subtabs button small {
+  background: rgba(219, 131, 131, 0.18);
+  color: #f2b7b7;
 }
 
 .app.dark .tag-chip-list button {
