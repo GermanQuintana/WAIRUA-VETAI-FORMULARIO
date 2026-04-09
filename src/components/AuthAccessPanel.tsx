@@ -19,6 +19,23 @@ const PLAN_PRICES: Record<BillingCycle, number> = {
   annual: 3600,
 };
 
+const roleLabels = {
+  es: {
+    viewer: 'Lector',
+    contributor: 'Colaborador',
+    editor: 'Editor',
+    reviewer: 'Revisor',
+    admin: 'Administrador',
+  },
+  en: {
+    viewer: 'Viewer',
+    contributor: 'Contributor',
+    editor: 'Editor',
+    reviewer: 'Reviewer',
+    admin: 'Admin',
+  },
+} as const;
+
 const copy = {
   es: {
     open: 'Acceder / registrarse',
@@ -56,6 +73,9 @@ const copy = {
     genericError: 'No se pudo completar la operación.',
     account: 'Cuenta',
     selectedPlan: 'Plan elegido',
+    accountType: 'Cuenta',
+    rolesLabel: 'Roles',
+    freeAccount: 'Gratuita',
     status: 'Estado',
     trialUntil: 'Prueba hasta',
     updatePlan: 'Guardar plan',
@@ -108,7 +128,7 @@ const copy = {
     showPassword: 'Mostrar',
     hidePassword: 'Ocultar',
     compactTitle: 'Mi acceso',
-    compactSubtitle: 'Controla prueba, plan y estado premium desde aquí.',
+    compactSubtitle: 'Plan, acceso y permisos de edición.',
     trialWarning: 'Tiempo restante de prueba',
     autoRenewOn: 'Renovación automática',
     autoRenewOff: 'No se renovará automáticamente',
@@ -159,6 +179,9 @@ const copy = {
     genericError: 'The operation could not be completed.',
     account: 'Account',
     selectedPlan: 'Selected plan',
+    accountType: 'Account',
+    rolesLabel: 'Roles',
+    freeAccount: 'Free',
     status: 'Status',
     trialUntil: 'Trial until',
     updatePlan: 'Save plan',
@@ -211,7 +234,7 @@ const copy = {
     showPassword: 'Show',
     hidePassword: 'Hide',
     compactTitle: 'My access',
-    compactSubtitle: 'Manage your trial, plan, and premium status here.',
+    compactSubtitle: 'Plan, access, and editing permissions.',
     trialWarning: 'Remaining trial time',
     autoRenewOn: 'Auto-renew is on',
     autoRenewOff: 'Will not auto-renew',
@@ -249,6 +272,8 @@ const formatStripeStatus = (status: string | undefined, t: (typeof copy)['es'] |
   if (status === 'cancelled' || status === 'expired' || status === 'canceled') return t.premiumEnded;
   return status ?? '--';
 };
+
+const formatUserRole = (lang: Language, role: UserRole) => roleLabels[lang][role];
 
 const getAppReturnUrl = () => {
   const path = window.location.pathname || '/';
@@ -356,6 +381,11 @@ export default function AuthAccessPanel({
   const shouldShowForm = isScreenLayout ? !account?.profile : isOpen && !account?.profile;
   const stripeStatusLabel = formatStripeStatus(membership?.stripeStatus ?? membership?.status, t);
   const isAdmin = (account?.profile?.roles ?? [account?.profile?.role ?? 'viewer']).includes('admin');
+  const accountRoles = useMemo(() => {
+    const rawRoles = account?.profile?.roles?.length ? account.profile.roles : [account?.profile?.role ?? 'viewer'];
+    return roleOptions.filter((role) => rawRoles.includes(role));
+  }, [account?.profile]);
+  const accountTypeLabel = !hasMembership ? t.freeAccount : t[membership?.status ?? 'trialing'];
   const now = Date.now();
   const trialTimeLeftMs = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() - now : null;
   const trialDaysLeft =
@@ -646,6 +676,14 @@ export default function AuthAccessPanel({
 
       <div className="auth-membership-summary">
         <div>
+          <span>{t.accountType}</span>
+          <strong>{accountTypeLabel}</strong>
+        </div>
+        <div>
+          <span>{t.rolesLabel}</span>
+          <strong>{accountRoles.map((role) => formatUserRole(lang, role)).join(' · ')}</strong>
+        </div>
+        <div>
           <span>{t.selectedPlan}</span>
           <strong>
             {hasMembership
@@ -671,7 +709,6 @@ export default function AuthAccessPanel({
         </div>
       </div>
 
-      <p className="auth-account-hint">{hasMembership ? t.updateHint : t.trialStartHint}</p>
       <p className="auth-account-hint">{t.managePlanHint}</p>
 
       {membership?.stripeCustomerId ? (
@@ -687,24 +724,21 @@ export default function AuthAccessPanel({
       {message ? <p className="auth-feedback auth-feedback-success">{message}</p> : null}
       {error ? <p className="auth-feedback auth-feedback-error">{error}</p> : null}
 
-      <div className="auth-price-note">
-        <span>{t.billingTitle}</span>
-        <strong>{t.stripeCheckout}</strong>
-        <p>{t.stripeHelp}</p>
-      </div>
-
       <div className="auth-account-actions">
-        <button type="button" className="theme-button" onClick={handleSavePlan} disabled={isBusy}>
-          {hasMembership ? t.savePreference : t.activateTrial}
-        </button>
-        <button type="button" className="theme-button" onClick={handleStripeCheckout} disabled={isBusy}>
-          {t.stripeCheckout}
-        </button>
         {membership?.stripeCustomerId ? (
           <button type="button" className="secondary-button" onClick={handleStripePortal} disabled={isBusy}>
             {t.portalCta}
           </button>
-        ) : null}
+        ) : (
+          <>
+            <button type="button" className="theme-button" onClick={handleSavePlan} disabled={isBusy}>
+              {hasMembership ? t.savePreference : t.activateTrial}
+            </button>
+            <button type="button" className="theme-button" onClick={handleStripeCheckout} disabled={isBusy}>
+              {t.stripeCheckout}
+            </button>
+          </>
+        )}
         <button type="button" className="secondary-button" onClick={handleSignOut} disabled={isBusy}>
           {t.signOut}
         </button>

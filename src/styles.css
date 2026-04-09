@@ -310,9 +310,16 @@ select:focus-visible {
 .auth-plan-grid button span,
 .auth-membership-summary span,
 .auth-price-note span {
+  display: block;
   color: var(--muted-light);
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.auth-membership-summary strong,
+.auth-price-note strong {
+  display: block;
+  line-height: 1.35;
 }
 
 .auth-trial-callout,
@@ -3540,6 +3547,7 @@ select:focus-visible {
 }
 
 .auth-panel-heading strong {
+  display: block;
   font-size: 1.15rem;
 }
 
@@ -3995,6 +4003,16 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.topbar-account-button small {
+  display: block;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.73rem;
+  opacity: 0.84;
 }
 
 .account-menu-shell {

@@ -65,6 +65,25 @@ type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 
+const topbarRoleLabels = {
+  es: {
+    viewer: 'Lector',
+    contributor: 'Colaborador',
+    editor: 'Editor',
+    reviewer: 'Revisor',
+    admin: 'Administrador',
+  },
+  en: {
+    viewer: 'Viewer',
+    contributor: 'Contributor',
+    editor: 'Editor',
+    reviewer: 'Reviewer',
+    admin: 'Admin',
+  },
+} as const;
+
+const topbarRoleOrder = ['admin', 'reviewer', 'editor', 'contributor', 'viewer'] as const;
+
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
   if (error && typeof error === 'object') {
@@ -73,6 +92,8 @@ const getErrorMessage = (error: unknown) => {
   }
   return 'Unknown error';
 };
+
+const formatTopbarRole = (lang: Language, role: keyof (typeof topbarRoleLabels)['es']) => topbarRoleLabels[lang][role];
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -645,6 +666,15 @@ function App() {
       ? accessText.statusLimited
       : accessText.statusNoPlan;
   const profileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
+  const accountRoleSummary = topbarRoleOrder
+    .filter((role) => profileRoles.includes(role))
+    .map((role) => formatTopbarRole(lang, role))
+    .join(' · ');
+  const accountTypeSummary = hasPremiumAccess
+    ? membership?.status === 'active'
+      ? accessText.statusPremium
+      : accessText.statusTrial
+    : accessText.freeBadge;
   const canCreateEditorial = profileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
   const canManageEditorial = profileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
   const canReviewEditorial = profileRoles.some((role) => ['reviewer', 'admin'].includes(role));
@@ -1738,13 +1768,11 @@ function App() {
                 EN
               </button>
             </div>
-            <button type="button" className="topbar-icon-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
-              {lang === 'es' ? 'Settings' : 'Settings'}
-            </button>
             <div className="account-menu-shell" ref={accountMenuShellRef}>
               <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
                 <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
                 <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
+                <small>{`${accountTypeSummary} · ${accountRoleSummary}`}</small>
               </button>
               {isAccountMenuOpen ? (
                 <div className="account-menu-popover">
