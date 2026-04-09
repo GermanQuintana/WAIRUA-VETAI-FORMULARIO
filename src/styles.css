@@ -219,6 +219,7 @@ select:focus-visible {
 
 .lang-switch button.active {
   background: #e8f5f6;
+  color: #162126;
 }
 
 .flag-emoji {
@@ -235,6 +236,27 @@ select:focus-visible {
 .auth-trigger,
 .auth-google-button {
   width: 100%;
+}
+
+.auth-google-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 3rem;
+  color: #14242a;
+  border-color: #d7dfcf;
+  background: #fff;
+}
+
+.auth-google-button:hover {
+  background: #f7fbfd;
+}
+
+.google-mark {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
 }
 
 .auth-unavailable,
@@ -288,9 +310,16 @@ select:focus-visible {
 .auth-plan-grid button span,
 .auth-membership-summary span,
 .auth-price-note span {
+  display: block;
   color: var(--muted-light);
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.auth-membership-summary strong,
+.auth-price-note strong {
+  display: block;
+  line-height: 1.35;
 }
 
 .auth-trial-callout,
@@ -806,9 +835,15 @@ select:focus-visible {
 .entry-card-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: end;
+  justify-content: flex-start;
   gap: 0.5rem;
-  flex: 0 0 auto;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.entry-card-actions button {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .entry-card h3 {
@@ -1175,6 +1210,16 @@ select:focus-visible {
   max-width: 64ch;
 }
 
+.module-back-button {
+  align-self: flex-start;
+  padding: 0.52rem 0.88rem;
+  border: 1px solid #cfd8c7;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #335245;
+  font-weight: 700;
+}
+
 .section-kicker {
   margin: 0;
   text-transform: uppercase;
@@ -1227,6 +1272,12 @@ select:focus-visible {
   border: 1px solid #d7ddc8;
   background: linear-gradient(180deg, #fffef9 0%, #f8fbf3 100%);
   box-shadow: 0 8px 22px rgba(94, 103, 62, 0.06);
+}
+
+.feature-card-soon {
+  border-color: #efc8cb;
+  background: linear-gradient(180deg, #fff8f8 0%, #fff2f2 100%);
+  box-shadow: 0 8px 22px rgba(159, 47, 53, 0.08);
 }
 
 .feature-card h3,
@@ -1514,6 +1565,26 @@ select:focus-visible {
   background: #f5f2e7;
 }
 
+.subtabs button.locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0.82;
+  cursor: not-allowed;
+}
+
+.subtabs button small {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(159, 47, 53, 0.12);
+  color: #9f2f35;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .subtabs button.active {
   color: #fff;
   border-color: transparent;
@@ -1661,6 +1732,16 @@ select:focus-visible {
 .app.dark .subtabs button {
   background: #203038;
   border-color: #33535d;
+}
+
+.app.dark .subtabs button.locked {
+  color: var(--text-dark);
+  border-color: #33535d;
+}
+
+.app.dark .subtabs button small {
+  background: rgba(219, 131, 131, 0.18);
+  color: #f2b7b7;
 }
 
 .app.dark .tag-chip-list button {
@@ -2001,7 +2082,9 @@ select:focus-visible {
 }
 
 .dose-table-shell {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: min(65vh, 42rem);
+  overscroll-behavior: contain;
   border: 1px solid #d9dfcb;
   border-radius: 1rem;
   background: #fffdf7;
@@ -2059,7 +2142,8 @@ select:focus-visible {
   position: sticky;
   top: 0;
   background: #f4f0e5;
-  z-index: 1;
+  z-index: 6;
+  box-shadow: 0 1px 0 #e4ead8;
 }
 
 .dose-table tbody tr:nth-child(even) {
@@ -2085,6 +2169,12 @@ select:focus-visible {
 .app.dark .ameg-table-shell {
   background: #182329;
   border-color: var(--border-dark);
+}
+
+.app.dark .feature-card-soon {
+  border-color: rgba(170, 83, 89, 0.72);
+  background: linear-gradient(180deg, rgba(74, 31, 35, 0.82) 0%, rgba(52, 22, 25, 0.9) 100%);
+  box-shadow: 0 10px 24px rgba(28, 10, 12, 0.3);
 }
 
 .app.dark .dose-calculator-header p,
@@ -3374,58 +3464,48 @@ select:focus-visible {
 
 .auth-screen-visual {
   position: relative;
-  padding: clamp(2rem, 4vw, 4rem);
+  padding: clamp(1rem, 2vw, 2rem);
   display: flex;
-  align-items: flex-end;
-  color: #f5fafb;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255, 225, 153, 0.28), transparent 14%),
-    radial-gradient(circle at 72% 20%, rgba(255, 255, 255, 0.14), transparent 18%),
-    linear-gradient(180deg, #5daed0 0%, #3d87b1 38%, #245f86 72%, #174662 100%);
-}
-
-.auth-screen-visual::before,
-.auth-screen-visual::after {
-  content: '';
-  position: absolute;
-  left: -6%;
-  right: -6%;
-  border-radius: 50%;
-  background: rgba(255, 249, 240, 0.2);
-}
-
-.auth-screen-visual::before {
-  bottom: 7%;
-  height: 16%;
-}
-
-.auth-screen-visual::after {
-  bottom: -10%;
-  height: 20%;
-  background: rgba(255, 255, 255, 0.12);
+  align-items: center;
+  justify-content: center;
+  color: #162126;
+  background: #ffffff;
 }
 
 .auth-visual-inner {
   position: relative;
   z-index: 1;
-  max-width: 32rem;
+  width: 100%;
+  max-width: 100%;
   display: grid;
-  gap: 1rem;
-}
-
-.auth-visual-inner h1 {
-  margin: 0;
-  font-size: clamp(2.4rem, 5vw, 4.4rem);
-  line-height: 0.95;
-  font-family: var(--font-serif);
-  text-shadow: 0 10px 32px rgba(7, 37, 52, 0.28);
+  justify-items: center;
+  gap: 0;
+  text-align: center;
 }
 
 .auth-visual-inner > p:last-of-type {
   margin: 0;
   max-width: 34ch;
-  color: rgba(245, 250, 251, 0.94);
-  font-size: 1.02rem;
+  color: #162126;
+  font-size: clamp(1.1rem, 1.7vw, 1.38rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.auth-visual-art-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: min(74vh, 52rem);
+}
+
+.auth-visual-art {
+  display: block;
+  width: min(100%, 74rem);
+  max-height: min(78vh, 54rem);
+  object-fit: contain;
+  filter: none;
 }
 
 .auth-visual-grid {
@@ -3495,6 +3575,7 @@ select:focus-visible {
   font-size: clamp(1.9rem, 4vw, 2.8rem);
   font-family: var(--font-serif);
   color: #0f2630;
+  line-height: 0.98;
 }
 
 .auth-card-screen .badge {
@@ -3521,6 +3602,7 @@ select:focus-visible {
 }
 
 .auth-panel-heading strong {
+  display: block;
   font-size: 1.15rem;
 }
 
@@ -3763,6 +3845,12 @@ select:focus-visible {
   color: var(--accent-dark);
 }
 
+.app.dark .auth-google-button {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.72);
+  color: #14242a;
+}
+
 .app.dark .access-feature-list {
   color: var(--text-dark);
 }
@@ -3834,7 +3922,8 @@ body {
   position: relative;
   max-width: 100%;
   padding: 1.1rem;
-  overflow: clip;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .app::before {
@@ -3853,6 +3942,7 @@ body {
   top: 0.7rem;
   z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -3872,6 +3962,18 @@ body {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  min-width: 0;
+}
+
+.topbar-utilities {
+  flex: 1 1 36rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.topbar-actions,
+.topbar-status-group {
+  flex-wrap: wrap;
 }
 
 .topbar-brand-copy {
@@ -3914,18 +4016,8 @@ body {
 }
 
 .topbar-status-chip.is-free {
-  background: rgba(79, 84, 67, 0.1);
-  color: #43473b;
-}
-
-.topbar-trial-pill {
-  border: 1px solid rgba(191, 73, 63, 0.2);
-  background: rgba(191, 73, 63, 0.08);
-  color: #992c22;
-}
-
-.topbar-trial-pill.is-warning:hover {
-  background: rgba(191, 73, 63, 0.14);
+  background: rgba(111, 176, 134, 0.14);
+  color: #2d6a43;
 }
 
 .topbar-icon-button {
@@ -3950,6 +4042,24 @@ body {
   letter-spacing: 0.06em;
 }
 
+.topbar-account-button strong {
+  display: block;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-account-button small {
+  display: block;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.73rem;
+  opacity: 0.84;
+}
+
 .account-menu-shell {
   position: relative;
 }
@@ -3958,9 +4068,12 @@ body {
   position: absolute;
   top: calc(100% + 0.55rem);
   right: 0;
-  width: min(31rem, calc(100vw - 1.5rem));
-  max-height: min(80vh, 46rem);
+  width: min(34rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 6rem);
   z-index: 30;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .account-menu-popover .auth-panel {
@@ -3971,8 +4084,8 @@ body {
   border-radius: 1.1rem;
   background: rgba(255, 252, 244, 0.98);
   box-shadow: 0 22px 50px rgba(16, 33, 38, 0.14);
-  max-height: inherit;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .auth-account-warning {
@@ -4567,9 +4680,35 @@ select {
   color: var(--accent-dark);
 }
 
+.app.dark .topbar-status-chip.is-free {
+  background: rgba(118, 212, 191, 0.14);
+  color: #90d9b3;
+}
+
 .app.dark .topbar-icon-button {
   background: rgba(18, 33, 38, 0.82);
   border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .module-back-button {
+  background: rgba(18, 33, 38, 0.82);
+  border-color: rgba(39, 67, 74, 0.9);
+  color: var(--text-dark);
+}
+
+.app.dark .lang-switch {
+  background: rgba(18, 33, 38, 0.82);
+  border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .lang-switch button {
+  color: var(--text-dark);
+  border-right-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .lang-switch button.active {
+  background: #f4f7ea;
+  color: #162126;
 }
 
 .app.dark .topbar-trial-pill,
@@ -4734,6 +4873,10 @@ select {
 
   .product-tabs {
     top: 7.8rem;
+  }
+
+  .dose-table-shell {
+    max-height: 58vh;
   }
 }
 

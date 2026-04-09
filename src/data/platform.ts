@@ -167,8 +167,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Calculadora transfusional orientativa con pautas de uso, compatibilidad y grupos sanguineos para perro y gato.',
       en: 'Guidance transfusion calculator with use notes, compatibility, and blood-group references for dogs and cats.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
     toolkitView: 'haemotherapy',
   },
   {
@@ -178,8 +178,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Guia de pruebas endocrinas por especie con cronogramas, ayuno, revisiones y ayuda de calculo para protocolos frecuentes.',
       en: 'Species-first endocrine testing guide with timelines, fasting notes, rechecks, and dose help for common protocols.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
     toolkitView: 'endocrine',
   },
   {
@@ -211,8 +211,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Linea con calculadoras energeticas y de nutrientes, base de datos de dietas terapeuticas y constructor de dieta casera para perro y gato.',
       en: 'Lane with energy and nutrient calculators, a therapeutic-diet database, and a homemade-diet builder for dogs and cats.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
     toolkitView: 'nutrition',
   },
   {

@@ -71,6 +71,27 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+create or replace function public.protect_profile_roles()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() = new.id then
+    new.role := old.role;
+    new.roles := old.roles;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_roles_before_update on public.profiles;
+create trigger protect_profile_roles_before_update
+  before update on public.profiles
+  for each row execute procedure public.protect_profile_roles();
+
 create table if not exists public.discount_codes (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
@@ -248,11 +269,7 @@ create policy "profiles_update_own"
   for update
   to authenticated
   using ((select auth.uid()) = id)
-  with check (
-    (select auth.uid()) = id
-    and role = (select role from public.profiles where id = (select auth.uid()))
-    and roles = (select roles from public.profiles where id = (select auth.uid()))
-  );
+  with check ((select auth.uid()) = id);
 
 drop policy if exists "profiles_update_admin" on public.profiles;
 create policy "profiles_update_admin"

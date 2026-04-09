@@ -4,15 +4,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
 import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
-import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
 import DoseCalculator from './components/DoseCalculator';
-import EndocrineToolkit from './components/EndocrineToolkit';
 import EntryCard from './components/EntryCard';
-import HaemotherapyCalculator from './components/HaemotherapyCalculator';
 import InfusionCalculator from './components/InfusionCalculator';
 import UnitConverter from './components/UnitConverter';
 import {
-  humanCimaCards,
   LocalizedCollectionCard,
   otcSubmissionFields,
   otcWorkflowCards,
@@ -47,14 +43,13 @@ import {
   createCimavetServiceFromEnv,
   resolveCimavetBaseUrl,
 } from './services/cimavet';
-import { createClinicalNutritionService } from './services/clinicalNutrition';
 import { createSupabaseAccessService, createSupabaseEditorialService } from './services/supabase';
 import { AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry } from './types';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
-const premiumTabs = ['human', 'active', 'toolkit'] as const;
+const premiumTabs = ['active', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
 const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
@@ -65,6 +60,7 @@ type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
+const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant']);
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -74,6 +70,7 @@ const getErrorMessage = (error: unknown) => {
   }
   return 'Unknown error';
 };
+const isToolkitViewAvailable = (view: ToolkitView) => view === 'overview' || availableToolkitViewSet.has(view);
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -208,6 +205,58 @@ const getOtcSearchableText = (product: OtcProductRecord) =>
 const hasLongOtcBadgeRow = (product: OtcProductRecord, lang: Language) =>
   [product.productType.label[lang], product.category.label[lang]].some((label) => label.length > 18);
 
+const getDoseRangeLabel = (min: number, max: number) => (min === max ? `${min} mg/kg` : `${min}-${max} mg/kg`);
+
+const getEntryIndicationFilterValues = (entry: TherapeuticEntry) =>
+  [
+    ...entry.pathologies,
+    entry.indications.es,
+    entry.indications.en,
+    ...(entry.calculatorPresets ?? []).flatMap((preset) => [preset.indication.es, preset.indication.en]),
+  ].filter(Boolean);
+
+const getEntryConcentrationFilterText = (entry: TherapeuticEntry) =>
+  [
+    ...entry.concentrations,
+    entry.dosage.es,
+    entry.dosage.en,
+    ...(entry.calculatorPresets ?? []).flatMap((preset) => [
+      preset.concentration.es,
+      preset.concentration.en,
+      getDoseRangeLabel(preset.doseRangeMgKg.min, preset.doseRangeMgKg.max),
+      `${preset.defaultDoseMgKg} mg/kg`,
+      preset.route,
+    ]),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const getCimavetDetailFilterText = (medication: CimavetMedicationSummary, detail?: CimavetMedicationDetail | null) =>
+  [
+    medication.pactivos ?? '',
+    detail?.principiosActivos
+      ?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim())
+      .join(' '),
+    detail?.presentaciones?.map((item) => item.nombre).join(' '),
+    detail?.indicaciones?.map((item) => `${item.especie?.nombre ?? ''} ${item.nombre}`.trim()).join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const getCimaDetailFilterText = (medication: CimaMedicationSummary, detail?: CimaMedicationDetail | null) =>
+  [
+    medication.pactivos ?? '',
+    medication.dosis ?? '',
+    medication.formaFarmaceuticaSimplificada?.nombre ?? '',
+    medication.formaFarmaceutica?.nombre ?? '',
+    detail?.principiosActivos
+      ?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim())
+      .join(' '),
+    detail?.presentaciones?.map((item) => item.nombre).join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
   query: string,
@@ -221,14 +270,21 @@ const filterTherapeuticEntries = (
 
   return entries.filter((entry) => {
     const inSpecies = selectedSpecies ? entry.species.some((value) => value === selectedSpecies) : true;
-    const inIndication = selectedIndication ? entry.pathologies.includes(selectedIndication) : true;
+    const inIndication = selectedIndication
+      ? getEntryIndicationFilterValues(entry).some(
+          (value) =>
+            matchesStructuredFilter(value, selectedIndication) ||
+            hasEquivalentMedicalTerm(value, selectedIndication) ||
+            hasEquivalentMedicalTerm(selectedIndication, value),
+        )
+      : true;
     const facetValues = Array.from(new Set([...entry.tags, ...entry.systems, ...entry.pathologies]));
     const inTags =
       selectedTags.length > 0
         ? facetValues.some((tag) => selectedTags.some((selectedTag) => hasEquivalentMedicalTerm(selectedTag, tag)))
         : true;
     const inConcentration = loweredConcentration
-      ? entry.concentrations.some((value) => value.toLowerCase().includes(loweredConcentration))
+      ? matchesStructuredFilter(getEntryConcentrationFilterText(entry), concentrationQuery)
       : true;
 
     if (!loweredQuery) return inSpecies && inIndication && inTags && inConcentration;
@@ -348,11 +404,11 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
+  const accountMenuShellRef = useRef<HTMLDivElement | null>(null);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
   const cimavetService = useMemo(() => createCimavetServiceFromEnv(), []);
-  const clinicalNutritionService = useMemo(() => createClinicalNutritionService(), []);
   const supabaseAccessService = useMemo(() => createSupabaseAccessService(), []);
   const supabaseEditorialService = useMemo(() => createSupabaseEditorialService(), []);
   const t = labels[lang];
@@ -426,6 +482,16 @@ function App() {
   );
   const systemOptions = useMemo(() => getSystemOptions(entryCatalog), [entryCatalog]);
   const localIndicationOptions = useMemo(() => getIndicationOptions(entryCatalog), [entryCatalog]);
+  const activeIndicationOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...localIndicationOptions,
+          ...Object.values(activeVetDetails).flatMap((detail) => detail.indicaciones?.map((item) => item.nombre) ?? []),
+        ]),
+      ).sort((left, right) => translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en')),
+    [activeVetDetails, lang, localIndicationOptions],
+  );
   const tagOptions = useMemo(() => getTagOptions(entryCatalog), [entryCatalog]);
   const formTagOptions = useMemo(
     () => Array.from(new Set([...tagOptions, ...systemOptions])).sort((a, b) => a.localeCompare(b)),
@@ -510,6 +576,12 @@ function App() {
   }, [supabaseAccessService]);
 
   useEffect(() => {
+    if (activeTab === 'toolkit' && !isToolkitViewAvailable(activeToolkitView)) {
+      setActiveToolkitView('overview');
+    }
+  }, [activeTab, activeToolkitView]);
+
+  useEffect(() => {
     if (!authAccount?.profile || !appShellRef.current) return;
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -568,13 +640,7 @@ function App() {
   const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
   const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
   const hasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
-  const accessStatusMessage = hasPremiumAccess
-    ? membership?.status === 'active'
-      ? accessText.statusPremium
-      : `${accessText.statusTrial} ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
-    : membership
-      ? accessText.statusLimited
-      : accessText.statusNoPlan;
+  const accessStatusMessage = hasPremiumAccess ? accessText.premiumBadge : lang === 'es' ? 'Gratuita' : 'Free';
   const profileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
   const canCreateEditorial = profileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
   const canManageEditorial = profileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
@@ -590,6 +656,29 @@ function App() {
           : activeTab === 'otc'
             ? t.otcHub
             : t.toolkitHub;
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (accountMenuShellRef.current?.contains(target)) return;
+      setIsAccountMenuOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsAccountMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isAccountMenuOpen]);
 
   const openKnowledgeRecord = (entryId?: string, ingredientName?: string) => {
     setActiveTab('active');
@@ -641,7 +730,7 @@ function App() {
       activeConcentrationQuery.trim().length > 0 ||
       activeTags.length > 0,
   );
-  const shouldShowActiveRecords = true;
+  const shouldShowActiveRecords = hasActiveSearchCriteria;
   const activeFilteredCount = filteredEntries.length;
   const activeRecordTotalPages = useMemo(() => {
     if (activeRecordPageSize === 'all') return 1;
@@ -841,47 +930,72 @@ function App() {
   );
   const isSingleVisibleOtcProduct = visibleOtcProducts.length === 1;
 
+  const filteredActiveVetResults = useMemo(
+    () =>
+      activeVetResults.filter((medication) => {
+        const detail = activeVetDetails[medication.nregistro];
+        const indicationMatch = activeIndication
+          ? detail?.indicaciones?.some((item) => matchesStructuredFilter(`${item.especie?.nombre ?? ''} ${item.nombre}`.trim(), activeIndication))
+          : true;
+        const concentrationMatch = activeConcentrationQuery
+          ? matchesStructuredFilter(getCimavetDetailFilterText(medication, detail), activeConcentrationQuery)
+          : true;
+        return indicationMatch && concentrationMatch;
+      }),
+    [activeConcentrationQuery, activeIndication, activeVetDetails, activeVetResults],
+  );
+
   const activeVetTotalPages = useMemo(() => {
     if (activeOfficialPageSize === 'all') return 1;
-    return Math.max(1, Math.ceil(activeVetResults.length / activeOfficialPageSize));
-  }, [activeOfficialPageSize, activeVetResults.length]);
+    return Math.max(1, Math.ceil(filteredActiveVetResults.length / activeOfficialPageSize));
+  }, [activeOfficialPageSize, filteredActiveVetResults.length]);
   const activeVetPageBounds = useMemo(() => {
-    if (activeVetResults.length === 0) return { start: 0, end: 0 };
-    if (activeOfficialPageSize === 'all') return { start: 1, end: activeVetResults.length };
+    if (filteredActiveVetResults.length === 0) return { start: 0, end: 0 };
+    if (activeOfficialPageSize === 'all') return { start: 1, end: filteredActiveVetResults.length };
 
     const start = (activeVetPage - 1) * activeOfficialPageSize + 1;
-    const end = Math.min(activeVetResults.length, activeVetPage * activeOfficialPageSize);
+    const end = Math.min(filteredActiveVetResults.length, activeVetPage * activeOfficialPageSize);
     return { start, end };
-  }, [activeOfficialPageSize, activeVetPage, activeVetResults.length]);
+  }, [activeOfficialPageSize, activeVetPage, filteredActiveVetResults.length]);
   const activeVetResultsForDetails = useMemo(
     () =>
       activeOfficialPageSize === 'all'
-        ? activeVetResults
-        : activeVetResults.slice((activeVetPage - 1) * activeOfficialPageSize, activeVetPage * activeOfficialPageSize),
-    [activeOfficialPageSize, activeVetPage, activeVetResults],
+        ? filteredActiveVetResults
+        : filteredActiveVetResults.slice((activeVetPage - 1) * activeOfficialPageSize, activeVetPage * activeOfficialPageSize),
+    [activeOfficialPageSize, activeVetPage, filteredActiveVetResults],
+  );
+
+  const filteredActiveHumanResults = useMemo(
+    () =>
+      activeHumanResults.filter((medication) => {
+        if (!activeConcentrationQuery) return true;
+        const detail = activeHumanDetails[medication.nregistro];
+        return matchesStructuredFilter(getCimaDetailFilterText(medication, detail), activeConcentrationQuery);
+      }),
+    [activeConcentrationQuery, activeHumanDetails, activeHumanResults],
   );
 
   const activeHumanTotalPages = useMemo(() => {
     if (activeOfficialPageSize === 'all') return 1;
-    return Math.max(1, Math.ceil(activeHumanResults.length / activeOfficialPageSize));
-  }, [activeHumanResults.length, activeOfficialPageSize]);
+    return Math.max(1, Math.ceil(filteredActiveHumanResults.length / activeOfficialPageSize));
+  }, [filteredActiveHumanResults.length, activeOfficialPageSize]);
   const activeHumanPageBounds = useMemo(() => {
-    if (activeHumanResults.length === 0) return { start: 0, end: 0 };
-    if (activeOfficialPageSize === 'all') return { start: 1, end: activeHumanResults.length };
+    if (filteredActiveHumanResults.length === 0) return { start: 0, end: 0 };
+    if (activeOfficialPageSize === 'all') return { start: 1, end: filteredActiveHumanResults.length };
 
     const start = (activeHumanPage - 1) * activeOfficialPageSize + 1;
-    const end = Math.min(activeHumanResults.length, activeHumanPage * activeOfficialPageSize);
+    const end = Math.min(filteredActiveHumanResults.length, activeHumanPage * activeOfficialPageSize);
     return { start, end };
-  }, [activeHumanPage, activeHumanResults.length, activeOfficialPageSize]);
+  }, [activeHumanPage, filteredActiveHumanResults.length, activeOfficialPageSize]);
   const activeHumanResultsForDetails = useMemo(
     () =>
       activeOfficialPageSize === 'all'
-        ? activeHumanResults
-        : activeHumanResults.slice(
+        ? filteredActiveHumanResults
+        : filteredActiveHumanResults.slice(
             (activeHumanPage - 1) * activeOfficialPageSize,
             activeHumanPage * activeOfficialPageSize,
           ),
-    [activeHumanPage, activeHumanResults, activeOfficialPageSize],
+    [activeHumanPage, filteredActiveHumanResults, activeOfficialPageSize],
   );
 
   useEffect(() => {
@@ -926,7 +1040,7 @@ function App() {
 
   useEffect(() => {
     setActiveVetPage(1);
-  }, [activeOfficialPageSize, activeQuery, activeSpecies]);
+  }, [activeOfficialPageSize, activeQuery, activeSpecies, activeIndication, activeConcentrationQuery]);
 
   useEffect(() => {
     setActiveVetPage((current) => Math.min(current, activeVetTotalPages));
@@ -934,7 +1048,7 @@ function App() {
 
   useEffect(() => {
     setActiveHumanPage(1);
-  }, [activeKnowledgeView, activeOfficialPageSize, activeQuery, activeTab]);
+  }, [activeKnowledgeView, activeOfficialPageSize, activeQuery, activeTab, activeIndication, activeConcentrationQuery]);
 
   useEffect(() => {
     setActiveHumanPage((current) => Math.min(current, activeHumanTotalPages));
@@ -1323,32 +1437,36 @@ function App() {
 
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => (
     <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
-      {cards.map((card) => (
-        <article key={card.id} className="feature-card">
-          <h3>{card.title[lang]}</h3>
-          <p>{card.description[lang]}</p>
-          {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}
-          {card.bullets?.[lang]?.length ? (
-            <ul>
-              {card.bullets[lang].map((bullet) => (
-                <li key={bullet}>{bullet}</li>
-              ))}
-            </ul>
-          ) : null}
-          {card.toolkitView ? (
-            <button
-              type="button"
-              className="feature-card-link"
-              onClick={() => {
-                setActiveTab('toolkit');
-                setActiveToolkitView(card.toolkitView!);
-              }}
-            >
-              <span>{t.openToolkitModule}</span>
-            </button>
-          ) : null}
-        </article>
-      ))}
+      {cards.map((card) => {
+        const isOpenableToolkitCard = card.toolkitView ? isToolkitViewAvailable(card.toolkitView) : false;
+
+        return (
+          <article key={card.id} className={`feature-card ${card.statusTone === 'soon' ? 'feature-card-soon' : ''}`.trim()}>
+            <h3>{card.title[lang]}</h3>
+            <p>{card.description[lang]}</p>
+            {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}
+            {card.bullets?.[lang]?.length ? (
+              <ul>
+                {card.bullets[lang].map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            ) : null}
+            {isOpenableToolkitCard ? (
+              <button
+                type="button"
+                className="feature-card-link"
+                onClick={() => {
+                  setActiveTab('toolkit');
+                  setActiveToolkitView(card.toolkitView!);
+                }}
+              >
+                <span>{t.openToolkitModule}</span>
+              </button>
+            ) : null}
+          </article>
+        );
+      })}
     </div>
   );
 
@@ -1594,19 +1712,6 @@ function App() {
         <div className="topbar-utilities">
           <div className="topbar-status-group">
             <span className={`topbar-status-chip ${hasPremiumAccess ? 'is-premium' : 'is-free'}`}>{accessStatusMessage}</span>
-            <button
-              type="button"
-              className={`topbar-trial-pill ${membership?.status === 'trialing' ? 'is-warning' : ''}`}
-              onClick={() => setIsAccountMenuOpen((current) => !current)}
-            >
-              {membership?.status === 'trialing'
-                ? lang === 'es'
-                  ? `Prueba · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
-                  : `Trial · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
-                : hasPremiumAccess
-                  ? accessText.premiumBadge
-                  : accessText.freeBadge}
-            </button>
           </div>
 
           <div className="topbar-actions">
@@ -1614,17 +1719,14 @@ function App() {
               {theme === 'light' ? t.dark : t.light}
             </button>
             <div className="lang-switch topbar-lang-switch" role="group" aria-label={t.language}>
-              <button onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
+              <button type="button" onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
                 ES
               </button>
-              <button onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
+              <button type="button" onClick={() => setLang('en')} className={lang === 'en' ? 'active' : ''}>
                 EN
               </button>
             </div>
-            <button type="button" className="topbar-icon-button" onClick={() => setActiveTab('toolkit')}>
-              {lang === 'es' ? 'Settings' : 'Settings'}
-            </button>
-            <div className="account-menu-shell">
+            <div className="account-menu-shell" ref={accountMenuShellRef}>
               <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
                 <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
                 <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
@@ -2232,7 +2334,7 @@ function App() {
                 {t.indicationFilter}
                 <select value={activeIndication} onChange={(event) => setActiveIndication(event.target.value)}>
                   <option value="">{t.all}</option>
-                  {localIndicationOptions.map((indication) => (
+                  {activeIndicationOptions.map((indication) => (
                     <option key={indication} value={indication}>
                       {translateMedicalTerm(indication, lang)}
                     </option>
@@ -2327,14 +2429,14 @@ function App() {
                     {isActiveVetExpanded && !activeQuery.trim().length && (
                       <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMAVET.' : 'Type an active ingredient to query CIMAVET.'}</p>
                     )}
-                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && activeVetResults.length === 0 && <p>{t.liveEmpty}</p>}
+                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && filteredActiveVetResults.length === 0 && <p>{t.liveEmpty}</p>}
 
-                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && activeVetResults.length > 0 && (
+                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && filteredActiveVetResults.length > 0 && (
                       <>
                         <p className="live-summary">
-                          {t.liveShowing}: <strong>{activeVetResults.length}</strong>
+                          {t.liveShowing}: <strong>{filteredActiveVetResults.length}</strong>
                         </p>
-                        {activeOfficialPageSize !== 'all' && activeVetResults.length > activeOfficialPageSize && (
+                        {activeOfficialPageSize !== 'all' && filteredActiveVetResults.length > activeOfficialPageSize && (
                           <div className="live-pagination">
                             <button
                               type="button"
@@ -2345,7 +2447,7 @@ function App() {
                               {t.previousPage}
                             </button>
                             <p>
-                              {activeVetPageBounds.start}-{activeVetPageBounds.end} {t.ofLabel} {activeVetResults.length}. {t.pageLabel}{' '}
+                              {activeVetPageBounds.start}-{activeVetPageBounds.end} {t.ofLabel} {filteredActiveVetResults.length}. {t.pageLabel}{' '}
                               {activeVetPage} {t.ofLabel} {activeVetTotalPages}
                             </p>
                             <button
@@ -2458,16 +2560,16 @@ function App() {
                     {isActiveHumanExpanded && !activeQuery.trim().length && (
                       <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMA.' : 'Type an active ingredient to query CIMA.'}</p>
                     )}
-                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && activeHumanResults.length === 0 && (
+                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && filteredActiveHumanResults.length === 0 && (
                       <p>{t.humanLiveEmpty}</p>
                     )}
 
-                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && activeHumanResults.length > 0 && (
+                    {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && filteredActiveHumanResults.length > 0 && (
                       <>
                         <p className="live-summary">
-                          {t.humanLiveShowing}: <strong>{activeHumanResults.length}</strong>
+                          {t.humanLiveShowing}: <strong>{filteredActiveHumanResults.length}</strong>
                         </p>
-                        {activeOfficialPageSize !== 'all' && activeHumanResults.length > activeOfficialPageSize && (
+                        {activeOfficialPageSize !== 'all' && filteredActiveHumanResults.length > activeOfficialPageSize && (
                           <div className="live-pagination">
                             <button
                               type="button"
@@ -2478,7 +2580,7 @@ function App() {
                               {t.previousPage}
                             </button>
                             <p>
-                              {activeHumanPageBounds.start}-{activeHumanPageBounds.end} {t.ofLabel} {activeHumanResults.length}. {t.pageLabel}{' '}
+                              {activeHumanPageBounds.start}-{activeHumanPageBounds.end} {t.ofLabel} {filteredActiveHumanResults.length}. {t.pageLabel}{' '}
                               {activeHumanPage} {t.ofLabel} {activeHumanTotalPages}
                             </p>
                             <button
@@ -2617,14 +2719,12 @@ function App() {
               <>
                 <div className="live-panel-header active-records-header">
                   <div>
-                    <h3>
-                      {t.activeIngredientSummaries}: {activeFilteredCount}
-                    </h3>
+                    <h3>{hasActiveSearchCriteria ? `${t.activeIngredientSummaries}: ${activeFilteredCount}` : t.activeIngredientSummaries}</h3>
                     {!hasActiveSearchCriteria && (
                       <p className="live-hint">
                         {lang === 'es'
-                          ? 'Mostrando toda la base local. Usa busqueda o filtros para acotarla.'
-                          : 'Showing the full local knowledge base. Use search or filters to narrow it down.'}
+                          ? 'Empieza escribiendo o aplicando filtros para mostrar principios activos.'
+                          : 'Start typing or applying filters to display active ingredients.'}
                       </p>
                     )}
                   </div>
@@ -2723,36 +2823,11 @@ function App() {
                     : 'Module to gather calculators, conversions, protocols, and shortcuts that are currently spread across different apps and worksheets.'}
                 </p>
               </div>
-            </div>
-
-            <div className="subtabs" role="tablist" aria-label="Toolkit views">
-              <button onClick={() => setActiveToolkitView('dose')} className={activeToolkitView === 'dose' ? 'active' : ''}>
-                {t.doseCalculatorTitle}
-              </button>
-              <button onClick={() => setActiveToolkitView('infusion')} className={activeToolkitView === 'infusion' ? 'active' : ''}>
-                {t.infusionCalculatorNav}
-              </button>
-              <button
-                onClick={() => setActiveToolkitView('haemotherapy')}
-                className={activeToolkitView === 'haemotherapy' ? 'active' : ''}
-              >
-                {t.haemotherapyNav}
-              </button>
-              <button onClick={() => setActiveToolkitView('endocrine')} className={activeToolkitView === 'endocrine' ? 'active' : ''}>
-                {t.endocrineNav}
-              </button>
-              <button onClick={() => setActiveToolkitView('converter')} className={activeToolkitView === 'converter' ? 'active' : ''}>
-                {t.unitConverterNav}
-              </button>
-              <button onClick={() => setActiveToolkitView('surface')} className={activeToolkitView === 'surface' ? 'active' : ''}>
-                {t.bodySurfaceNav}
-              </button>
-              <button onClick={() => setActiveToolkitView('nutrition')} className={activeToolkitView === 'nutrition' ? 'active' : ''}>
-                {t.clinicalNutritionNav}
-              </button>
-              <button onClick={() => setActiveToolkitView('assistant')} className={activeToolkitView === 'assistant' ? 'active' : ''}>
-                {t.assistantForm}
-              </button>
+              {activeToolkitView !== 'overview' ? (
+                <button type="button" className="module-back-button" onClick={() => setActiveToolkitView('overview')}>
+                  {lang === 'es' ? 'Volver al resumen' : 'Back to overview'}
+                </button>
+              ) : null}
             </div>
 
             {activeToolkitView === 'overview' && (
@@ -2781,15 +2856,9 @@ function App() {
 
             {activeToolkitView === 'infusion' && <InfusionCalculator lang={lang} />}
 
-            {activeToolkitView === 'haemotherapy' && <HaemotherapyCalculator lang={lang} />}
-
-            {activeToolkitView === 'endocrine' && <EndocrineToolkit lang={lang} />}
-
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
             {activeToolkitView === 'surface' && <BodySurfaceAreaCalculator lang={lang} />}
-
-            {activeToolkitView === 'nutrition' && <ClinicalNutritionToolkit lang={lang} service={clinicalNutritionService} />}
 
             {activeToolkitView === 'assistant' && (
               <section className="embedded-section">
@@ -3134,7 +3203,6 @@ function App() {
               )}
             </section>
 
-            {renderLocalizedCards(humanCimaCards)}
           </section>
         )}
       </main>

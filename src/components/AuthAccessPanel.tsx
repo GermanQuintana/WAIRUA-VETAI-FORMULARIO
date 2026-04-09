@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
 import { AuthAccountSnapshot, BillingCycle, DiscountCodeRecord, MembershipSelection, UserProfile, UserRole } from '../types';
 import { SupabaseAccessService } from '../services/supabase';
+import wairuaLoginArt from '../assets/wairua-vetai-login-art.jpeg';
 
 interface Props {
   lang: Language;
@@ -18,12 +19,30 @@ const PLAN_PRICES: Record<BillingCycle, number> = {
   annual: 3600,
 };
 
+const roleLabels = {
+  es: {
+    viewer: 'Lector',
+    contributor: 'Colaborador',
+    editor: 'Editor',
+    reviewer: 'Revisor',
+    admin: 'Administrador',
+  },
+  en: {
+    viewer: 'Viewer',
+    contributor: 'Contributor',
+    editor: 'Editor',
+    reviewer: 'Reviewer',
+    admin: 'Admin',
+  },
+} as const;
+
 const copy = {
   es: {
     open: 'Acceder / registrarse',
     close: 'Cerrar',
     unavailable: 'Modo demo publicado. El login y las membresias se activaran cuando conectemos Supabase en el despliegue.',
-    unavailableHint: 'Si quieres probar el acceso real, hay que configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en GitHub Pages.',
+    unavailableHint:
+      'Si quieres probar el acceso real, configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en Vercel y autoriza la URL del despliegue en Supabase Auth.',
     signIn: 'Iniciar sesión',
     signUp: 'Crear cuenta',
     withGoogle: 'Continuar con Google',
@@ -37,7 +56,7 @@ const copy = {
     monthlyPrice: '5 €/mes',
     annualPrice: '36 €/año',
     partnerCode: 'Código descuento',
-    partnerCodePlaceholder: 'Ej: PARTNER1EURO3M',
+    partnerCodePlaceholder: 'Ej: CODIGO-DEMO',
     applyCode: 'Aplicar código',
     activeCode: 'Código activo',
     codeApplied: 'Código aplicado correctamente.',
@@ -54,6 +73,9 @@ const copy = {
     genericError: 'No se pudo completar la operación.',
     account: 'Cuenta',
     selectedPlan: 'Plan elegido',
+    accountType: 'Cuenta',
+    rolesLabel: 'Roles',
+    freeAccount: 'Gratuita',
     status: 'Estado',
     trialUntil: 'Prueba hasta',
     updatePlan: 'Guardar plan',
@@ -89,10 +111,10 @@ const copy = {
     premiumEnded: 'Premium cancelada o caducada',
     renewalHelp: 'Si el plan sigue activo, Stripe renovará automáticamente en esa fecha.',
     portalCta: 'Abrir portal de Stripe',
-    welcomeBack: 'Bienvenido de nuevo',
+    welcomeBack: 'Bienvenido',
     accessHeading: 'Entra primero y después accede a la web app',
-    accessBody:
-      'Autenticación convencional para profesionales veterinarios: inicias sesión, accedes a tu espacio y ves qué áreas siguen libres y cuáles requieren premium.',
+    accessBody: 'Acceso profesional a WAIRUA VetAI.',
+    visualNote: 'Toolkit clínico, consulta prescriptiva y conocimiento veterinario colaborativo en un solo entorno.',
     freeZone: 'Zona gratuita',
     premiumZone: 'Zona premium',
     freeFeatureOne: 'Medicaciones veterinarias oficiales',
@@ -106,7 +128,7 @@ const copy = {
     showPassword: 'Mostrar',
     hidePassword: 'Ocultar',
     compactTitle: 'Mi acceso',
-    compactSubtitle: 'Controla prueba, plan y estado premium desde aquí.',
+    compactSubtitle: 'Plan, acceso y permisos de edición.',
     trialWarning: 'Tiempo restante de prueba',
     autoRenewOn: 'Renovación automática',
     autoRenewOff: 'No se renovará automáticamente',
@@ -125,7 +147,8 @@ const copy = {
     open: 'Sign in / sign up',
     close: 'Close',
     unavailable: 'Published demo mode. Login and memberships will become available once Supabase is connected in deployment.',
-    unavailableHint: 'To enable real access here, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in GitHub Pages.',
+    unavailableHint:
+      'To enable real access here, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Vercel and allow the deployment URL in Supabase Auth.',
     signIn: 'Sign in',
     signUp: 'Create account',
     withGoogle: 'Continue with Google',
@@ -139,7 +162,7 @@ const copy = {
     monthlyPrice: 'EUR 5/month',
     annualPrice: 'EUR 36/year',
     partnerCode: 'Discount code',
-    partnerCodePlaceholder: 'Example: PARTNER1EURO3M',
+    partnerCodePlaceholder: 'Example: DEMO-CODE',
     applyCode: 'Apply code',
     activeCode: 'Active code',
     codeApplied: 'Code applied successfully.',
@@ -156,6 +179,9 @@ const copy = {
     genericError: 'The operation could not be completed.',
     account: 'Account',
     selectedPlan: 'Selected plan',
+    accountType: 'Account',
+    rolesLabel: 'Roles',
+    freeAccount: 'Free',
     status: 'Status',
     trialUntil: 'Trial until',
     updatePlan: 'Save plan',
@@ -191,10 +217,10 @@ const copy = {
     premiumEnded: 'Premium cancelled or expired',
     renewalHelp: 'If the plan remains active, Stripe will renew automatically on that date.',
     portalCta: 'Open Stripe portal',
-    welcomeBack: 'Welcome back',
+    welcomeBack: 'Welcome',
     accessHeading: 'Sign in first, then enter the web app',
-    accessBody:
-      'Standard authentication for veterinary professionals: sign in first, enter your workspace, then see which areas stay free and which require premium.',
+    accessBody: 'Professional access to WAIRUA VetAI.',
+    visualNote: 'Clinical toolkit, prescribing guidance, and collaborative veterinary knowledge in one place.',
     freeZone: 'Free area',
     premiumZone: 'Premium area',
     freeFeatureOne: 'Official veterinary medication search',
@@ -208,7 +234,7 @@ const copy = {
     showPassword: 'Show',
     hidePassword: 'Hide',
     compactTitle: 'My access',
-    compactSubtitle: 'Manage your trial, plan, and premium status here.',
+    compactSubtitle: 'Plan, access, and editing permissions.',
     trialWarning: 'Remaining trial time',
     autoRenewOn: 'Auto-renew is on',
     autoRenewOff: 'Will not auto-renew',
@@ -247,6 +273,8 @@ const formatStripeStatus = (status: string | undefined, t: (typeof copy)['es'] |
   return status ?? '--';
 };
 
+const formatUserRole = (lang: Language, role: UserRole) => roleLabels[lang][role];
+
 const getAppReturnUrl = () => {
   const path = window.location.pathname || '/';
   return new URL(path, window.location.origin).toString();
@@ -257,6 +285,27 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
   return fallback;
 };
+
+const GoogleMark = () => (
+  <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+    <path
+      fill="#EA4335"
+      d="M17.64 9.2045c0-.6382-.0573-1.2518-.1636-1.8409H9v3.4818h4.8436c-.2087 1.125-.8427 2.0782-1.796 2.7164v2.2582h2.9087c1.7018-1.5668 2.6837-3.8732 2.6837-6.6155Z"
+    />
+    <path
+      fill="#4285F4"
+      d="M9 18c2.43 0 4.4673-.8059 5.9564-2.1791l-2.9087-2.2582c-.8059.54-1.8368.8591-3.0477.8591-2.3468 0-4.3323-1.5859-5.0409-3.716L.9527 12.9632C2.4332 15.9032 5.475 18 9 18Z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M3.9591 10.705c-.18-.54-.2823-1.1168-.2823-1.705 0-.5882.1023-1.165.2823-1.705V5.0368H.9527C.3418 6.2536 0 7.6255 0 9s.3418 2.7464.9527 3.9632L3.9591 10.705Z"
+    />
+    <path
+      fill="#34A853"
+      d="M9 3.5782c1.3214 0 2.5077.4541 3.4418 1.3459l2.5814-2.5814C13.4632.8918 11.4259 0 9 0 5.475 0 2.4332 2.0968.9527 5.0368L3.9591 7.295C4.6677 5.1641 6.6532 3.5782 9 3.5782Z"
+    />
+  </svg>
+);
 
 const isDiscountApplicable = (cycle: BillingCycle, discount: DiscountCodeRecord | null) =>
   Boolean(discount && (discount.appliesTo === cycle || discount.appliesTo === 'both'));
@@ -332,6 +381,11 @@ export default function AuthAccessPanel({
   const shouldShowForm = isScreenLayout ? !account?.profile : isOpen && !account?.profile;
   const stripeStatusLabel = formatStripeStatus(membership?.stripeStatus ?? membership?.status, t);
   const isAdmin = (account?.profile?.roles ?? [account?.profile?.role ?? 'viewer']).includes('admin');
+  const accountRoles = useMemo(() => {
+    const rawRoles = account?.profile?.roles?.length ? account.profile.roles : [account?.profile?.role ?? 'viewer'];
+    return roleOptions.filter((role) => rawRoles.includes(role));
+  }, [account?.profile]);
+  const accountTypeLabel = !hasMembership ? t.freeAccount : t[membership?.status ?? 'trialing'];
   const now = Date.now();
   const trialTimeLeftMs = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() - now : null;
   const trialDaysLeft =
@@ -401,8 +455,8 @@ export default function AuthAccessPanel({
     try {
       const redirectTo = getAppReturnUrl();
       await service.signInWithGoogle(redirectTo, mode === 'sign_up' ? selection : undefined);
-    } catch {
-      setError(t.genericError);
+    } catch (error) {
+      setError(getErrorMessage(error, t.genericError));
       setIsBusy(false);
     }
   };
@@ -622,6 +676,14 @@ export default function AuthAccessPanel({
 
       <div className="auth-membership-summary">
         <div>
+          <span>{t.accountType}</span>
+          <strong>{accountTypeLabel}</strong>
+        </div>
+        <div>
+          <span>{t.rolesLabel}</span>
+          <strong>{accountRoles.map((role) => formatUserRole(lang, role)).join(' · ')}</strong>
+        </div>
+        <div>
           <span>{t.selectedPlan}</span>
           <strong>
             {hasMembership
@@ -647,7 +709,6 @@ export default function AuthAccessPanel({
         </div>
       </div>
 
-      <p className="auth-account-hint">{hasMembership ? t.updateHint : t.trialStartHint}</p>
       <p className="auth-account-hint">{t.managePlanHint}</p>
 
       {membership?.stripeCustomerId ? (
@@ -663,24 +724,21 @@ export default function AuthAccessPanel({
       {message ? <p className="auth-feedback auth-feedback-success">{message}</p> : null}
       {error ? <p className="auth-feedback auth-feedback-error">{error}</p> : null}
 
-      <div className="auth-price-note">
-        <span>{t.billingTitle}</span>
-        <strong>{t.stripeCheckout}</strong>
-        <p>{t.stripeHelp}</p>
-      </div>
-
       <div className="auth-account-actions">
-        <button type="button" className="theme-button" onClick={handleSavePlan} disabled={isBusy}>
-          {hasMembership ? t.savePreference : t.activateTrial}
-        </button>
-        <button type="button" className="theme-button" onClick={handleStripeCheckout} disabled={isBusy}>
-          {t.stripeCheckout}
-        </button>
         {membership?.stripeCustomerId ? (
           <button type="button" className="secondary-button" onClick={handleStripePortal} disabled={isBusy}>
             {t.portalCta}
           </button>
-        ) : null}
+        ) : (
+          <>
+            <button type="button" className="theme-button" onClick={handleSavePlan} disabled={isBusy}>
+              {hasMembership ? t.savePreference : t.activateTrial}
+            </button>
+            <button type="button" className="theme-button" onClick={handleStripeCheckout} disabled={isBusy}>
+              {t.stripeCheckout}
+            </button>
+          </>
+        )}
         <button type="button" className="secondary-button" onClick={handleSignOut} disabled={isBusy}>
           {t.signOut}
         </button>
@@ -783,8 +841,9 @@ export default function AuthAccessPanel({
 
       {mode === 'sign_up' ? renderPlanSelector() : null}
 
-      <button type="button" className="theme-button auth-google-button" onClick={handleGoogle} disabled={isBusy}>
-        {mode === 'sign_up' ? t.signUpGoogle : t.withGoogle}
+      <button type="button" className="secondary-button auth-google-button" onClick={handleGoogle} disabled={isBusy}>
+        <GoogleMark />
+        <span>{mode === 'sign_up' ? t.signUpGoogle : t.withGoogle}</span>
       </button>
 
       <form className="auth-form" onSubmit={handleEmailAuth}>
@@ -856,9 +915,9 @@ export default function AuthAccessPanel({
         <section className="auth-screen">
           <div className="auth-screen-visual">
             <div className="auth-visual-inner">
-              <p className="badge">WAIRUA VetAI</p>
-              <h1>{t.accessHeading}</h1>
-              <p>{t.accessBody}</p>
+              <div className="auth-visual-art-wrap">
+                <img src={wairuaLoginArt} alt="WAIRUA VetAI" className="auth-visual-art" />
+              </div>
             </div>
           </div>
           <div className="auth-screen-panel">
@@ -883,21 +942,8 @@ export default function AuthAccessPanel({
       <section className="auth-screen">
         <div className="auth-screen-visual">
           <div className="auth-visual-inner">
-            <p className="badge">WAIRUA VetAI</p>
-            <h1>{t.accessHeading}</h1>
-            <p>{t.accessBody}</p>
-
-            <div className="auth-visual-grid">
-              <article>
-                <span>{t.freeZone}</span>
-                <strong>{t.freeFeatureOne}</strong>
-                <p>{t.freeFeatureTwo}</p>
-              </article>
-              <article>
-                <span>{t.premiumZone}</span>
-                <strong>{t.premiumFeatureOne}</strong>
-                <p>{t.premiumFeatureTwo}</p>
-              </article>
+            <div className="auth-visual-art-wrap">
+              <img src={wairuaLoginArt} alt="WAIRUA VetAI" className="auth-visual-art" />
             </div>
           </div>
         </div>
