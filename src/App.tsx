@@ -12,7 +12,6 @@ import HaemotherapyCalculator from './components/HaemotherapyCalculator';
 import InfusionCalculator from './components/InfusionCalculator';
 import UnitConverter from './components/UnitConverter';
 import {
-  humanCimaCards,
   LocalizedCollectionCard,
   otcSubmissionFields,
   otcWorkflowCards,
@@ -54,7 +53,7 @@ import { AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry } from './types
 gsap.registerPlugin(ScrollTrigger);
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
-const premiumTabs = ['human', 'active', 'toolkit'] as const;
+const premiumTabs = ['active', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
 const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
@@ -665,7 +664,7 @@ function App() {
       activeConcentrationQuery.trim().length > 0 ||
       activeTags.length > 0,
   );
-  const shouldShowActiveRecords = true;
+  const shouldShowActiveRecords = hasActiveSearchCriteria;
   const activeFilteredCount = filteredEntries.length;
   const activeRecordTotalPages = useMemo(() => {
     if (activeRecordPageSize === 'all') return 1;
@@ -2641,14 +2640,12 @@ function App() {
               <>
                 <div className="live-panel-header active-records-header">
                   <div>
-                    <h3>
-                      {t.activeIngredientSummaries}: {activeFilteredCount}
-                    </h3>
+                    <h3>{hasActiveSearchCriteria ? `${t.activeIngredientSummaries}: ${activeFilteredCount}` : t.activeIngredientSummaries}</h3>
                     {!hasActiveSearchCriteria && (
                       <p className="live-hint">
                         {lang === 'es'
-                          ? 'Mostrando toda la base local. Usa busqueda o filtros para acotarla.'
-                          : 'Showing the full local knowledge base. Use search or filters to narrow it down.'}
+                          ? 'Empieza escribiendo o aplicando filtros para mostrar principios activos.'
+                          : 'Start typing or applying filters to display active ingredients.'}
                       </p>
                     )}
                   </div>
@@ -3158,7 +3155,6 @@ function App() {
               )}
             </section>
 
-            {renderLocalizedCards(humanCimaCards)}
           </section>
         )}
       </main>

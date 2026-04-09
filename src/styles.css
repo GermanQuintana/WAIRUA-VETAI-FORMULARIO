@@ -3853,7 +3853,8 @@ body {
   position: relative;
   max-width: 100%;
   padding: 1.1rem;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .app::before {
@@ -3872,6 +3873,7 @@ body {
   top: 0.7rem;
   z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -3891,6 +3893,18 @@ body {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  min-width: 0;
+}
+
+.topbar-utilities {
+  flex: 1 1 36rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.topbar-actions,
+.topbar-status-group {
+  flex-wrap: wrap;
 }
 
 .topbar-brand-copy {
@@ -3969,6 +3983,14 @@ body {
   letter-spacing: 0.06em;
 }
 
+.topbar-account-button strong {
+  display: block;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .account-menu-shell {
   position: relative;
 }
@@ -3977,10 +3999,12 @@ body {
   position: absolute;
   top: calc(100% + 0.55rem);
   right: 0;
-  width: min(31rem, calc(100vw - 1.5rem));
-  max-height: min(80vh, 46rem);
+  width: min(34rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 6rem);
   z-index: 30;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .account-menu-popover .auth-panel {
@@ -3991,10 +4015,8 @@ body {
   border-radius: 1.1rem;
   background: rgba(255, 252, 244, 0.98);
   box-shadow: 0 22px 50px rgba(16, 33, 38, 0.14);
-  max-height: inherit;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  max-height: none;
+  overflow: visible;
 }
 
 .auth-account-warning {
