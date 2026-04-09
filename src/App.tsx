@@ -1753,11 +1753,7 @@ function App() {
         <div className="topbar-utilities">
           <div className="topbar-status-group">
             <span className={`topbar-status-chip ${hasPremiumAccess ? 'is-premium' : 'is-free'}`}>{accessStatusMessage}</span>
-            <button
-              type="button"
-              className={`topbar-trial-pill ${membership?.status === 'trialing' ? 'is-warning' : ''}`}
-              onClick={() => setIsAccountMenuOpen((current) => !current)}
-            >
+            <span className={`topbar-trial-pill ${membership?.status === 'trialing' ? 'is-warning' : ''}`}>
               {membership?.status === 'trialing'
                 ? lang === 'es'
                   ? `Prueba · ${formatAccessDate(lang, membership?.trialEndsAt ?? undefined)}`
@@ -1765,7 +1761,7 @@ function App() {
                 : hasPremiumAccess
                   ? accessText.premiumBadge
                   : accessText.freeBadge}
-            </button>
+            </span>
           </div>
 
           <div className="topbar-actions">
@@ -2878,41 +2874,11 @@ function App() {
                     : 'Module to gather calculators, conversions, protocols, and shortcuts that are currently spread across different apps and worksheets.'}
                 </p>
               </div>
-            </div>
-
-            <div className="subtabs" role="tablist" aria-label="Toolkit views">
-              <button onClick={() => setActiveToolkitView('dose')} className={activeToolkitView === 'dose' ? 'active' : ''}>
-                {t.doseCalculatorTitle}
-              </button>
-              <button onClick={() => setActiveToolkitView('infusion')} className={activeToolkitView === 'infusion' ? 'active' : ''}>
-                {t.infusionCalculatorNav}
-              </button>
-              <button
-                type="button"
-                disabled
-                className="locked"
-                aria-disabled="true"
-              >
-                <span>{t.haemotherapyNav}</span>
-                <small>{lang === 'es' ? 'Próximamente' : 'Coming soon'}</small>
-              </button>
-              <button type="button" disabled className="locked" aria-disabled="true">
-                <span>{t.endocrineNav}</span>
-                <small>{lang === 'es' ? 'Próximamente' : 'Coming soon'}</small>
-              </button>
-              <button onClick={() => setActiveToolkitView('converter')} className={activeToolkitView === 'converter' ? 'active' : ''}>
-                {t.unitConverterNav}
-              </button>
-              <button onClick={() => setActiveToolkitView('surface')} className={activeToolkitView === 'surface' ? 'active' : ''}>
-                {t.bodySurfaceNav}
-              </button>
-              <button type="button" disabled className="locked" aria-disabled="true">
-                <span>{t.clinicalNutritionNav}</span>
-                <small>{lang === 'es' ? 'Próximamente' : 'Coming soon'}</small>
-              </button>
-              <button onClick={() => setActiveToolkitView('assistant')} className={activeToolkitView === 'assistant' ? 'active' : ''}>
-                {t.assistantForm}
-              </button>
+              {activeToolkitView !== 'overview' ? (
+                <button type="button" className="module-back-button" onClick={() => setActiveToolkitView('overview')}>
+                  {lang === 'es' ? 'Volver al resumen' : 'Back to overview'}
+                </button>
+              ) : null}
             </div>
 
             {activeToolkitView === 'overview' && (

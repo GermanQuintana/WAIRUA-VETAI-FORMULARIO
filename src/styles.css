@@ -1210,6 +1210,16 @@ select:focus-visible {
   max-width: 64ch;
 }
 
+.module-back-button {
+  align-self: flex-start;
+  padding: 0.52rem 0.88rem;
+  border: 1px solid #cfd8c7;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #335245;
+  font-weight: 700;
+}
+
 .section-kicker {
   margin: 0;
   text-transform: uppercase;
@@ -4001,10 +4011,6 @@ body {
   color: #992c22;
 }
 
-.topbar-trial-pill.is-warning:hover {
-  background: rgba(191, 73, 63, 0.14);
-}
-
 .topbar-icon-button {
   padding: 0.45rem 0.85rem;
   background: rgba(255, 255, 255, 0.84);
@@ -4668,6 +4674,12 @@ select {
 .app.dark .topbar-icon-button {
   background: rgba(18, 33, 38, 0.82);
   border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .module-back-button {
+  background: rgba(18, 33, 38, 0.82);
+  border-color: rgba(39, 67, 74, 0.9);
+  color: var(--text-dark);
 }
 
 .app.dark .lang-switch {
