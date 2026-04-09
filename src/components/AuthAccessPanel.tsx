@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
 import { AuthAccountSnapshot, BillingCycle, DiscountCodeRecord, MembershipSelection, UserProfile, UserRole } from '../types';
 import { SupabaseAccessService } from '../services/supabase';
-import wairuaLoginArt from '../assets/wairua-vetai-login-art.png';
+import wairuaLoginArt from '../assets/wairua-vetai-login-art.jpeg';
 
 interface Props {
   lang: Language;
