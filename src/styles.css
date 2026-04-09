@@ -238,6 +238,27 @@ select:focus-visible {
   width: 100%;
 }
 
+.auth-google-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 3rem;
+  color: #14242a;
+  border-color: #d7dfcf;
+  background: #fff;
+}
+
+.auth-google-button:hover {
+  background: #f7fbfd;
+}
+
+.google-mark {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+
 .auth-unavailable,
 .auth-copy,
 .auth-account-hint,
@@ -3377,7 +3398,8 @@ select:focus-visible {
   position: relative;
   padding: clamp(2rem, 4vw, 4rem);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   color: #f5fafb;
   background:
     radial-gradient(circle at 18% 18%, rgba(255, 225, 153, 0.28), transparent 14%),
@@ -3409,24 +3431,37 @@ select:focus-visible {
 .auth-visual-inner {
   position: relative;
   z-index: 1;
-  max-width: 32rem;
+  width: min(100%, 46rem);
   display: grid;
-  gap: 1rem;
-}
-
-.auth-visual-inner h1 {
-  margin: 0;
-  font-size: clamp(2.4rem, 5vw, 4.4rem);
-  line-height: 0.95;
-  font-family: var(--font-serif);
-  text-shadow: 0 10px 32px rgba(7, 37, 52, 0.28);
+  justify-items: center;
+  gap: 1.15rem;
+  text-align: center;
 }
 
 .auth-visual-inner > p:last-of-type {
   margin: 0;
-  max-width: 34ch;
+  max-width: 40ch;
   color: rgba(245, 250, 251, 0.94);
   font-size: 1.02rem;
+}
+
+.auth-visual-art-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(54vh, 34rem);
+}
+
+.auth-visual-art {
+  display: block;
+  width: min(100%, 42rem);
+  max-height: min(56vh, 36rem);
+  object-fit: contain;
+  filter: drop-shadow(0 26px 40px rgba(9, 34, 46, 0.28));
+}
+
+.auth-visual-note {
+  text-wrap: balance;
 }
 
 .auth-visual-grid {
@@ -3496,6 +3531,7 @@ select:focus-visible {
   font-size: clamp(1.9rem, 4vw, 2.8rem);
   font-family: var(--font-serif);
   color: #0f2630;
+  line-height: 0.98;
 }
 
 .auth-card-screen .badge {
@@ -3762,6 +3798,12 @@ select:focus-visible {
 .app.dark .access-tier-badge {
   background: rgba(118, 212, 191, 0.14);
   color: var(--accent-dark);
+}
+
+.app.dark .auth-google-button {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.72);
+  color: #14242a;
 }
 
 .app.dark .access-feature-list {

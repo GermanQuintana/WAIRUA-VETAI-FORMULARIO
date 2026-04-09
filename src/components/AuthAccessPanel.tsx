@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
 import { AuthAccountSnapshot, BillingCycle, DiscountCodeRecord, MembershipSelection, UserProfile, UserRole } from '../types';
 import { SupabaseAccessService } from '../services/supabase';
+import wairuaLoginArt from '../assets/wairua-vetai-login-art.png';
 
 interface Props {
   lang: Language;
@@ -90,10 +91,10 @@ const copy = {
     premiumEnded: 'Premium cancelada o caducada',
     renewalHelp: 'Si el plan sigue activo, Stripe renovará automáticamente en esa fecha.',
     portalCta: 'Abrir portal de Stripe',
-    welcomeBack: 'Bienvenido de nuevo',
+    welcomeBack: 'Bienvenido',
     accessHeading: 'Entra primero y después accede a la web app',
-    accessBody:
-      'Autenticación convencional para profesionales veterinarios: inicias sesión, accedes a tu espacio y ves qué áreas siguen libres y cuáles requieren premium.',
+    accessBody: 'Acceso profesional a WAIRUA VetAI.',
+    visualNote: 'Toolkit clínico, consulta prescriptiva y conocimiento veterinario colaborativo en un solo entorno.',
     freeZone: 'Zona gratuita',
     premiumZone: 'Zona premium',
     freeFeatureOne: 'Medicaciones veterinarias oficiales',
@@ -193,10 +194,10 @@ const copy = {
     premiumEnded: 'Premium cancelled or expired',
     renewalHelp: 'If the plan remains active, Stripe will renew automatically on that date.',
     portalCta: 'Open Stripe portal',
-    welcomeBack: 'Welcome back',
+    welcomeBack: 'Welcome',
     accessHeading: 'Sign in first, then enter the web app',
-    accessBody:
-      'Standard authentication for veterinary professionals: sign in first, enter your workspace, then see which areas stay free and which require premium.',
+    accessBody: 'Professional access to WAIRUA VetAI.',
+    visualNote: 'Clinical toolkit, prescribing guidance, and collaborative veterinary knowledge in one place.',
     freeZone: 'Free area',
     premiumZone: 'Premium area',
     freeFeatureOne: 'Official veterinary medication search',
@@ -259,6 +260,27 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
   return fallback;
 };
+
+const GoogleMark = () => (
+  <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+    <path
+      fill="#EA4335"
+      d="M17.64 9.2045c0-.6382-.0573-1.2518-.1636-1.8409H9v3.4818h4.8436c-.2087 1.125-.8427 2.0782-1.796 2.7164v2.2582h2.9087c1.7018-1.5668 2.6837-3.8732 2.6837-6.6155Z"
+    />
+    <path
+      fill="#4285F4"
+      d="M9 18c2.43 0 4.4673-.8059 5.9564-2.1791l-2.9087-2.2582c-.8059.54-1.8368.8591-3.0477.8591-2.3468 0-4.3323-1.5859-5.0409-3.716L.9527 12.9632C2.4332 15.9032 5.475 18 9 18Z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M3.9591 10.705c-.18-.54-.2823-1.1168-.2823-1.705 0-.5882.1023-1.165.2823-1.705V5.0368H.9527C.3418 6.2536 0 7.6255 0 9s.3418 2.7464.9527 3.9632L3.9591 10.705Z"
+    />
+    <path
+      fill="#34A853"
+      d="M9 3.5782c1.3214 0 2.5077.4541 3.4418 1.3459l2.5814-2.5814C13.4632.8918 11.4259 0 9 0 5.475 0 2.4332 2.0968.9527 5.0368L3.9591 7.295C4.6677 5.1641 6.6532 3.5782 9 3.5782Z"
+    />
+  </svg>
+);
 
 const isDiscountApplicable = (cycle: BillingCycle, discount: DiscountCodeRecord | null) =>
   Boolean(discount && (discount.appliesTo === cycle || discount.appliesTo === 'both'));
@@ -785,8 +807,9 @@ export default function AuthAccessPanel({
 
       {mode === 'sign_up' ? renderPlanSelector() : null}
 
-      <button type="button" className="theme-button auth-google-button" onClick={handleGoogle} disabled={isBusy}>
-        {mode === 'sign_up' ? t.signUpGoogle : t.withGoogle}
+      <button type="button" className="secondary-button auth-google-button" onClick={handleGoogle} disabled={isBusy}>
+        <GoogleMark />
+        <span>{mode === 'sign_up' ? t.signUpGoogle : t.withGoogle}</span>
       </button>
 
       <form className="auth-form" onSubmit={handleEmailAuth}>
@@ -859,8 +882,10 @@ export default function AuthAccessPanel({
           <div className="auth-screen-visual">
             <div className="auth-visual-inner">
               <p className="badge">WAIRUA VetAI</p>
-              <h1>{t.accessHeading}</h1>
-              <p>{t.accessBody}</p>
+              <div className="auth-visual-art-wrap">
+                <img src={wairuaLoginArt} alt="WAIRUA VetAI" className="auth-visual-art" />
+              </div>
+              <p className="auth-visual-note">{t.visualNote}</p>
             </div>
           </div>
           <div className="auth-screen-panel">
@@ -886,21 +911,10 @@ export default function AuthAccessPanel({
         <div className="auth-screen-visual">
           <div className="auth-visual-inner">
             <p className="badge">WAIRUA VetAI</p>
-            <h1>{t.accessHeading}</h1>
-            <p>{t.accessBody}</p>
-
-            <div className="auth-visual-grid">
-              <article>
-                <span>{t.freeZone}</span>
-                <strong>{t.freeFeatureOne}</strong>
-                <p>{t.freeFeatureTwo}</p>
-              </article>
-              <article>
-                <span>{t.premiumZone}</span>
-                <strong>{t.premiumFeatureOne}</strong>
-                <p>{t.premiumFeatureTwo}</p>
-              </article>
+            <div className="auth-visual-art-wrap">
+              <img src={wairuaLoginArt} alt="WAIRUA VetAI" className="auth-visual-art" />
             </div>
+            <p className="auth-visual-note">{t.visualNote}</p>
           </div>
         </div>
 
