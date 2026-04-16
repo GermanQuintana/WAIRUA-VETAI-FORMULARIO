@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
-import { AuthAccountSnapshot, BillingCycle, DiscountCodeRecord, MembershipSelection, UserProfile, UserRole } from '../types';
+import { AccessPreviewMode, AuthAccountSnapshot, BillingCycle, DiscountCodeRecord, MembershipSelection, UserProfile, UserRole } from '../types';
 import { SupabaseAccessService } from '../services/supabase';
 import wairuaLoginArt from '../assets/wairua-vetai-login-art.jpeg';
 
@@ -10,6 +10,8 @@ interface Props {
   account: AuthAccountSnapshot | null;
   onRefreshAccount: () => Promise<void>;
   layout?: 'compact' | 'screen';
+  accessPreviewMode?: AccessPreviewMode;
+  onChangeAccessPreviewMode?: (mode: AccessPreviewMode) => void;
 }
 
 type AuthMode = 'sign_in' | 'sign_up';
@@ -142,6 +144,15 @@ const copy = {
     adminEmpty: 'No se han encontrado perfiles.',
     adminRoleSaved: 'Roles actualizados correctamente.',
     adminRoleHint: 'Puedes marcar varios roles para el mismo usuario.',
+    previewTitle: 'Vista previa de acceso',
+    previewSubtitle: 'Comprueba qué vería cada perfil sin salir de tu cuenta de administrador.',
+    previewLabel: 'Perfil simulado',
+    previewActual: 'Cuenta real',
+    previewFreeViewer: 'Usuario gratuito',
+    previewPremiumViewer: 'Lector premium',
+    previewContributor: 'Contributor premium',
+    previewEditor: 'Editor premium',
+    previewReviewer: 'Reviewer premium',
   },
   en: {
     open: 'Sign in / sign up',
@@ -248,6 +259,15 @@ const copy = {
     adminEmpty: 'No profiles found.',
     adminRoleSaved: 'Roles updated successfully.',
     adminRoleHint: 'You can assign multiple roles to the same user.',
+    previewTitle: 'Access preview',
+    previewSubtitle: 'Check what each profile would see without leaving your administrator account.',
+    previewLabel: 'Simulated profile',
+    previewActual: 'Actual account',
+    previewFreeViewer: 'Free user',
+    previewPremiumViewer: 'Premium viewer',
+    previewContributor: 'Premium contributor',
+    previewEditor: 'Premium editor',
+    previewReviewer: 'Premium reviewer',
   },
 } as const;
 
@@ -354,6 +374,8 @@ export default function AuthAccessPanel({
   account,
   onRefreshAccount,
   layout = 'compact',
+  accessPreviewMode = 'actual',
+  onChangeAccessPreviewMode,
 }: Props) {
   const t = copy[lang];
   const [isOpen, setIsOpen] = useState(layout === 'screen');
@@ -390,6 +412,14 @@ export default function AuthAccessPanel({
   const trialTimeLeftMs = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() - now : null;
   const trialDaysLeft =
     trialTimeLeftMs != null && Number.isFinite(trialTimeLeftMs) ? Math.max(0, Math.ceil(trialTimeLeftMs / (1000 * 60 * 60 * 24))) : null;
+  const previewOptions: Array<{ value: AccessPreviewMode; label: string }> = [
+    { value: 'actual', label: t.previewActual },
+    { value: 'free_viewer', label: t.previewFreeViewer },
+    { value: 'premium_viewer', label: t.previewPremiumViewer },
+    { value: 'contributor', label: t.previewContributor },
+    { value: 'editor', label: t.previewEditor },
+    { value: 'reviewer', label: t.previewReviewer },
+  ];
 
   const resetFeedback = () => {
     setMessage('');
@@ -748,6 +778,29 @@ export default function AuthAccessPanel({
 
       {isAdmin ? (
         <section className="admin-role-panel">
+          <div className="auth-panel-heading admin-role-heading">
+            <div>
+              <span className="section-kicker">{t.previewTitle}</span>
+              <strong>{t.previewSubtitle}</strong>
+            </div>
+          </div>
+
+          <div className="admin-preview-panel">
+            <label>
+              {t.previewLabel}
+              <select
+                value={accessPreviewMode}
+                onChange={(event) => onChangeAccessPreviewMode?.(event.target.value as AccessPreviewMode)}
+              >
+                {previewOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           <div className="auth-panel-heading admin-role-heading">
             <div>
               <span className="section-kicker">{t.adminTitle}</span>

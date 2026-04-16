@@ -116,6 +116,31 @@ const normalizeSearchText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const ingredientQualifierPattern =
+  /\b(hidrocloruro|clorhidrato|hydrochloride|hcl|maleato|mesilato|besilato|citrato|fosfato|sulfato|succinato|fumarato|lactato|acetato|nitrato|potasico|potasica|potassium|sodico|sodica|sodium|calcico|calcica|calcium)\b/g;
+
+const normalizeIngredientFamily = (value: string) =>
+  normalizeSearchText(value)
+    .replace(ingredientQualifierPattern, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const matchesIngredientFamily = (value: string, query: string) => {
+  const normalizedValue = normalizeSearchText(value);
+  const normalizedQuery = normalizeSearchText(query);
+  const familyValue = normalizeIngredientFamily(value);
+  const familyQuery = normalizeIngredientFamily(query);
+
+  if (!normalizedQuery) return true;
+
+  return (
+    normalizedValue.includes(normalizedQuery) ||
+    normalizedQuery.includes(normalizedValue) ||
+    familyValue.includes(familyQuery) ||
+    familyQuery.includes(familyValue)
+  );
+};
+
 const getActiveIngredientParts = (value?: string) =>
   (value ?? '')
     .split(/[;+]/)
@@ -126,9 +151,11 @@ const getPrimaryActiveIngredientText = (medication: CimaMedicationSummary) => me
 
 const getExactActiveIngredientMatchLevel = (medication: CimaMedicationSummary, query: string) => {
   const q = normalizeSearchText(query);
+  const familyQuery = normalizeIngredientFamily(query);
   const ingredients = getActiveIngredientParts(getPrimaryActiveIngredientText(medication));
   if (ingredients.length === 0) return 0;
-  if (!ingredients.includes(q)) return 0;
+  const matches = ingredients.some((ingredient) => ingredient === q || normalizeIngredientFamily(ingredient) === familyQuery);
+  if (!matches) return 0;
   return ingredients.length === 1 ? 2 : 1;
 };
 
@@ -144,6 +171,7 @@ const scoreMedication = (medication: CimaMedicationSummary, query: string) => {
   if (activeIngredient === q) score += 110;
   if (exactActiveIngredientLevel === 2) score += 90;
   if (exactActiveIngredientLevel === 1) score += 25;
+  if (matchesIngredientFamily(activeIngredient, q)) score += 40;
   if (tradeName.startsWith(q)) score += 40;
   if (activeIngredient.startsWith(q)) score += 35;
   if (tradeName.includes(q)) score += 25;
@@ -238,13 +266,19 @@ export class CimaService {
   async searchMedications(query: string, options: CimaSearchOptions = {}) {
     const q = query.trim();
     if (q.length < 2) return [];
+    const familyQuery = normalizeIngredientFamily(q);
 
     const includeTradeNameSearch = options.includeTradeNameSearch ?? true;
     const includeActiveIngredientSearch = options.includeActiveIngredientSearch ?? true;
     const searches: Array<Promise<CimaMedicationSummary[]>> = [];
 
     if (includeTradeNameSearch) searches.push(this.searchByTradeName(q));
-    if (includeActiveIngredientSearch) searches.push(this.searchByActiveIngredient(q));
+    if (includeActiveIngredientSearch) {
+      searches.push(this.searchByActiveIngredient(q));
+      if (familyQuery && familyQuery !== normalizeSearchText(q)) {
+        searches.push(this.searchByActiveIngredient(familyQuery));
+      }
+    }
 
     const results = await Promise.all(searches);
     const merged = new Map<string, CimaMedicationSummary>();

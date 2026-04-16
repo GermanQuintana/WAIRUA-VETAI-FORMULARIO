@@ -44,7 +44,7 @@ import {
   resolveCimavetBaseUrl,
 } from './services/cimavet';
 import { createSupabaseAccessService, createSupabaseEditorialService } from './services/supabase';
-import { AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry } from './types';
+import { AccessPreviewMode, AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry, UserRole } from './types';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,6 +61,13 @@ type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant']);
+const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
+  free_viewer: ['viewer'],
+  premium_viewer: ['viewer'],
+  contributor: ['contributor'],
+  editor: ['editor'],
+  reviewer: ['reviewer'],
+};
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -402,6 +409,7 @@ function App() {
   const [remoteSyncMessage, setRemoteSyncMessage] = useState('');
   const [authAccount, setAuthAccount] = useState<AuthAccountSnapshot | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [accessPreviewMode, setAccessPreviewMode] = useState<AccessPreviewMode>('actual');
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const accountMenuShellRef = useRef<HTMLDivElement | null>(null);
@@ -639,13 +647,20 @@ function App() {
   const isAuthenticated = Boolean(authAccount?.profile);
   const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
   const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
-  const hasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
+  const actualHasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
+  const actualProfileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
+  const isActualAdmin = actualProfileRoles.includes('admin');
+  const effectiveProfileRoles =
+    isActualAdmin && accessPreviewMode !== 'actual' ? accessPreviewRoleMap[accessPreviewMode] : actualProfileRoles;
+  const hasPremiumAccess =
+    isActualAdmin && accessPreviewMode !== 'actual'
+      ? accessPreviewMode !== 'free_viewer'
+      : actualHasPremiumAccess;
   const accessStatusMessage = hasPremiumAccess ? accessText.premiumBadge : lang === 'es' ? 'Gratuita' : 'Free';
-  const profileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
-  const canCreateEditorial = profileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
-  const canManageEditorial = profileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
-  const canReviewEditorial = profileRoles.some((role) => ['reviewer', 'admin'].includes(role));
-  const canActivateEditorial = profileRoles.includes('admin');
+  const canCreateEditorial = effectiveProfileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
+  const canManageEditorial = effectiveProfileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
+  const canReviewEditorial = effectiveProfileRoles.some((role) => ['reviewer', 'admin'].includes(role));
+  const canActivateEditorial = effectiveProfileRoles.includes('admin');
   const currentWorkspaceLabel =
     activeTab === 'prescription'
       ? t.prescriptionHub
@@ -1738,6 +1753,8 @@ function App() {
                     service={supabaseAccessService}
                     account={authAccount}
                     onRefreshAccount={refreshAuthAccount}
+                    accessPreviewMode={accessPreviewMode}
+                    onChangeAccessPreviewMode={setAccessPreviewMode}
                   />
                 </div>
               ) : null}

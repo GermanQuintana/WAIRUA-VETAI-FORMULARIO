@@ -4122,6 +4122,19 @@ body {
   border-top: 1px solid rgba(209, 215, 191, 0.72);
 }
 
+.admin-preview-panel {
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(209, 215, 191, 0.72);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.admin-preview-panel label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
 .admin-role-heading {
   display: flex;
   justify-content: space-between;
@@ -4729,6 +4742,11 @@ select {
 }
 
 .app.dark .admin-role-item {
+  background: rgba(18, 33, 38, 0.72);
+  border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .admin-preview-panel {
   background: rgba(18, 33, 38, 0.72);
   border-color: rgba(39, 67, 74, 0.9);
 }
