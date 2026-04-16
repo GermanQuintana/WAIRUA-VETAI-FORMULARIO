@@ -27,6 +27,7 @@ const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
 const MEMBERSHIP_PENDING_STORAGE_KEY = 'wairua.pending-membership-selection';
 const TRIAL_DAYS = 10;
 const ADMIN_EMAILS = new Set(['gerqd79@gmail.com']);
+const DISCOUNT_CODE_ALREADY_USED_ERROR = 'DISCOUNT_CODE_ALREADY_USED';
 
 const isPlaceholder = (value: string) => !value || value.includes('your-project') || value.includes('anon_key');
 
@@ -732,6 +733,50 @@ export class SupabaseAccessService {
     return data ? mapMembershipRow(data as Record<string, unknown>) : null;
   }
 
+  private async hasDiscountCodeRedemption(userId: string, discountCodeId?: string | null) {
+    if (!discountCodeId) return false;
+
+    const { data, error } = await this.client
+      .from('discount_code_redemptions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('discount_code_id', discountCodeId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return Boolean(data);
+  }
+
+  private async assertDiscountCodeAvailableForUser(userId: string, discountCodeId?: string | null) {
+    if (!discountCodeId) return;
+    const alreadyRedeemed = await this.hasDiscountCodeRedemption(userId, discountCodeId);
+    if (alreadyRedeemed) throw new Error(DISCOUNT_CODE_ALREADY_USED_ERROR);
+  }
+
+  private async redeemDiscountCodeForUser(userId: string, discount: DiscountCodeRecord) {
+    try {
+      const { error } = await this.client.from('discount_code_redemptions').insert({
+        user_id: userId,
+        discount_code_id: discount.id,
+        discount_code: discount.code,
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        typeof error.code === 'string' &&
+        error.code === '23505'
+      ) {
+        throw new Error(DISCOUNT_CODE_ALREADY_USED_ERROR);
+      }
+
+      throw error;
+    }
+  }
+
   async getCurrentSession() {
     const { data, error } = await this.client.auth.getSession();
     if (error) throw error;
@@ -741,7 +786,14 @@ export class SupabaseAccessService {
   async syncPendingMembershipSelection(session: Session | null) {
     const selection = this.readPendingMembershipSelection();
     if (!selection || !session?.user) return null;
-    return this.saveMembershipSelection(selection, getAuthProvider(session.user), session.user);
+    try {
+      return await this.saveMembershipSelection(selection, getAuthProvider(session.user), session.user);
+    } catch (error) {
+      if (error instanceof Error && error.message === DISCOUNT_CODE_ALREADY_USED_ERROR) {
+        this.clearPendingMembershipSelection();
+      }
+      throw error;
+    }
   }
 
   async getAccountSnapshot(): Promise<AuthAccountSnapshot> {
@@ -860,7 +912,15 @@ export class SupabaseAccessService {
       .maybeSingle();
 
     if (error) throw error;
-    return data ? mapDiscountCodeRow(data as Record<string, unknown>) : null;
+    if (!data) return null;
+
+    const discount = mapDiscountCodeRow(data as Record<string, unknown>);
+    const session = await this.getCurrentSession();
+    if (session?.user) {
+      await this.assertDiscountCodeAvailableForUser(session.user.id, discount.id);
+    }
+
+    return discount;
   }
 
   async createStripeCheckoutSession(selection: MembershipSelection, origin: string) {
@@ -915,6 +975,9 @@ export class SupabaseAccessService {
     }
 
     await this.ensureProfile(user);
+    if (selection.discountCodeId) {
+      await this.assertDiscountCodeAvailableForUser(user.id, selection.discountCodeId);
+    }
     const existing = await this.getMembershipByUserId(user.id);
     const now = new Date();
     const trialStartedAt = existing?.trialStartedAt ?? now.toISOString();
@@ -943,6 +1006,22 @@ export class SupabaseAccessService {
 
     const { data, error } = await this.client.from('user_memberships').upsert(payload, { onConflict: 'user_id' }).select('*').single();
     if (error) throw error;
+
+    if (selection.discountCodeId && selection.discountCode && (selection.grantDays || selection.finalPriceCents === 0)) {
+      await this.redeemDiscountCodeForUser(user.id, {
+        id: selection.discountCodeId,
+        code: selection.discountCode,
+        label: selection.discountCode,
+        appliesTo: selection.billingCycle,
+        discountMode: selection.overridePriceCents !== undefined ? 'override_price' : 'fixed_amount',
+        discountMonths: selection.discountMonths ?? 1,
+        discountAmountCents: selection.discountAmountCents,
+        overridePriceCents: selection.overridePriceCents,
+        grantDays: selection.grantDays,
+        grantedRoles: [],
+        active: true,
+      });
+    }
 
     this.clearPendingMembershipSelection();
     return mapMembershipRow(data as Record<string, unknown>);

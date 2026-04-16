@@ -63,6 +63,7 @@ const copy = {
     activeCode: 'Código activo',
     codeApplied: 'Código aplicado correctamente.',
     codeMissing: 'Ese código no existe o no está activo.',
+    codeAlreadyUsed: 'Ya has usado este código anteriormente.',
     codeMonthlyOnly: 'El código existe, pero solo aplica al plan mensual.',
     trialInfo: 'Primero entras a la web app. Durante la prueba tienes acceso completo y después mantienes la parte gratuita si no activas premium.',
     signInHelp: 'Accede con Google o con tu email y contraseña para entrar en la plataforma.',
@@ -178,6 +179,7 @@ const copy = {
     activeCode: 'Active code',
     codeApplied: 'Code applied successfully.',
     codeMissing: 'That code does not exist or is inactive.',
+    codeAlreadyUsed: 'You have already used this code.',
     codeMonthlyOnly: 'The code exists, but only applies to the monthly plan.',
     trialInfo: 'You first enter the web app. During the trial all premium areas stay open, and after that the free areas remain available unless you activate premium.',
     signInHelp: 'Use Google or your email and password to enter the platform.',
@@ -304,6 +306,12 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
   return fallback;
+};
+
+const getDisplayErrorMessage = (error: unknown, t: (typeof copy)['es'] | (typeof copy)['en']) => {
+  const message = getErrorMessage(error, t.genericError);
+  if (message === 'DISCOUNT_CODE_ALREADY_USED') return t.codeAlreadyUsed;
+  return message;
 };
 
 const GoogleMark = () => (
@@ -442,7 +450,7 @@ export default function AuthAccessPanel({
           Object.fromEntries(profiles.map((profile) => [profile.id, profile.roles])),
         );
       } catch (error) {
-        if (!ignore) setError(getErrorMessage(error, t.genericError));
+        if (!ignore) setError(getDisplayErrorMessage(error, t));
       } finally {
         if (!ignore) setAdminLoading(false);
       }
@@ -471,7 +479,7 @@ export default function AuthAccessPanel({
       setAppliedDiscount(discount);
       setMessage(isDiscountApplicable(selectedPlan, discount) ? t.codeApplied : t.codeMonthlyOnly);
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
     } finally {
       setIsBusy(false);
     }
@@ -486,7 +494,7 @@ export default function AuthAccessPanel({
       const redirectTo = getAppReturnUrl();
       await service.signInWithGoogle(redirectTo, mode === 'sign_up' ? selection : undefined);
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
       setIsBusy(false);
     }
   };
@@ -518,7 +526,7 @@ export default function AuthAccessPanel({
       setShowPassword(false);
       setIsOpen(false);
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
     } finally {
       setIsBusy(false);
     }
@@ -533,8 +541,8 @@ export default function AuthAccessPanel({
       await service.saveMembershipSelection(selection);
       await onRefreshAccount();
       setMessage(t.adminRoleSaved);
-    } catch {
-      setError(t.genericError);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
     } finally {
       setIsBusy(false);
     }
@@ -551,7 +559,7 @@ export default function AuthAccessPanel({
       setMessage(t.redirectingStripe);
       window.location.assign(url);
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
       setIsBusy(false);
     }
   };
@@ -566,7 +574,7 @@ export default function AuthAccessPanel({
       setMessage(t.redirectingStripe);
       window.location.assign(url);
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
       setIsBusy(false);
     }
   };
@@ -583,7 +591,7 @@ export default function AuthAccessPanel({
       setDiscountInput('');
       setIsOpen(false);
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
     } finally {
       setIsBusy(false);
     }
@@ -599,7 +607,7 @@ export default function AuthAccessPanel({
       setAdminProfiles(profiles);
       setAdminRolesDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.roles])));
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
     } finally {
       setAdminLoading(false);
     }
@@ -616,7 +624,7 @@ export default function AuthAccessPanel({
       setMessage(t.savedPlan);
       await onRefreshAccount();
     } catch (error) {
-      setError(getErrorMessage(error, t.genericError));
+      setError(getDisplayErrorMessage(error, t));
     } finally {
       setIsBusy(false);
     }
