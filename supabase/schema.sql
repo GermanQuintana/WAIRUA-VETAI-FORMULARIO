@@ -214,6 +214,32 @@ values (
 )
 on conflict (code) do nothing;
 
+insert into public.discount_codes (
+  code,
+  label,
+  description,
+  partner_name,
+  applies_to,
+  discount_mode,
+  override_price_cents,
+  discount_months,
+  grant_days,
+  active
+)
+values (
+  'WAIRUA15DIAS',
+  'Acceso premium 15 dias',
+  'Codigo de acceso completo durante 15 dias sin coste. Despues mantiene solo la parte gratuita salvo que active suscripcion.',
+  'Invitacion WAIRUA',
+  'both',
+  'override_price',
+  0,
+  1,
+  15,
+  true
+)
+on conflict (code) do nothing;
+
 create or replace function public.current_profile_role()
 returns text
 language sql
