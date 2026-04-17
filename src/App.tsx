@@ -50,7 +50,7 @@ import { AccessPreviewMode, AuthAccountSnapshot, OtcProductRecord, TherapeuticEn
 gsap.registerPlugin(ScrollTrigger);
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
-const premiumTabs = ['active', 'toolkit'] as const;
+const premiumTabs = ['active'] as const;
 const activeViews = ['records', 'create'] as const;
 const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition', 'management'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
@@ -62,6 +62,7 @@ type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant', 'management']);
+const freeToolkitViewSet = new Set<ToolkitView>(['management']);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
   premium_viewer: ['viewer'],
@@ -78,7 +79,8 @@ const getErrorMessage = (error: unknown) => {
   }
   return 'Unknown error';
 };
-const isToolkitViewAvailable = (view: ToolkitView) => view === 'overview' || availableToolkitViewSet.has(view);
+const canAccessToolkitView = (view: ToolkitView, hasPremiumAccess: boolean) =>
+  view === 'overview' || freeToolkitViewSet.has(view) || (hasPremiumAccess && availableToolkitViewSet.has(view));
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -585,12 +587,6 @@ function App() {
   }, [supabaseAccessService]);
 
   useEffect(() => {
-    if (activeTab === 'toolkit' && !isToolkitViewAvailable(activeToolkitView)) {
-      setActiveToolkitView('overview');
-    }
-  }, [activeTab, activeToolkitView]);
-
-  useEffect(() => {
     if (!authAccount?.profile || !appShellRef.current) return;
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -672,6 +668,12 @@ function App() {
           : activeTab === 'otc'
             ? t.otcHub
             : t.toolkitHub;
+
+  useEffect(() => {
+    if (activeTab === 'toolkit' && !canAccessToolkitView(activeToolkitView, hasPremiumAccess)) {
+      setActiveToolkitView('overview');
+    }
+  }, [activeTab, activeToolkitView, hasPremiumAccess]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -1454,7 +1456,15 @@ function App() {
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => (
     <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
       {cards.map((card) => {
-        const isOpenableToolkitCard = card.toolkitView ? isToolkitViewAvailable(card.toolkitView) : false;
+        const isToolkitCard = Boolean(card.toolkitView);
+        const isOpenableToolkitCard = card.toolkitView ? canAccessToolkitView(card.toolkitView, hasPremiumAccess) : false;
+        const isLockedToolkitCard =
+          Boolean(
+            isToolkitCard &&
+              card.toolkitView &&
+              availableToolkitViewSet.has(card.toolkitView) &&
+              !canAccessToolkitView(card.toolkitView, hasPremiumAccess),
+          );
 
         return (
           <article key={card.id} className={`feature-card ${card.statusTone === 'soon' ? 'feature-card-soon' : ''}`.trim()}>
@@ -1479,6 +1489,8 @@ function App() {
               >
                 <span>{t.openToolkitModule}</span>
               </button>
+            ) : isLockedToolkitCard ? (
+              <span className="feature-card-link feature-card-link-disabled">{accessText.lockedTitle}</span>
             ) : null}
           </article>
         );

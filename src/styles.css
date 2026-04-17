@@ -1320,6 +1320,11 @@ select:focus-visible {
   color: #21634b;
 }
 
+.status-pill-premium {
+  background: #fff1df;
+  color: #9a5d12;
+}
+
 .status-pill-soon {
   background: #fde9e9;
   color: #9f2f35;
@@ -1361,6 +1366,20 @@ select:focus-visible {
 
 .feature-card-link:hover::after {
   transform: translateX(3px);
+}
+
+.feature-card-link-disabled {
+  margin-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.34rem 0.68rem;
+  border: 1px solid #e1cdaa;
+  border-radius: 999px;
+  background: rgba(255, 248, 238, 0.92);
+  color: #9a5d12;
+  font-weight: 700;
+  font-size: 0.82rem;
 }
 
 .feature-callout {
@@ -1803,6 +1822,17 @@ select:focus-visible {
 .app.dark .status-pill {
   background: rgba(118, 212, 191, 0.18);
   color: var(--accent-dark);
+}
+
+.app.dark .status-pill-premium {
+  background: rgba(229, 171, 97, 0.18);
+  color: #f1c47e;
+}
+
+.app.dark .feature-card-link-disabled {
+  background: rgba(72, 53, 24, 0.46);
+  border-color: rgba(133, 99, 45, 0.72);
+  color: #f1c47e;
 }
 
 .app.dark .otc-badge {
