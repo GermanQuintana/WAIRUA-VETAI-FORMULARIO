@@ -148,6 +148,7 @@ const toggleEquivalentTag = (current: string[], value: string) => {
 };
 
 const productionSpeciesOptions = ['Bovine', 'Ovine', 'Caprine', 'Porcine', 'Poultry', 'Equine', 'Fish', 'Bee'] as const;
+const SUPPORT_EMAIL = 'gerqd79@gmail.com';
 
 const formatDecimal = (value: number) => {
   const rounded = value >= 10 || Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
@@ -413,9 +414,11 @@ function App() {
   const [authAccount, setAuthAccount] = useState<AuthAccountSnapshot | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [accessPreviewMode, setAccessPreviewMode] = useState<AccessPreviewMode>('actual');
+  const [supportFeedback, setSupportFeedback] = useState('');
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const accountMenuShellRef = useRef<HTMLDivElement | null>(null);
+  const authResolvedRef = useRef(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
@@ -453,6 +456,11 @@ function App() {
           statusNoPlan: 'Cuenta autenticada sin prueba activada',
           activateHint: 'Puedes activar o cambiar el plan desde el panel "Mi acceso".',
           limitedHint: 'Las pestañas premium quedan visibles, pero bloqueadas hasta reactivar el plan.',
+          supportLabel: 'Soporte',
+          supportMail: 'Escribir',
+          supportCopy: 'Copiar email',
+          supportCopied: 'Email copiado',
+          supportTitle: 'Bugs, incidencias, ideas o propuestas',
         }
       : {
           loading: 'Checking secure access...',
@@ -481,6 +489,11 @@ function App() {
           statusNoPlan: 'Signed-in account without active trial',
           activateHint: 'You can activate or change the plan from the "My access" panel.',
           limitedHint: 'Premium tabs remain visible but locked until the plan is reactivated.',
+          supportLabel: 'Support',
+          supportMail: 'Write',
+          supportCopy: 'Copy email',
+          supportCopied: 'Email copied',
+          supportTitle: 'Bugs, issues, ideas, or proposals',
         };
 
   const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
@@ -560,7 +573,7 @@ function App() {
     let ignore = false;
 
     const loadAuthAccount = async () => {
-      if (!ignore) setAuthLoading(true);
+      if (!ignore && !authResolvedRef.current) setAuthLoading(true);
 
       try {
         const snapshot = await supabaseAccessService.getAccountSnapshot();
@@ -568,6 +581,7 @@ function App() {
       } catch {
         if (!ignore) setAuthAccount({ profile: null, membership: null, email: null });
       } finally {
+        authResolvedRef.current = true;
         if (!ignore) setAuthLoading(false);
       }
     };
@@ -668,6 +682,27 @@ function App() {
           : activeTab === 'otc'
             ? t.otcHub
             : t.toolkitHub;
+
+  const supportSubject =
+    lang === 'es'
+      ? 'WAIRUA VetAI | Bug / incidencia / propuesta'
+      : 'WAIRUA VetAI | Bug / issue / proposal';
+  const supportBody =
+    lang === 'es'
+      ? 'Describe aqui el problema o la idea.%0A%0AModulo:%20%0APantalla:%20%0APasos:%20%0AResultado%20esperado:%20%0AResultado%20actual:%20'
+      : 'Describe the issue or idea here.%0A%0AModule:%20%0AScreen:%20%0ASteps:%20%0AExpected%20result:%20%0ACurrent%20result:%20';
+  const supportMailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}&body=${supportBody}`;
+
+  const handleCopySupportEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      setSupportFeedback(accessText.supportCopied);
+      window.setTimeout(() => setSupportFeedback(''), 1800);
+    } catch {
+      setSupportFeedback(SUPPORT_EMAIL);
+      window.setTimeout(() => setSupportFeedback(''), 2200);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === 'toolkit' && !canAccessToolkitView(activeToolkitView, hasPremiumAccess)) {
@@ -1691,7 +1726,7 @@ function App() {
     </>
   );
 
-  if (authLoading) {
+  if (authLoading && authAccount === null) {
     return (
       <div className={`app auth-app-shell ${theme}`}>
         <section className="auth-loading-shell">
@@ -1743,6 +1778,16 @@ function App() {
           </div>
 
           <div className="topbar-actions">
+            <div className="topbar-support" title={accessText.supportTitle}>
+              <a href={supportMailto} className="topbar-support-link">
+                <span aria-hidden="true">✉</span>
+                {accessText.supportMail}
+              </a>
+              <button type="button" className="topbar-support-copy" onClick={handleCopySupportEmail}>
+                {accessText.supportCopy}
+              </button>
+              {supportFeedback ? <span className="topbar-support-feedback">{supportFeedback}</span> : null}
+            </div>
             <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               {theme === 'light' ? t.dark : t.light}
             </button>
