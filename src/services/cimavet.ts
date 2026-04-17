@@ -131,6 +131,31 @@ const normalizeSearchText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const ingredientQualifierPattern =
+  /\b(hidrocloruro|clorhidrato|hydrochloride|hcl|maleato|mesilato|besilato|citrato|fosfato|sulfato|succinato|fumarato|lactato|acetato|nitrato|potasico|potasica|potassium|sodico|sodica|sodium|calcico|calcica|calcium)\b/g;
+
+const normalizeIngredientFamily = (value: string) =>
+  normalizeSearchText(value)
+    .replace(ingredientQualifierPattern, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const matchesIngredientFamily = (value: string, query: string) => {
+  const normalizedValue = normalizeSearchText(value);
+  const normalizedQuery = normalizeSearchText(query);
+  const familyValue = normalizeIngredientFamily(value);
+  const familyQuery = normalizeIngredientFamily(query);
+
+  if (!normalizedQuery) return true;
+
+  return (
+    normalizedValue.includes(normalizedQuery) ||
+    normalizedQuery.includes(normalizedValue) ||
+    familyValue.includes(familyQuery) ||
+    familyQuery.includes(familyValue)
+  );
+};
+
 const getCimavetActiveIngredientParts = (value?: string) =>
   (value ?? '')
     .split(/[;+]/)
@@ -139,9 +164,11 @@ const getCimavetActiveIngredientParts = (value?: string) =>
 
 const getCimavetExactActiveIngredientMatchLevel = (medication: CimavetMedicationSummary, query: string) => {
   const q = normalizeSearchText(query);
+  const familyQuery = normalizeIngredientFamily(query);
   const ingredients = getCimavetActiveIngredientParts(medication.pactivos);
   if (ingredients.length === 0) return 0;
-  if (!ingredients.includes(q)) return 0;
+  const matches = ingredients.some((ingredient) => ingredient === q || normalizeIngredientFamily(ingredient) === familyQuery);
+  if (!matches) return 0;
   return ingredients.length === 1 ? 2 : 1;
 };
 
@@ -301,7 +328,7 @@ export class CimavetService {
     return catalog.filter((medication) => {
       const tradeName = normalizeSearchText(medication.nombre);
       const activeIngredient = normalizeSearchText(medication.pactivos ?? '');
-      return tradeName.includes(q) || activeIngredient.includes(q);
+      return tradeName.includes(q) || activeIngredient.includes(q) || matchesIngredientFamily(activeIngredient, query);
     });
   }
 

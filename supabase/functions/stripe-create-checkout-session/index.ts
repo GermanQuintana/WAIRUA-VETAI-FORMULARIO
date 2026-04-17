@@ -68,6 +68,8 @@ Deno.serve(async (req) => {
     }
 
     let discounts: Array<{ coupon?: string; promotion_code?: string }> | undefined;
+    let redeemedDiscountId: string | null = null;
+    let redeemedDiscountCode: string | null = null;
     if (selection?.discountCode) {
       const discountQuery = await admin
         .from('discount_codes')
@@ -77,6 +79,23 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       const discount = discountQuery.data;
+      if (discount?.id) {
+        const { data: existingRedemption, error: redemptionError } = await admin
+          .from('discount_code_redemptions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('discount_code_id', discount.id)
+          .maybeSingle();
+
+        if (redemptionError) throw redemptionError;
+        if (existingRedemption) {
+          return json({ error: 'DISCOUNT_CODE_ALREADY_USED' }, { status: 409, headers: corsHeaders });
+        }
+
+        redeemedDiscountId = String(discount.id);
+        redeemedDiscountCode = String(discount.code ?? selection.discountCode).trim().toUpperCase();
+      }
+
       if (discount?.stripe_promotion_code_id) {
         discounts = [{ promotion_code: discount.stripe_promotion_code_id }];
       } else if (discount?.stripe_coupon_id) {
@@ -158,6 +177,21 @@ Deno.serve(async (req) => {
 
     const { error: upsertError } = await admin.from('user_memberships').upsert(payload, { onConflict: 'user_id' });
     if (upsertError) throw upsertError;
+
+    if (redeemedDiscountId && redeemedDiscountCode) {
+      const { error: redemptionInsertError } = await admin.from('discount_code_redemptions').insert({
+        user_id: user.id,
+        discount_code_id: redeemedDiscountId,
+        discount_code: redeemedDiscountCode,
+      });
+
+      if (redemptionInsertError) {
+        if (redemptionInsertError.code === '23505') {
+          return json({ error: 'DISCOUNT_CODE_ALREADY_USED' }, { status: 409, headers: corsHeaders });
+        }
+        throw redemptionInsertError;
+      }
+    }
 
     return json({ url: session.url }, { headers: corsHeaders });
   } catch (error) {

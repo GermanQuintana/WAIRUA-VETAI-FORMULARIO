@@ -7,6 +7,7 @@ import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import DoseCalculator from './components/DoseCalculator';
 import EntryCard from './components/EntryCard';
 import InfusionCalculator from './components/InfusionCalculator';
+import ManagementToolkit from './components/ManagementToolkit';
 import UnitConverter from './components/UnitConverter';
 import {
   LocalizedCollectionCard,
@@ -44,14 +45,14 @@ import {
   resolveCimavetBaseUrl,
 } from './services/cimavet';
 import { createSupabaseAccessService, createSupabaseEditorialService } from './services/supabase';
-import { AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry } from './types';
+import { AccessPreviewMode, AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry, UserRole } from './types';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
-const premiumTabs = ['active', 'toolkit'] as const;
+const premiumTabs = ['active'] as const;
 const activeViews = ['records', 'create'] as const;
-const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition'] as const;
+const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition', 'management'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
@@ -60,7 +61,15 @@ type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
-const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant']);
+const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant', 'management']);
+const freeToolkitViewSet = new Set<ToolkitView>(['management']);
+const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
+  free_viewer: ['viewer'],
+  premium_viewer: ['viewer'],
+  contributor: ['contributor'],
+  editor: ['editor'],
+  reviewer: ['reviewer'],
+};
 
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message;
@@ -70,7 +79,8 @@ const getErrorMessage = (error: unknown) => {
   }
   return 'Unknown error';
 };
-const isToolkitViewAvailable = (view: ToolkitView) => view === 'overview' || availableToolkitViewSet.has(view);
+const canAccessToolkitView = (view: ToolkitView, hasPremiumAccess: boolean) =>
+  view === 'overview' || freeToolkitViewSet.has(view) || (hasPremiumAccess && availableToolkitViewSet.has(view));
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -138,6 +148,7 @@ const toggleEquivalentTag = (current: string[], value: string) => {
 };
 
 const productionSpeciesOptions = ['Bovine', 'Ovine', 'Caprine', 'Porcine', 'Poultry', 'Equine', 'Fish', 'Bee'] as const;
+const SUPPORT_EMAIL = 'gerqd79@gmail.com';
 
 const formatDecimal = (value: number) => {
   const rounded = value >= 10 || Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
@@ -402,9 +413,12 @@ function App() {
   const [remoteSyncMessage, setRemoteSyncMessage] = useState('');
   const [authAccount, setAuthAccount] = useState<AuthAccountSnapshot | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [accessPreviewMode, setAccessPreviewMode] = useState<AccessPreviewMode>('actual');
+  const [supportFeedback, setSupportFeedback] = useState('');
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const accountMenuShellRef = useRef<HTMLDivElement | null>(null);
+  const authResolvedRef = useRef(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
@@ -442,6 +456,11 @@ function App() {
           statusNoPlan: 'Cuenta autenticada sin prueba activada',
           activateHint: 'Puedes activar o cambiar el plan desde el panel "Mi acceso".',
           limitedHint: 'Las pestañas premium quedan visibles, pero bloqueadas hasta reactivar el plan.',
+          supportLabel: 'Soporte',
+          supportMail: 'Escribir',
+          supportCopy: 'Copiar email',
+          supportCopied: 'Email copiado',
+          supportTitle: 'Bugs, incidencias, ideas o propuestas',
         }
       : {
           loading: 'Checking secure access...',
@@ -470,6 +489,11 @@ function App() {
           statusNoPlan: 'Signed-in account without active trial',
           activateHint: 'You can activate or change the plan from the "My access" panel.',
           limitedHint: 'Premium tabs remain visible but locked until the plan is reactivated.',
+          supportLabel: 'Support',
+          supportMail: 'Write',
+          supportCopy: 'Copy email',
+          supportCopied: 'Email copied',
+          supportTitle: 'Bugs, issues, ideas, or proposals',
         };
 
   const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
@@ -549,7 +573,7 @@ function App() {
     let ignore = false;
 
     const loadAuthAccount = async () => {
-      if (!ignore) setAuthLoading(true);
+      if (!ignore && !authResolvedRef.current) setAuthLoading(true);
 
       try {
         const snapshot = await supabaseAccessService.getAccountSnapshot();
@@ -557,6 +581,7 @@ function App() {
       } catch {
         if (!ignore) setAuthAccount({ profile: null, membership: null, email: null });
       } finally {
+        authResolvedRef.current = true;
         if (!ignore) setAuthLoading(false);
       }
     };
@@ -574,12 +599,6 @@ function App() {
       subscription.unsubscribe();
     };
   }, [supabaseAccessService]);
-
-  useEffect(() => {
-    if (activeTab === 'toolkit' && !isToolkitViewAvailable(activeToolkitView)) {
-      setActiveToolkitView('overview');
-    }
-  }, [activeTab, activeToolkitView]);
 
   useEffect(() => {
     if (!authAccount?.profile || !appShellRef.current) return;
@@ -639,13 +658,20 @@ function App() {
   const isAuthenticated = Boolean(authAccount?.profile);
   const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
   const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
-  const hasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
+  const actualHasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
+  const actualProfileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
+  const isActualAdmin = actualProfileRoles.includes('admin');
+  const effectiveProfileRoles =
+    isActualAdmin && accessPreviewMode !== 'actual' ? accessPreviewRoleMap[accessPreviewMode] : actualProfileRoles;
+  const hasPremiumAccess =
+    isActualAdmin && accessPreviewMode !== 'actual'
+      ? accessPreviewMode !== 'free_viewer'
+      : actualHasPremiumAccess;
   const accessStatusMessage = hasPremiumAccess ? accessText.premiumBadge : lang === 'es' ? 'Gratuita' : 'Free';
-  const profileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
-  const canCreateEditorial = profileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
-  const canManageEditorial = profileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
-  const canReviewEditorial = profileRoles.some((role) => ['reviewer', 'admin'].includes(role));
-  const canActivateEditorial = profileRoles.includes('admin');
+  const canCreateEditorial = effectiveProfileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
+  const canManageEditorial = effectiveProfileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
+  const canReviewEditorial = effectiveProfileRoles.some((role) => ['reviewer', 'admin'].includes(role));
+  const canActivateEditorial = effectiveProfileRoles.includes('admin');
   const currentWorkspaceLabel =
     activeTab === 'prescription'
       ? t.prescriptionHub
@@ -656,6 +682,33 @@ function App() {
           : activeTab === 'otc'
             ? t.otcHub
             : t.toolkitHub;
+
+  const supportSubject =
+    lang === 'es'
+      ? 'WAIRUA VetAI | Bug / incidencia / propuesta'
+      : 'WAIRUA VetAI | Bug / issue / proposal';
+  const supportBody =
+    lang === 'es'
+      ? 'Describe aqui el problema o la idea.%0A%0AModulo:%20%0APantalla:%20%0APasos:%20%0AResultado%20esperado:%20%0AResultado%20actual:%20'
+      : 'Describe the issue or idea here.%0A%0AModule:%20%0AScreen:%20%0ASteps:%20%0AExpected%20result:%20%0ACurrent%20result:%20';
+  const supportMailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}&body=${supportBody}`;
+
+  const handleCopySupportEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      setSupportFeedback(accessText.supportCopied);
+      window.setTimeout(() => setSupportFeedback(''), 1800);
+    } catch {
+      setSupportFeedback(SUPPORT_EMAIL);
+      window.setTimeout(() => setSupportFeedback(''), 2200);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'toolkit' && !canAccessToolkitView(activeToolkitView, hasPremiumAccess)) {
+      setActiveToolkitView('overview');
+    }
+  }, [activeTab, activeToolkitView, hasPremiumAccess]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -1438,7 +1491,15 @@ function App() {
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => (
     <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
       {cards.map((card) => {
-        const isOpenableToolkitCard = card.toolkitView ? isToolkitViewAvailable(card.toolkitView) : false;
+        const isToolkitCard = Boolean(card.toolkitView);
+        const isOpenableToolkitCard = card.toolkitView ? canAccessToolkitView(card.toolkitView, hasPremiumAccess) : false;
+        const isLockedToolkitCard =
+          Boolean(
+            isToolkitCard &&
+              card.toolkitView &&
+              availableToolkitViewSet.has(card.toolkitView) &&
+              !canAccessToolkitView(card.toolkitView, hasPremiumAccess),
+          );
 
         return (
           <article key={card.id} className={`feature-card ${card.statusTone === 'soon' ? 'feature-card-soon' : ''}`.trim()}>
@@ -1463,6 +1524,8 @@ function App() {
               >
                 <span>{t.openToolkitModule}</span>
               </button>
+            ) : isLockedToolkitCard ? (
+              <span className="feature-card-link feature-card-link-disabled">{accessText.lockedTitle}</span>
             ) : null}
           </article>
         );
@@ -1663,7 +1726,7 @@ function App() {
     </>
   );
 
-  if (authLoading) {
+  if (authLoading && authAccount === null) {
     return (
       <div className={`app auth-app-shell ${theme}`}>
         <section className="auth-loading-shell">
@@ -1715,6 +1778,16 @@ function App() {
           </div>
 
           <div className="topbar-actions">
+            <div className="topbar-support" title={accessText.supportTitle}>
+              <a href={supportMailto} className="topbar-support-link">
+                <span aria-hidden="true">✉</span>
+                {accessText.supportMail}
+              </a>
+              <button type="button" className="topbar-support-copy" onClick={handleCopySupportEmail}>
+                {accessText.supportCopy}
+              </button>
+              {supportFeedback ? <span className="topbar-support-feedback">{supportFeedback}</span> : null}
+            </div>
             <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               {theme === 'light' ? t.dark : t.light}
             </button>
@@ -1738,6 +1811,8 @@ function App() {
                     service={supabaseAccessService}
                     account={authAccount}
                     onRefreshAccount={refreshAuthAccount}
+                    accessPreviewMode={accessPreviewMode}
+                    onChangeAccessPreviewMode={setAccessPreviewMode}
                   />
                 </div>
               ) : null}
@@ -2964,6 +3039,8 @@ function App() {
                 )}
               </section>
             )}
+
+            {activeToolkitView === 'management' && <ManagementToolkit lang={lang} />}
           </section>
         )}
 

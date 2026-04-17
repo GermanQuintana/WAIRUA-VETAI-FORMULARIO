@@ -1320,6 +1320,11 @@ select:focus-visible {
   color: #21634b;
 }
 
+.status-pill-premium {
+  background: #fff1df;
+  color: #9a5d12;
+}
+
 .status-pill-soon {
   background: #fde9e9;
   color: #9f2f35;
@@ -1361,6 +1366,20 @@ select:focus-visible {
 
 .feature-card-link:hover::after {
   transform: translateX(3px);
+}
+
+.feature-card-link-disabled {
+  margin-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.34rem 0.68rem;
+  border: 1px solid #e1cdaa;
+  border-radius: 999px;
+  background: rgba(255, 248, 238, 0.92);
+  color: #9a5d12;
+  font-weight: 700;
+  font-size: 0.82rem;
 }
 
 .feature-callout {
@@ -1803,6 +1822,17 @@ select:focus-visible {
 .app.dark .status-pill {
   background: rgba(118, 212, 191, 0.18);
   color: var(--accent-dark);
+}
+
+.app.dark .status-pill-premium {
+  background: rgba(229, 171, 97, 0.18);
+  color: #f1c47e;
+}
+
+.app.dark .feature-card-link-disabled {
+  background: rgba(72, 53, 24, 0.46);
+  border-color: rgba(133, 99, 45, 0.72);
+  color: #f1c47e;
 }
 
 .app.dark .otc-badge {
@@ -2689,6 +2719,131 @@ select:focus-visible {
   background: rgba(255, 255, 255, 0.7);
 }
 
+.management-subtabs {
+  margin-top: 0.35rem;
+}
+
+.management-grid {
+  align-items: start;
+}
+
+.management-base-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.management-base-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, 150px);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #dbe3cf;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.76);
+  font-weight: 600;
+}
+
+.management-base-row input {
+  text-align: right;
+}
+
+.management-tax-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.management-tax-badge.tax-4 {
+  background: #ff8c42;
+}
+
+.management-tax-badge.tax-10 {
+  background: #4da1ff;
+}
+
+.management-tax-badge.tax-21 {
+  background: #8e55c6;
+}
+
+.management-discount-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.management-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.management-breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid #dbe3cf;
+  font-size: 0.92rem;
+}
+
+.management-breakdown-item span {
+  color: var(--muted-light);
+}
+
+.management-breakdown-item strong {
+  font-size: 1rem;
+}
+
+.management-breakdown-full {
+  grid-column: 1 / -1;
+  background: #f4f8ed;
+}
+
+.management-total-banner {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(120deg, #0b5053, #2b8a78);
+  color: #fff;
+  text-align: center;
+}
+
+.management-total-banner span {
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.84;
+}
+
+.management-total-banner strong {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1;
+}
+
+.management-result-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.management-total {
+  padding-top: 0.75rem;
+  border-top: 1px solid #dbe3cf;
+}
+
+.management-equivalent strong {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+}
+
 .toolkit-table-toggle {
   grid-column: 1 / -1;
   justify-self: start;
@@ -2776,6 +2931,28 @@ select:focus-visible {
 
 .app.dark .toolkit-source-note a {
   color: var(--accent-dark);
+}
+
+.app.dark .management-total {
+  border-top-color: #24353b;
+}
+
+.app.dark .management-base-row,
+.app.dark .management-breakdown-item {
+  background: rgba(24, 35, 41, 0.82);
+  border-color: #24353b;
+}
+
+.app.dark .management-breakdown-item span {
+  color: var(--muted-dark);
+}
+
+.app.dark .management-breakdown-full {
+  background: rgba(34, 55, 43, 0.82);
+}
+
+.app.dark .management-total-banner {
+  background: linear-gradient(120deg, #1f7a7b, #31967d);
 }
 
 .app.dark .toolkit-table th,
@@ -3976,6 +4153,44 @@ body {
   flex-wrap: wrap;
 }
 
+.topbar-support {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.topbar-support-link,
+.topbar-support-copy {
+  min-height: 2.65rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.45rem 0.82rem;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.topbar-support-link {
+  border: 1px solid rgba(209, 215, 191, 0.72);
+  background: rgba(255, 255, 255, 0.9);
+  color: #0a5f66;
+  text-decoration: none;
+}
+
+.topbar-support-copy {
+  border: 1px solid rgba(209, 215, 191, 0.72);
+  background: rgba(255, 248, 238, 0.92);
+  color: #8c5615;
+}
+
+.topbar-support-feedback {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted-light);
+}
+
 .topbar-brand-copy {
   flex-direction: column;
   align-items: flex-start;
@@ -4120,6 +4335,19 @@ body {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(209, 215, 191, 0.72);
+}
+
+.admin-preview-panel {
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(209, 215, 191, 0.72);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.admin-preview-panel label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
 }
 
 .admin-role-heading {
@@ -4680,6 +4908,22 @@ select {
   color: var(--accent-dark);
 }
 
+.app.dark .topbar-support-link {
+  background: rgba(24, 35, 41, 0.86);
+  border-color: rgba(39, 67, 74, 0.9);
+  color: var(--accent-dark);
+}
+
+.app.dark .topbar-support-copy {
+  background: rgba(72, 53, 24, 0.46);
+  border-color: rgba(133, 99, 45, 0.72);
+  color: #f1c47e;
+}
+
+.app.dark .topbar-support-feedback {
+  color: var(--muted-dark);
+}
+
 .app.dark .topbar-status-chip.is-free {
   background: rgba(118, 212, 191, 0.14);
   color: #90d9b3;
@@ -4729,6 +4973,11 @@ select {
 }
 
 .app.dark .admin-role-item {
+  background: rgba(18, 33, 38, 0.72);
+  border-color: rgba(39, 67, 74, 0.9);
+}
+
+.app.dark .admin-preview-panel {
   background: rgba(18, 33, 38, 0.72);
   border-color: rgba(39, 67, 74, 0.9);
 }

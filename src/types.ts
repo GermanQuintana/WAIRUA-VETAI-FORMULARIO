@@ -23,6 +23,7 @@ export type MembershipStatus = 'trialing' | 'pending_payment' | 'active' | 'expi
 export type AuthProvider = 'google' | 'email' | 'unknown';
 export type DiscountMode = 'fixed_amount' | 'override_price';
 export type UserRole = 'viewer' | 'contributor' | 'editor' | 'reviewer' | 'admin';
+export type AccessPreviewMode = 'actual' | 'free_viewer' | 'premium_viewer' | 'contributor' | 'editor' | 'reviewer';
 
 export interface LocalizedText {
   es: string;

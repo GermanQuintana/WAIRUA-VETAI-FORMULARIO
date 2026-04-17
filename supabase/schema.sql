@@ -138,6 +138,15 @@ create table if not exists public.user_memberships (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.discount_code_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  discount_code_id uuid not null references public.discount_codes(id) on delete cascade,
+  discount_code text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, discount_code_id)
+);
+
 alter table if exists public.discount_codes
   add column if not exists grant_days integer,
   add column if not exists granted_roles text[] not null default array[]::text[],
@@ -161,6 +170,7 @@ create table if not exists public.stripe_webhook_events (
 
 create index if not exists user_memberships_status_idx on public.user_memberships (status);
 create index if not exists discount_codes_active_idx on public.discount_codes (active, code);
+create index if not exists discount_code_redemptions_user_idx on public.discount_code_redemptions (user_id, created_at desc);
 create unique index if not exists user_memberships_stripe_customer_id_idx on public.user_memberships (stripe_customer_id) where stripe_customer_id is not null;
 create unique index if not exists user_memberships_stripe_subscription_id_idx on public.user_memberships (stripe_subscription_id) where stripe_subscription_id is not null;
 
@@ -214,6 +224,32 @@ values (
 )
 on conflict (code) do nothing;
 
+insert into public.discount_codes (
+  code,
+  label,
+  description,
+  partner_name,
+  applies_to,
+  discount_mode,
+  override_price_cents,
+  discount_months,
+  grant_days,
+  active
+)
+values (
+  'WAIRUA15DIAS',
+  'Acceso premium 15 dias',
+  'Codigo de acceso completo durante 15 dias sin coste. Despues mantiene solo la parte gratuita salvo que active suscripcion.',
+  'Invitacion WAIRUA',
+  'both',
+  'override_price',
+  0,
+  1,
+  15,
+  true
+)
+on conflict (code) do nothing;
+
 create or replace function public.current_profile_role()
 returns text
 language sql
@@ -241,6 +277,7 @@ $$;
 alter table public.profiles enable row level security;
 alter table public.discount_codes enable row level security;
 alter table public.user_memberships enable row level security;
+alter table public.discount_code_redemptions enable row level security;
 
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
@@ -310,6 +347,20 @@ create policy "memberships_update_own"
   for update
   to authenticated
   using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "discount_code_redemptions_select_own" on public.discount_code_redemptions;
+create policy "discount_code_redemptions_select_own"
+  on public.discount_code_redemptions
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "discount_code_redemptions_insert_own" on public.discount_code_redemptions;
+create policy "discount_code_redemptions_insert_own"
+  on public.discount_code_redemptions
+  for insert
+  to authenticated
   with check ((select auth.uid()) = user_id);
 
 create table if not exists public.references (

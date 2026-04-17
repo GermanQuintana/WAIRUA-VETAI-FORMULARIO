@@ -9,8 +9,19 @@ export interface LocalizedCollectionCard {
     en: string[];
   };
   status?: LocalizedText;
-  statusTone?: 'available' | 'soon';
-  toolkitView?: 'overview' | 'dose' | 'infusion' | 'haemotherapy' | 'endocrine' | 'converter' | 'surface' | 'assistant' | 'nutrition';
+  statusTone?: 'available' | 'soon' | 'premium';
+  accessTier?: 'free' | 'premium';
+  toolkitView?:
+    | 'overview'
+    | 'dose'
+    | 'infusion'
+    | 'haemotherapy'
+    | 'endocrine'
+    | 'converter'
+    | 'surface'
+    | 'assistant'
+    | 'nutrition'
+    | 'management';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -145,8 +156,9 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Conversion rapida de mg/kg a mg, mL o comprimidos segun peso, concentracion y presentacion.',
       en: 'Fast conversion from mg/kg to mg, mL, or tablets based on weight, concentration, and presentation.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Premium', en: 'Premium' },
+    statusTone: 'premium',
+    accessTier: 'premium',
     toolkitView: 'dose',
   },
   {
@@ -156,8 +168,9 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Incluye la CRI concreta MLK/FLK para preparar bolsas, ajustar concentraciones y estimar ritmos.',
       en: 'Includes the specific MLK/FLK CRI to prepare bags, adjust concentrations, and estimate rates.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Premium', en: 'Premium' },
+    statusTone: 'premium',
+    accessTier: 'premium',
     toolkitView: 'infusion',
   },
   {
@@ -169,6 +182,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     },
     status: { es: 'Proximamente', en: 'Coming soon' },
     statusTone: 'soon',
+    accessTier: 'premium',
     toolkitView: 'haemotherapy',
   },
   {
@@ -180,6 +194,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     },
     status: { es: 'Proximamente', en: 'Coming soon' },
     statusTone: 'soon',
+    accessTier: 'premium',
     toolkitView: 'endocrine',
   },
   {
@@ -189,8 +204,9 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Conversion directa entre masa, volumen y concentraciones clinicas de interes para medicacion y perfusiones.',
       en: 'Direct conversion between mass, volume, and clinically relevant concentration units for medication and infusions.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Premium', en: 'Premium' },
+    statusTone: 'premium',
+    accessTier: 'premium',
     toolkitView: 'converter',
   },
   {
@@ -200,8 +216,9 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Calculadora por especie con tabla desplegable para perro, gato, conejo y huron.',
       en: 'Species-aware calculator with expandable tables for dog, cat, rabbit, and ferret.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Premium', en: 'Premium' },
+    statusTone: 'premium',
+    accessTier: 'premium',
     toolkitView: 'surface',
   },
   {
@@ -213,6 +230,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     },
     status: { es: 'Proximamente', en: 'Coming soon' },
     statusTone: 'soon',
+    accessTier: 'premium',
     toolkitView: 'nutrition',
   },
   {
@@ -232,9 +250,22 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Genera una orientacion inicial a partir de especie, patologia y notas clinicas desde el propio toolkit.',
       en: 'Generates an initial orientation from species, pathology, and clinical notes directly inside the toolkit.',
     },
-    status: { es: 'Disponible', en: 'Available' },
-    statusTone: 'available',
+    status: { es: 'Premium', en: 'Premium' },
+    statusTone: 'premium',
+    accessTier: 'premium',
     toolkitView: 'assistant',
+  },
+  {
+    id: 'management',
+    title: { es: 'Gestion', en: 'Management' },
+    description: {
+      es: 'Carril para utilidades de negocio y operativa. Arranca con una calculadora de descuentos en cascada adaptada al uso comercial.',
+      en: 'Lane for business and operational utilities. It starts with a cascading discount calculator adapted to commercial use.',
+    },
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
+    toolkitView: 'management',
   },
   {
     id: 'anesthesia',
