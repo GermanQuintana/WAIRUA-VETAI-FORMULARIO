@@ -2689,6 +2689,28 @@ select:focus-visible {
   background: rgba(255, 255, 255, 0.7);
 }
 
+.management-subtabs {
+  margin-top: 0.35rem;
+}
+
+.management-grid {
+  align-items: start;
+}
+
+.management-result-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.management-total {
+  padding-top: 0.75rem;
+  border-top: 1px solid #dbe3cf;
+}
+
+.management-equivalent strong {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+}
+
 .toolkit-table-toggle {
   grid-column: 1 / -1;
   justify-self: start;
@@ -2776,6 +2798,10 @@ select:focus-visible {
 
 .app.dark .toolkit-source-note a {
   color: var(--accent-dark);
+}
+
+.app.dark .management-total {
+  border-top-color: #24353b;
 }
 
 .app.dark .toolkit-table th,

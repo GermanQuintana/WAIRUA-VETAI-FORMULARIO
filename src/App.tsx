@@ -7,6 +7,7 @@ import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import DoseCalculator from './components/DoseCalculator';
 import EntryCard from './components/EntryCard';
 import InfusionCalculator from './components/InfusionCalculator';
+import ManagementToolkit from './components/ManagementToolkit';
 import UnitConverter from './components/UnitConverter';
 import {
   LocalizedCollectionCard,
@@ -51,7 +52,7 @@ gsap.registerPlugin(ScrollTrigger);
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const premiumTabs = ['active', 'toolkit'] as const;
 const activeViews = ['records', 'create'] as const;
-const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition'] as const;
+const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition', 'management'] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
@@ -60,7 +61,7 @@ type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
-const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant']);
+const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant', 'management']);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
   premium_viewer: ['viewer'],
@@ -2981,6 +2982,8 @@ function App() {
                 )}
               </section>
             )}
+
+            {activeToolkitView === 'management' && <ManagementToolkit lang={lang} />}
           </section>
         )}
 

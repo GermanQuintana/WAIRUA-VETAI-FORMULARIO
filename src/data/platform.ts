@@ -10,7 +10,17 @@ export interface LocalizedCollectionCard {
   };
   status?: LocalizedText;
   statusTone?: 'available' | 'soon';
-  toolkitView?: 'overview' | 'dose' | 'infusion' | 'haemotherapy' | 'endocrine' | 'converter' | 'surface' | 'assistant' | 'nutrition';
+  toolkitView?:
+    | 'overview'
+    | 'dose'
+    | 'infusion'
+    | 'haemotherapy'
+    | 'endocrine'
+    | 'converter'
+    | 'surface'
+    | 'assistant'
+    | 'nutrition'
+    | 'management';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -235,6 +245,17 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     status: { es: 'Disponible', en: 'Available' },
     statusTone: 'available',
     toolkitView: 'assistant',
+  },
+  {
+    id: 'management',
+    title: { es: 'Gestion', en: 'Management' },
+    description: {
+      es: 'Carril para utilidades de negocio y operativa. Arranca con una calculadora de descuentos en cascada adaptada al uso comercial.',
+      en: 'Lane for business and operational utilities. It starts with a cascading discount calculator adapted to commercial use.',
+    },
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    toolkitView: 'management',
   },
   {
     id: 'anesthesia',
