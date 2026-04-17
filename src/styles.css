@@ -2727,6 +2727,109 @@ select:focus-visible {
   align-items: start;
 }
 
+.management-base-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.management-base-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, 150px);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #dbe3cf;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.76);
+  font-weight: 600;
+}
+
+.management-base-row input {
+  text-align: right;
+}
+
+.management-tax-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.management-tax-badge.tax-4 {
+  background: #ff8c42;
+}
+
+.management-tax-badge.tax-10 {
+  background: #4da1ff;
+}
+
+.management-tax-badge.tax-21 {
+  background: #8e55c6;
+}
+
+.management-discount-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.management-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.management-breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid #dbe3cf;
+  font-size: 0.92rem;
+}
+
+.management-breakdown-item span {
+  color: var(--muted-light);
+}
+
+.management-breakdown-item strong {
+  font-size: 1rem;
+}
+
+.management-breakdown-full {
+  grid-column: 1 / -1;
+  background: #f4f8ed;
+}
+
+.management-total-banner {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: linear-gradient(120deg, #0b5053, #2b8a78);
+  color: #fff;
+  text-align: center;
+}
+
+.management-total-banner span {
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.84;
+}
+
+.management-total-banner strong {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1;
+}
+
 .management-result-list {
   display: grid;
   gap: 0.8rem;
@@ -2832,6 +2935,24 @@ select:focus-visible {
 
 .app.dark .management-total {
   border-top-color: #24353b;
+}
+
+.app.dark .management-base-row,
+.app.dark .management-breakdown-item {
+  background: rgba(24, 35, 41, 0.82);
+  border-color: #24353b;
+}
+
+.app.dark .management-breakdown-item span {
+  color: var(--muted-dark);
+}
+
+.app.dark .management-breakdown-full {
+  background: rgba(34, 55, 43, 0.82);
+}
+
+.app.dark .management-total-banner {
+  background: linear-gradient(120deg, #1f7a7b, #31967d);
 }
 
 .app.dark .toolkit-table th,
