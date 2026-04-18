@@ -1,6 +1,7 @@
 import { canonicalTagOptions } from '../data/taxonomy';
 import { spreadsheetDoseEntries } from '../data/spreadsheetDoseTable';
 import { DoseCalculatorEntry, Species, TherapeuticEntry } from '../types';
+import { excludeEquivalentValues, normalizeStringList } from './entryNormalization';
 
 const uniqueSorted = (values: string[]) => Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 const normalizeDoseSearch = (value: string) =>
@@ -37,13 +38,16 @@ export const getSpeciesOptions = (entries: TherapeuticEntry[]) =>
   uniqueSorted(entries.flatMap((entry) => entry.species)) as Species[];
 
 export const getSystemOptions = (entries: TherapeuticEntry[]) =>
-  uniqueSorted(entries.flatMap((entry) => entry.systems));
+  normalizeStringList(entries.flatMap((entry) => entry.systems), Array.from(canonicalTagOptions)).sort((a, b) => a.localeCompare(b));
 
 export const getIndicationOptions = (entries: TherapeuticEntry[]) =>
-  uniqueSorted(entries.flatMap((entry) => entry.pathologies));
+  normalizeStringList(entries.flatMap((entry) => entry.pathologies)).sort((a, b) => a.localeCompare(b));
 
 export const getTagOptions = (entries: TherapeuticEntry[]) =>
-  uniqueSorted([...canonicalTagOptions, ...entries.flatMap((entry) => entry.tags)]);
+  normalizeStringList(
+    [...canonicalTagOptions, ...entries.flatMap((entry) => excludeEquivalentValues(entry.tags, entry.systems))],
+    Array.from(canonicalTagOptions),
+  ).sort((a, b) => a.localeCompare(b));
 
 export const buildDoseCalculatorEntries = (entries: TherapeuticEntry[]): DoseCalculatorEntry[] => {
   const editorialEntries: DoseCalculatorEntry[] = entries.flatMap((entry) =>

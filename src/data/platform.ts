@@ -17,6 +17,8 @@ export interface LocalizedCollectionCard {
     | 'infusion'
     | 'haemotherapy'
     | 'endocrine'
+    | 'genetics'
+    | 'interactions'
     | 'converter'
     | 'surface'
     | 'assistant'
@@ -196,6 +198,28 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     statusTone: 'soon',
     accessTier: 'premium',
     toolkitView: 'endocrine',
+  },
+  {
+    id: 'genetics',
+    title: { es: 'Genetica clinica', en: 'Clinical genetics' },
+    description: {
+      es: 'Cribado rapido de MDR1, predisposiciones metabolicas y enfermedades hereditarias por raza para apoyar decisiones seguras.',
+      en: 'Quick screening of MDR1, metabolic predispositions, and hereditary breed diseases to support safer decisions.',
+    },
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
+    toolkitView: 'genetics',
+  },
+  {
+    id: 'interactions',
+    title: { es: 'Interacciones', en: 'Interactions' },
+    description: {
+      es: 'Checker interno para revisar combinaciones de farmacos frecuentes de alto impacto y cruzarlas con notas editoriales.',
+      en: 'Internal checker to review common high-impact drug combinations and cross-check them with editorial notes.',
+    },
+    status: { es: 'Proximamente', en: 'Coming soon' },
+    statusTone: 'soon',
+    toolkitView: 'interactions',
   },
   {
     id: 'unit-converter',

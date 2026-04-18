@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
+import { areEquivalentValues, excludeEquivalentValues, normalizeStringList } from '../lib/entryNormalization';
 import { translateMedicalTerm } from '../lib/terms';
 import { DoseCalculatorPreset, EditorialStatus, EvidenceLevel, Species, TherapeuticEntry } from '../types';
 
@@ -269,6 +270,15 @@ export default function ActiveIngredientForm({
 
   const isEditing = Boolean(initialEntry);
   const isSpanish = lang === 'es';
+  const normalizedSystemOptions = useMemo(() => normalizeStringList(systemOptions, tagOptions), [systemOptions, tagOptions]);
+  const facetOptions = useMemo(
+    () => normalizeStringList([...tagOptions, ...normalizedSystemOptions], tagOptions),
+    [normalizedSystemOptions, tagOptions],
+  );
+  const displayTagOptions = useMemo(
+    () => normalizeStringList([...tagOptions, ...normalizedSystemOptions], tagOptions),
+    [normalizedSystemOptions, tagOptions],
+  );
 
   const toggleArrayValue = <T,>(current: T[], value: T) =>
     current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
@@ -331,12 +341,15 @@ export default function ActiveIngredientForm({
     }
 
     setActiveIngredient(entry.activeIngredient);
-    setTradeNames(entry.tradeNames.join(', '));
+    setTradeNames(normalizeStringList(entry.tradeNames).join(', '));
     setSelectedSpecies(entry.species);
-    setSelectedTags(tagOptions.filter((tag) => [...entry.tags, ...entry.systems].includes(tag)));
-    setCustomTags(entry.tags.filter((tag) => !tagOptions.includes(tag)).join(', '));
-    setPathologies(entry.pathologies.join(', '));
-    setConcentrations(entry.concentrations.join(', '));
+    const normalizedSystems = normalizeStringList(entry.systems, normalizedSystemOptions);
+    const normalizedTags = excludeEquivalentValues(normalizeStringList(entry.tags, facetOptions), normalizedSystems);
+    const normalizedFacets = normalizeStringList([...normalizedTags, ...normalizedSystems], facetOptions);
+    setSelectedTags(displayTagOptions.filter((tag) => normalizedFacets.some((value) => areEquivalentValues(tag, value))));
+    setCustomTags(normalizedFacets.filter((tag) => !displayTagOptions.some((option) => areEquivalentValues(option, tag))).join(', '));
+    setPathologies(normalizeStringList(entry.pathologies).join(', '));
+    setConcentrations(normalizeStringList(entry.concentrations).join(', '));
     setIndicationsEs(entry.indications.es);
     setIndicationsEn(entry.indications.en);
     setDosageEs(entry.dosage.es);
@@ -365,7 +378,7 @@ export default function ActiveIngredientForm({
     populateForm(initialEntry);
     setError('');
     setSuccess('');
-  }, [initialEntry, tagOptions]);
+  }, [displayTagOptions, facetOptions, initialEntry, normalizedSystemOptions, tagOptions]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -377,9 +390,13 @@ export default function ActiveIngredientForm({
       return;
     }
 
-    const mergedTags = Array.from(new Set([...selectedTags, ...splitList(customTags)]));
-    const derivedSystems = mergedTags.filter((tag) => systemOptions.includes(tag));
-    const concentrationList = splitList(concentrations);
+    const mergedFacets = normalizeStringList([...selectedTags, ...splitList(customTags)], facetOptions);
+    const derivedSystems = normalizeStringList(
+      mergedFacets.filter((tag) => normalizedSystemOptions.some((system) => areEquivalentValues(system, tag))),
+      normalizedSystemOptions,
+    );
+    const normalizedTags = excludeEquivalentValues(mergedFacets, derivedSystems);
+    const concentrationList = normalizeStringList(splitList(concentrations));
     const references = parseReferences(referencesInput, slugify(activeIngredient));
 
     const calculatorPresets = presets
@@ -410,11 +427,11 @@ export default function ActiveIngredientForm({
     const entry: TherapeuticEntry = {
       id: initialEntry?.id ?? `${slugify(activeIngredient)}-${Date.now().toString().slice(-6)}`,
       activeIngredient: activeIngredient.trim(),
-      tradeNames: splitList(tradeNames),
+      tradeNames: normalizeStringList(splitList(tradeNames)),
       species: selectedSpecies,
-      tags: mergedTags,
+      tags: normalizedTags,
       systems: derivedSystems,
-      pathologies: splitList(pathologies),
+      pathologies: normalizeStringList(splitList(pathologies)),
       concentrations: concentrationList,
       indications: {
         es: indicationsEs.trim(),
@@ -529,7 +546,7 @@ export default function ActiveIngredientForm({
         <section className="entry-form-block">
           <h4>{text.tags}</h4>
           <div className="tag-chip-list">
-            {tagOptions.map((tag) => (
+            {displayTagOptions.map((tag) => (
               <button
                 key={tag}
                 type="button"
