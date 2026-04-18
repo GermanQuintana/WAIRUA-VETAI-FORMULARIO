@@ -5,7 +5,9 @@ import ActiveIngredientForm from './components/ActiveIngredientForm';
 import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import DoseCalculator from './components/DoseCalculator';
+import DrugInteractionChecker from './components/DrugInteractionChecker';
 import EntryCard from './components/EntryCard';
+import GeneticsToolkit from './components/GeneticsToolkit';
 import InfusionCalculator from './components/InfusionCalculator';
 import ManagementToolkit from './components/ManagementToolkit';
 import UnitConverter from './components/UnitConverter';
@@ -26,6 +28,7 @@ import {
   getSystemOptions,
   getTagOptions,
 } from './lib/indexes';
+import { excludeEquivalentValues, normalizeStringList } from './lib/entryNormalization';
 import { expandMedicalTermAliases, translateMedicalTerm, translateMedicalTerms } from './lib/terms';
 import {
   buildCimaRecordUrl,
@@ -52,7 +55,20 @@ gsap.registerPlugin(ScrollTrigger);
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const premiumTabs = ['active'] as const;
 const activeViews = ['records', 'create'] as const;
-const toolkitViews = ['overview', 'dose', 'infusion', 'haemotherapy', 'endocrine', 'converter', 'surface', 'assistant', 'nutrition', 'management'] as const;
+const toolkitViews = [
+  'overview',
+  'dose',
+  'infusion',
+  'haemotherapy',
+  'endocrine',
+  'genetics',
+  'interactions',
+  'converter',
+  'surface',
+  'assistant',
+  'nutrition',
+  'management',
+] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
 
@@ -61,7 +77,14 @@ type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
-const availableToolkitViewSet = new Set<ToolkitView>(['dose', 'infusion', 'converter', 'surface', 'assistant', 'management']);
+const availableToolkitViewSet = new Set<ToolkitView>([
+  'dose',
+  'infusion',
+  'converter',
+  'surface',
+  'assistant',
+  'management',
+]);
 const freeToolkitViewSet = new Set<ToolkitView>(['management']);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
@@ -133,6 +156,26 @@ const formatDelimitedText = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean)
     .join(', ');
+
+const getPresentationCodeItems = (presentations?: Array<{ cn?: string; nombre: string }> | null) => {
+  const seen = new Set<string>();
+
+  return (presentations ?? []).filter((item) => {
+    const key = `${item.cn ?? ''}::${item.nombre}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const formatNationalCodeSummary = (presentations?: Array<{ cn?: string; nombre: string }> | null) => {
+  const items = getPresentationCodeItems(presentations);
+  if (items.length === 0) return '-';
+  if (items.length === 1) return items[0].cn?.trim() || '-';
+  return 'Ver presentaciones';
+};
+
+const formatPresentationCodeLine = (item: { cn?: string; nombre: string }) => (item.cn ? `${item.nombre} · CN ${item.cn}` : item.nombre);
 
 const hasEquivalentMedicalTerm = (left: string, right: string) => {
   const leftAliases = new Set(expandMedicalTermAliases(left));
@@ -1565,8 +1608,15 @@ function App() {
       };
     }
     setRemoteSyncMessage('');
+    const normalizedSystems = normalizeStringList(entry.systems, systemOptions);
+    const normalizedTags = excludeEquivalentValues(normalizeStringList(entry.tags, formTagOptions), normalizedSystems);
     const normalizedEntry: TherapeuticEntry = {
       ...entry,
+      tradeNames: normalizeStringList(entry.tradeNames),
+      tags: normalizedTags,
+      systems: normalizedSystems,
+      pathologies: normalizeStringList(entry.pathologies),
+      concentrations: normalizeStringList(entry.concentrations),
       publicationStatus: canActivateEditorial ? entry.publicationStatus : 'pending_activation',
     };
 
@@ -1612,7 +1662,7 @@ function App() {
       }
     }
 
-    if (!supabaseEditorialService || !isUuid(entry.id)) {
+    if (!supabaseEditorialService) {
       replaceCatalogEntry(normalizedEntry);
       setEditingEntry(normalizedEntry);
       return {
@@ -1626,6 +1676,20 @@ function App() {
     }
 
     try {
+      if (!isUuid(entry.id)) {
+        const savedEntry = await supabaseEditorialService.createTherapeuticEntry(normalizedEntry);
+        replaceCatalogEntry(savedEntry, entry.id);
+        setEditingEntry(savedEntry);
+        return {
+          persisted: true,
+          entry: savedEntry,
+          message:
+            lang === 'es'
+              ? 'Ficha local persistida en Supabase y actualizada.'
+              : 'Local record persisted to Supabase and updated.',
+        };
+      }
+
       const savedEntry = await supabaseEditorialService.updateTherapeuticEntry(normalizedEntry);
       replaceCatalogEntry(savedEntry, entry.id);
       setEditingEntry(savedEntry);
@@ -1779,14 +1843,24 @@ function App() {
 
           <div className="topbar-actions">
             <div className="topbar-support" title={accessText.supportTitle}>
-              <a href={supportMailto} className="topbar-support-link">
-                <span aria-hidden="true">✉</span>
-                {accessText.supportMail}
+              <a href={supportMailto} className="topbar-support-link topbar-support-link-icon" aria-label={accessText.supportTitle}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="topbar-support-icon" fill="none">
+                  <path
+                    d="M4.5 7.5h15a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15V9a1.5 1.5 0 0 1 1.5-1.5Z"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="m4 8 8 6 8-6"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </a>
-              <button type="button" className="topbar-support-copy" onClick={handleCopySupportEmail}>
-                {accessText.supportCopy}
-              </button>
-              {supportFeedback ? <span className="topbar-support-feedback">{supportFeedback}</span> : null}
             </div>
             <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               {theme === 'light' ? t.dark : t.light}
@@ -2020,6 +2094,8 @@ function App() {
                       const withdrawalMaxDays = getCimavetMaxWithdrawalDays(detail, rxSpeciesLabel);
                       const speciesLabel = detail?.especies?.map((item) => item.nombre).join(', ') ?? '-';
                       const formLabel = medication.forma?.nombre ?? medication.formasFarmaceuticas?.[0]?.nombre ?? '-';
+                      const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
+                      const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
                       const routeLabel =
                         medication.administracion?.nombre ?? medication.viasAdministracion?.[0]?.nombre ?? '-';
 
@@ -2057,6 +2133,10 @@ function App() {
                                 <strong>{speciesLabel}</strong>
                               </p>
                               <p>
+                                <span>{t.nationalCode}</span>
+                                <strong>{nationalCodeLabel}</strong>
+                              </p>
+                              <p>
                                 <span>{t.withdrawalMax}</span>
                                 <strong>{withdrawalMaxDays != null ? formatWithdrawalSummary(withdrawalMaxDays, lang) : '-'}</strong>
                               </p>
@@ -2087,10 +2167,23 @@ function App() {
                               </section>
                             ) : null}
 
+                            {presentationCodeItems.length > 0 ? (
+                              <section className="live-indications">
+                                <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
+                                <ul>
+                                  {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                    <li key={`${medication.nregistro}-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            ) : null}
+
                             <footer className="live-card-footer">
-                              <span>
-                                {t.registration}: {medication.nregistro}
-                              </span>
+                              <div className="live-card-identifiers">
+                                <span>
+                                  {t.registration}: {medication.nregistro}
+                                </span>
+                              </div>
                               <a
                                 href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
                                 target="_blank"
@@ -2536,66 +2629,89 @@ function App() {
                           </div>
                         )}
                         <ul className="live-results-list">
-                          {activeVetResultsForDetails.map((medication) => (
-                            <li key={`active-vet-${medication.nregistro}`}>
-                              <article className="live-card">
-                                <header className="live-card-header">
-                                  <h4>{medication.nombre}</h4>
-                                  <div className="live-badges">
-                                    {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
-                                    {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
-                                    {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                          {activeVetResultsForDetails.map((medication) => {
+                            const detail = activeVetDetails[medication.nregistro];
+                            const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
+                            const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
+
+                            return (
+                              <li key={`active-vet-${medication.nregistro}`}>
+                                <article className="live-card">
+                                  <header className="live-card-header">
+                                    <h4>{medication.nombre}</h4>
+                                    <div className="live-badges">
+                                      {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
+                                      {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
+                                      {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                                    </div>
+                                  </header>
+
+                                  <div className="live-meta-grid">
+                                    <p>
+                                      <span>{t.laboratory}</span>
+                                      <strong>{medication.labtitular || '-'}</strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.pharmaceuticalForm}</span>
+                                      <strong>{medication.forma?.nombre || '-'}</strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.activeIngredient}</span>
+                                      <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.administrationRoute}</span>
+                                      <strong>{medication.administracion?.nombre || '-'}</strong>
+                                    </p>
+                                    <p>
+                                      <span>{t.nationalCode}</span>
+                                      <strong>{nationalCodeLabel}</strong>
+                                    </p>
                                   </div>
-                                </header>
 
-                                <div className="live-meta-grid">
-                                  <p>
-                                    <span>{t.laboratory}</span>
-                                    <strong>{medication.labtitular || '-'}</strong>
-                                  </p>
-                                  <p>
-                                    <span>{t.pharmaceuticalForm}</span>
-                                    <strong>{medication.forma?.nombre || '-'}</strong>
-                                  </p>
-                                  <p>
-                                    <span>{t.activeIngredient}</span>
-                                    <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
-                                  </p>
-                                  <p>
-                                    <span>{t.administrationRoute}</span>
-                                    <strong>{medication.administracion?.nombre || '-'}</strong>
-                                  </p>
-                                </div>
+                                  {detail?.indicaciones?.length ? (
+                                    <section className="live-indications">
+                                      <h5>{t.indications}</h5>
+                                      <ul>
+                                        {detail.indicaciones!.slice(0, 4).map((indication, index) => (
+                                          <li key={`${medication.nregistro}-active-indication-${index}`}>
+                                            {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
+                                            {indication.nombre}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </section>
+                                  ) : null}
 
-                                {activeVetDetails[medication.nregistro]?.indicaciones?.length ? (
-                                  <section className="live-indications">
-                                    <h5>{t.indications}</h5>
-                                    <ul>
-                                      {activeVetDetails[medication.nregistro].indicaciones!.slice(0, 4).map((indication, index) => (
-                                        <li key={`${medication.nregistro}-active-indication-${index}`}>
-                                          {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
-                                          {indication.nombre}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </section>
-                                ) : null}
+                                  {presentationCodeItems.length > 0 ? (
+                                    <section className="live-indications">
+                                      <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
+                                      <ul>
+                                        {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                          <li key={`${medication.nregistro}-active-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                        ))}
+                                      </ul>
+                                    </section>
+                                  ) : null}
 
-                                <footer className="live-card-footer">
-                                  <span>
-                                    {t.registration}: {medication.nregistro}
-                                  </span>
-                                  <a
-                                    href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
-                                    {t.openRecord}
-                                  </a>
-                                </footer>
-                              </article>
-                            </li>
-                          ))}
+                                  <footer className="live-card-footer">
+                                    <div className="live-card-identifiers">
+                                      <span>
+                                        {t.registration}: {medication.nregistro}
+                                      </span>
+                                    </div>
+                                    <a
+                                      href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      {t.openRecord}
+                                    </a>
+                                  </footer>
+                                </article>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </>
                     )}
@@ -2674,6 +2790,8 @@ function App() {
                             const technicalSheetUrl = getCimaDocumentUrl(detail ?? medication, 1);
                             const leafletUrl = getCimaDocumentUrl(detail ?? medication, 2);
                             const recordUrl = buildCimaRecordUrl(CIMA_BASE_URL, medication.nregistro);
+                            const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
+                            const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
 
                             return (
                               <li key={`active-human-${medication.nregistro}`}>
@@ -2708,6 +2826,10 @@ function App() {
                                       <span>{t.dose}</span>
                                       <strong>{medication.dosis || '-'}</strong>
                                     </p>
+                                    <p>
+                                      <span>{t.nationalCode}</span>
+                                      <strong>{nationalCodeLabel}</strong>
+                                    </p>
                                   </div>
 
                                   {detail?.viasAdministracion?.length ? (
@@ -2721,10 +2843,23 @@ function App() {
                                     </section>
                                   ) : null}
 
+                                  {presentationCodeItems.length > 0 ? (
+                                    <section className="live-indications">
+                                      <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
+                                      <ul>
+                                        {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                          <li key={`${medication.nregistro}-active-human-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                        ))}
+                                      </ul>
+                                    </section>
+                                  ) : null}
+
                                   <footer className="live-card-footer">
-                                    <span>
-                                      {t.registration}: {medication.nregistro}
-                                    </span>
+                                    <div className="live-card-identifiers">
+                                      <span>
+                                        {t.registration}: {medication.nregistro}
+                                      </span>
+                                    </div>
                                     <div className="live-card-links">
                                       {technicalSheetUrl && (
                                         <a href={technicalSheetUrl} target="_blank" rel="noreferrer">
@@ -2876,7 +3011,7 @@ function App() {
                   lang={lang}
                   speciesOptions={speciesOptions}
                   systemOptions={systemOptions}
-                  tagOptions={formTagOptions}
+                  tagOptions={tagOptions}
                   initialEntry={editingEntry}
                   onSubmit={handleSaveEntry}
                   onCancelEdit={() => setEditingEntry(null)}
@@ -2930,6 +3065,10 @@ function App() {
             )}
 
             {activeToolkitView === 'infusion' && <InfusionCalculator lang={lang} />}
+
+            {activeToolkitView === 'genetics' && <GeneticsToolkit lang={lang} />}
+
+            {activeToolkitView === 'interactions' && <DrugInteractionChecker lang={lang} entries={entryCatalog} />}
 
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
@@ -3200,6 +3339,8 @@ function App() {
                         medication.formaFarmaceuticaSimplificada?.nombre ||
                         medication.formaFarmaceutica?.nombre ||
                         '-';
+                      const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
+                      const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
 
                       return (
                         <li key={medication.nregistro}>
@@ -3238,6 +3379,10 @@ function App() {
                                 <span>{lang === 'es' ? 'Dispensacion' : 'Dispensing'}</span>
                                 <strong>{medication.cpresc || '-'}</strong>
                               </p>
+                              <p>
+                                <span>{t.nationalCode}</span>
+                                <strong>{nationalCodeLabel}</strong>
+                              </p>
                             </div>
 
                             {detail?.presentaciones?.length ? (
@@ -3251,10 +3396,23 @@ function App() {
                               </section>
                             ) : null}
 
+                            {presentationCodeItems.length > 0 ? (
+                              <section className="live-indications">
+                                <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
+                                <ul>
+                                  {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                    <li key={`${medication.nregistro}-human-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            ) : null}
+
                             <footer className="live-card-footer">
-                              <span>
-                                {t.registration}: {medication.nregistro}
-                              </span>
+                              <div className="live-card-identifiers">
+                                <span>
+                                  {t.registration}: {medication.nregistro}
+                                </span>
+                              </div>
                               <div className="live-card-links">
                                 {technicalSheetUrl && (
                                   <a href={technicalSheetUrl} target="_blank" rel="noreferrer">

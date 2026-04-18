@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { labels, Language } from '../i18n';
+import { excludeEquivalentValues, normalizeStringList } from '../lib/entryNormalization';
 import {
   translateEditorialStatus,
   translateEvidenceLevel,
@@ -78,14 +79,20 @@ export default function EntryCard({
   }, [entry.calculatorPresets, entry.references, lang]);
 
   const speciesLabel = useMemo(() => translateMedicalTerms(entry.species, lang).join(', '), [entry.species, lang]);
+  const normalizedSystems = useMemo(() => normalizeStringList(entry.systems), [entry.systems]);
+  const normalizedTags = useMemo(
+    () => excludeEquivalentValues(normalizeStringList(entry.tags), normalizedSystems),
+    [entry.tags, normalizedSystems],
+  );
   const pathologiesLabel = useMemo(
-    () => translateMedicalTerms(entry.pathologies, lang).join(', '),
+    () => translateMedicalTerms(normalizeStringList(entry.pathologies), lang).join(', '),
     [entry.pathologies, lang],
   );
   const tagsLabel = useMemo(
-    () => translateMedicalTerms(Array.from(new Set([...entry.tags, ...entry.systems])), lang).join(', '),
-    [entry.systems, entry.tags, lang],
+    () => translateMedicalTerms(normalizeStringList([...normalizedTags, ...normalizedSystems]), lang).join(', '),
+    [lang, normalizedSystems, normalizedTags],
   );
+  const concentrationsLabel = useMemo(() => normalizeStringList(entry.concentrations).join(', '), [entry.concentrations]);
   const structuredDoseRows = useMemo(() => {
     return [...(entry.calculatorPresets ?? [])]
       .sort((left, right) => {
@@ -181,7 +188,7 @@ export default function EntryCard({
       )}
       {entry.concentrations.length > 0 && (
         <p>
-          <strong>{t.concentrationsLabel}:</strong> {entry.concentrations.join(', ')}
+          <strong>{t.concentrationsLabel}:</strong> {concentrationsLabel}
         </p>
       )}
       {hasValue(entry.indications[lang]) && (

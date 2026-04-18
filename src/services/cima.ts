@@ -116,6 +116,8 @@ const normalizeSearchText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const searchTokenPattern = /[a-z0-9]+/g;
+
 const ingredientQualifierPattern =
   /\b(hidrocloruro|clorhidrato|hydrochloride|hcl|maleato|mesilato|besilato|citrato|fosfato|sulfato|succinato|fumarato|lactato|acetato|nitrato|potasico|potasica|potassium|sodico|sodica|sodium|calcico|calcica|calcium)\b/g;
 
@@ -147,7 +149,34 @@ const getActiveIngredientParts = (value?: string) =>
     .map((part) => normalizeSearchText(part))
     .filter(Boolean);
 
+const getSearchTokens = (value: string) =>
+  Array.from(new Set(normalizeSearchText(value).match(searchTokenPattern) ?? [])).filter((token) => token.length >= 2);
+
 const getPrimaryActiveIngredientText = (medication: CimaMedicationSummary) => medication.pactivos ?? medication.vtm?.nombre ?? '';
+
+const getMedicationSearchFields = (medication: CimaMedicationSummary) =>
+  [
+    medication.nombre,
+    getPrimaryActiveIngredientText(medication),
+    medication.labtitular ?? '',
+    medication.labcomercializador ?? '',
+    medication.formaFarmaceuticaSimplificada?.nombre ?? '',
+    medication.formaFarmaceutica?.nombre ?? '',
+    medication.vtm?.nombre ?? '',
+    medication.dosis ?? '',
+  ].map(normalizeSearchText);
+
+const matchesMedicationQuery = (medication: CimaMedicationSummary, query: string) => {
+  const normalizedQuery = normalizeSearchText(query);
+  const tokens = getSearchTokens(query);
+  const fields = getMedicationSearchFields(medication);
+
+  if (!normalizedQuery) return true;
+  if (fields.some((field) => field.includes(normalizedQuery))) return true;
+  if (tokens.length <= 1) return fields.some((field) => field.includes(tokens[0] ?? normalizedQuery));
+
+  return tokens.every((token) => fields.some((field) => field.includes(token) || matchesIngredientFamily(field, token)));
+};
 
 const getExactActiveIngredientMatchLevel = (medication: CimaMedicationSummary, query: string) => {
   const q = normalizeSearchText(query);
@@ -161,9 +190,13 @@ const getExactActiveIngredientMatchLevel = (medication: CimaMedicationSummary, q
 
 const scoreMedication = (medication: CimaMedicationSummary, query: string) => {
   const q = normalizeSearchText(query);
+  const queryTokens = getSearchTokens(query);
   const tradeName = normalizeSearchText(medication.nombre);
   const activeIngredient = normalizeSearchText(getPrimaryActiveIngredientText(medication));
   const exactActiveIngredientLevel = getExactActiveIngredientMatchLevel(medication, q);
+  const matchesAcrossTokens = matchesMedicationQuery(medication, query);
+  const tradeTokenMatches = queryTokens.filter((token) => tradeName.includes(token)).length;
+  const activeTokenMatches = queryTokens.filter((token) => activeIngredient.includes(token)).length;
 
   let score = 0;
 
@@ -176,6 +209,9 @@ const scoreMedication = (medication: CimaMedicationSummary, query: string) => {
   if (activeIngredient.startsWith(q)) score += 35;
   if (tradeName.includes(q)) score += 25;
   if (activeIngredient.includes(q)) score += 20;
+  if (queryTokens.length > 1 && matchesAcrossTokens) score += 55;
+  score += tradeTokenMatches * 12;
+  score += activeTokenMatches * 10;
   if (medication.comerc) score += 8;
   if (medication.receta) score += 3;
 
@@ -267,17 +303,26 @@ export class CimaService {
     const q = query.trim();
     if (q.length < 2) return [];
     const familyQuery = normalizeIngredientFamily(q);
+    const queryTokens = getSearchTokens(q);
+    const tokenQueries = queryTokens.filter((token) => token.length >= 3).slice(0, 4);
 
     const includeTradeNameSearch = options.includeTradeNameSearch ?? true;
     const includeActiveIngredientSearch = options.includeActiveIngredientSearch ?? true;
     const searches: Array<Promise<CimaMedicationSummary[]>> = [];
 
-    if (includeTradeNameSearch) searches.push(this.searchByTradeName(q));
+    if (includeTradeNameSearch) {
+      const tradeQueries = Array.from(new Set([q, ...tokenQueries]));
+      tradeQueries.forEach((tradeQuery) => searches.push(this.searchByTradeName(tradeQuery)));
+    }
     if (includeActiveIngredientSearch) {
-      searches.push(this.searchByActiveIngredient(q));
-      if (familyQuery && familyQuery !== normalizeSearchText(q)) {
-        searches.push(this.searchByActiveIngredient(familyQuery));
-      }
+      const activeQueries = new Set<string>([q, ...tokenQueries]);
+      if (familyQuery && familyQuery !== normalizeSearchText(q)) activeQueries.add(familyQuery);
+      tokenQueries
+        .map((token) => normalizeIngredientFamily(token))
+        .filter((token) => token && token.length >= 3)
+        .forEach((token) => activeQueries.add(token));
+
+      activeQueries.forEach((activeQuery) => searches.push(this.searchByActiveIngredient(activeQuery)));
     }
 
     const results = await Promise.all(searches);
@@ -291,16 +336,18 @@ export class CimaService {
     });
 
     const ranked = Array.from(merged.values()).sort((left, right) => scoreMedication(right, q) - scoreMedication(left, q));
+    const tokenFiltered = queryTokens.length > 1 ? ranked.filter((medication) => matchesMedicationQuery(medication, q)) : ranked;
+    const candidateResults = tokenFiltered.length > 0 ? tokenFiltered : ranked;
 
-    if (!options.preferExactActiveIngredient) return ranked;
+    if (!options.preferExactActiveIngredient) return candidateResults;
 
-    const exactSingleMatches = ranked.filter((medication) => getExactActiveIngredientMatchLevel(medication, q) === 2);
+    const exactSingleMatches = candidateResults.filter((medication) => getExactActiveIngredientMatchLevel(medication, q) === 2);
     if (exactSingleMatches.length > 0) return exactSingleMatches;
 
-    const exactCombinationMatches = ranked.filter((medication) => getExactActiveIngredientMatchLevel(medication, q) === 1);
+    const exactCombinationMatches = candidateResults.filter((medication) => getExactActiveIngredientMatchLevel(medication, q) === 1);
     if (exactCombinationMatches.length > 0) return exactCombinationMatches;
 
-    return ranked;
+    return candidateResults;
   }
 
   async getMedicationByRegistration(nregistro: string): Promise<CimaMedicationDetail> {

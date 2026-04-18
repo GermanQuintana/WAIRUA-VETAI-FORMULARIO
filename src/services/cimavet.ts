@@ -131,6 +131,8 @@ const normalizeSearchText = (value: string) =>
     .toLowerCase()
     .trim();
 
+const searchTokenPattern = /[a-z0-9]+/g;
+
 const ingredientQualifierPattern =
   /\b(hidrocloruro|clorhidrato|hydrochloride|hcl|maleato|mesilato|besilato|citrato|fosfato|sulfato|succinato|fumarato|lactato|acetato|nitrato|potasico|potasica|potassium|sodico|sodica|sodium|calcico|calcica|calcium)\b/g;
 
@@ -161,6 +163,59 @@ const getCimavetActiveIngredientParts = (value?: string) =>
     .split(/[;+]/)
     .map((part) => normalizeSearchText(part))
     .filter(Boolean);
+
+const getSearchTokens = (value: string) =>
+  Array.from(new Set(normalizeSearchText(value).match(searchTokenPattern) ?? [])).filter((token) => token.length >= 2);
+
+const getCimavetMedicationSearchFields = (medication: CimavetMedicationSummary, includeActiveIngredient = true) =>
+  [
+    medication.nombre,
+    medication.labtitular ?? '',
+    medication.forma?.nombre ?? '',
+    medication.administracion?.nombre ?? '',
+    ...(includeActiveIngredient ? [medication.pactivos ?? ''] : []),
+  ].map(normalizeSearchText);
+
+const matchesCimavetMedicationQuery = (
+  medication: CimavetMedicationSummary,
+  query: string,
+  includeActiveIngredient = true,
+) => {
+  const normalizedQuery = normalizeSearchText(query);
+  const tokens = getSearchTokens(query);
+  const fields = getCimavetMedicationSearchFields(medication, includeActiveIngredient);
+
+  if (!normalizedQuery) return true;
+  if (fields.some((field) => field.includes(normalizedQuery))) return true;
+  if (tokens.length <= 1) {
+    return fields.some((field) => field.includes(tokens[0] ?? normalizedQuery));
+  }
+
+  return tokens.every((token) => fields.some((field) => field.includes(token) || matchesIngredientFamily(field, token)));
+};
+
+const scoreCimavetMedication = (medication: CimavetMedicationSummary, query: string) => {
+  const normalizedQuery = normalizeSearchText(query);
+  const tokens = getSearchTokens(query);
+  const tradeName = normalizeSearchText(medication.nombre);
+  const activeIngredient = normalizeSearchText(medication.pactivos ?? '');
+
+  let score = 0;
+
+  if (tradeName === normalizedQuery) score += 120;
+  if (activeIngredient === normalizedQuery) score += 110;
+  if (tradeName.startsWith(normalizedQuery)) score += 45;
+  if (activeIngredient.startsWith(normalizedQuery)) score += 40;
+  if (tradeName.includes(normalizedQuery)) score += 28;
+  if (activeIngredient.includes(normalizedQuery)) score += 24;
+  if (matchesCimavetMedicationQuery(medication, query)) score += 50;
+  score += tokens.filter((token) => tradeName.includes(token)).length * 12;
+  score += tokens.filter((token) => activeIngredient.includes(token)).length * 10;
+  if (medication.comerc) score += 8;
+  if (medication.receta) score += 3;
+
+  return score;
+};
 
 const getCimavetExactActiveIngredientMatchLevel = (medication: CimavetMedicationSummary, query: string) => {
   const q = normalizeSearchText(query);
@@ -323,13 +378,16 @@ export class CimavetService {
     return (await response.json()) as CimavetMedicationDetail;
   }
 
-  private filterCatalogByQuery(catalog: CimavetMedicationSummary[], query: string) {
-    const q = normalizeSearchText(query);
-    return catalog.filter((medication) => {
-      const tradeName = normalizeSearchText(medication.nombre);
-      const activeIngredient = normalizeSearchText(medication.pactivos ?? '');
-      return tradeName.includes(q) || activeIngredient.includes(q) || matchesIngredientFamily(activeIngredient, query);
-    });
+  private filterCatalogByQuery(
+    catalog: CimavetMedicationSummary[],
+    query: string,
+    options: { includeActiveIngredient?: boolean } = {},
+  ) {
+    const includeActiveIngredient = options.includeActiveIngredient ?? true;
+
+    return catalog
+      .filter((medication) => matchesCimavetMedicationQuery(medication, query, includeActiveIngredient))
+      .sort((left, right) => scoreCimavetMedication(right, query) - scoreCimavetMedication(left, query));
   }
 
   async loadCatalog(options: { maxPages?: number } = {}): Promise<CimavetMedicationSummary[]> {
@@ -376,15 +434,34 @@ export class CimavetService {
     if (!q) return [];
 
     const includeActiveIngredientSearch = options.includeActiveIngredientSearch ?? true;
+    const tokenQueries = getSearchTokens(query).filter((token) => token.length >= 3).slice(0, 4);
     let basicMatch: CimavetMedicationSummary[] = [];
 
     if (this.catalogCache) {
-      basicMatch = this.filterCatalogByQuery(this.catalogCache, query);
+      basicMatch = this.filterCatalogByQuery(this.catalogCache, query, {
+        includeActiveIngredient: includeActiveIngredientSearch,
+      });
     } else if (includeActiveIngredientSearch) {
       const catalog = await this.loadCatalog({ maxPages: options.maxPages });
-      basicMatch = this.filterCatalogByQuery(catalog, query);
+      basicMatch = this.filterCatalogByQuery(catalog, query, {
+        includeActiveIngredient: true,
+      });
     } else {
-      basicMatch = await this.searchByTradeName(query).catch(() => []);
+      const tradeQueries = Array.from(new Set([query.trim(), ...tokenQueries]));
+      const tradeResults = await Promise.all(tradeQueries.map((tradeQuery) => this.searchByTradeName(tradeQuery).catch(() => [])));
+      const merged = new Map<string, CimavetMedicationSummary>();
+
+      tradeResults
+        .flat()
+        .filter((medication) => matchesCimavetMedicationQuery(medication, query, false))
+        .forEach((medication) => {
+          const current = merged.get(medication.nregistro);
+          if (!current || scoreCimavetMedication(medication, query) > scoreCimavetMedication(current, query)) {
+            merged.set(medication.nregistro, medication);
+          }
+        });
+
+      basicMatch = Array.from(merged.values()).sort((left, right) => scoreCimavetMedication(right, query) - scoreCimavetMedication(left, query));
     }
 
     let results = basicMatch;

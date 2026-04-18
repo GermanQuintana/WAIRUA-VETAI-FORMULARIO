@@ -8,6 +8,7 @@ import {
   User,
 } from '@supabase/supabase-js';
 import { specialtyTags, therapeuticClassTags } from '../data/taxonomy';
+import { excludeEquivalentValues, normalizeStringList } from '../lib/entryNormalization';
 import {
   AuthAccountSnapshot,
   AuthProvider,
@@ -275,23 +276,35 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
   );
   const dosingRules = (Array.isArray(row.dosing_rules) ? row.dosing_rules : []) as Array<Record<string, unknown>>;
   const speciesFromRules = uniq(dosingRules.map((rule) => String(rule.species)).filter(Boolean));
-  const pathologiesFromRules = uniq(dosingRules.map((rule) => String(rule.indication)).filter(Boolean));
+  const pathologiesFromRules = normalizeStringList(dosingRules.map((rule) => String(rule.indication)).filter(Boolean));
   const reviewRows = (Array.isArray(row.active_ingredient_reviews) ? row.active_ingredient_reviews : []) as Array<{
     reviewer_id?: string;
     approved?: boolean;
     approval_level?: number;
     review_note?: string;
   }>;
+  const systems = normalizeStringList((row.systems as string[] | null) ?? []);
+  const tags = excludeEquivalentValues(
+    normalizeStringList(((row.active_ingredient_tags as Array<{ tag_name: string }> | undefined) ?? []).map((item) => item.tag_name)),
+    systems,
+  );
+  const pathologies = normalizeStringList(((row.pathologies as string[] | null) ?? pathologiesFromRules) ?? []);
+  const tradeNames = normalizeStringList(
+    ((row.active_ingredient_trade_names as Array<{ trade_name: string }> | undefined) ?? []).map((item) => item.trade_name),
+  );
+  const concentrations = normalizeStringList(
+    ((row.active_ingredient_concentrations as Array<{ label: string }> | undefined) ?? []).map((item) => item.label),
+  );
 
   return {
     id: String(row.id),
     activeIngredient: String(row.active_ingredient),
-    tradeNames: ((row.active_ingredient_trade_names as Array<{ trade_name: string }> | undefined) ?? []).map((item) => item.trade_name),
+    tradeNames,
     species: (((row.species as string[] | null) ?? speciesFromRules) as TherapeuticEntry['species']),
-    tags: ((row.active_ingredient_tags as Array<{ tag_name: string }> | undefined) ?? []).map((item) => item.tag_name),
-    systems: (row.systems as string[] | null) ?? [],
-    pathologies: ((row.pathologies as string[] | null) ?? pathologiesFromRules) ?? [],
-    concentrations: ((row.active_ingredient_concentrations as Array<{ label: string }> | undefined) ?? []).map((item) => item.label),
+    tags,
+    systems,
+    pathologies,
+    concentrations,
     indications: {
       es: noteBody(notes, 'indications', 'es'),
       en: noteBody(notes, 'indications', 'en'),
