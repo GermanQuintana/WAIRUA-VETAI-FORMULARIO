@@ -19,6 +19,10 @@ export interface LocalizedCollectionCard {
     | 'endocrine'
     | 'genetics'
     | 'interactions'
+    | 'constants'
+    | 'ranges'
+    | 'fluid'
+    | 'emergency'
     | 'converter'
     | 'surface'
     | 'assistant'
@@ -176,13 +180,37 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     toolkitView: 'infusion',
   },
   {
+    id: 'species-constants',
+    title: { es: 'Constantes fisiologicas', en: 'Physiologic constants' },
+    description: {
+      es: 'Referencia por especie para temperatura, FC, FR, PANI/PAM, TRC, mucosas, diuresis y parametros de triage rapido.',
+      en: 'Species reference for temperature, HR, RR, NIBP/MAP, CRT, mucous membranes, urine output, and rapid triage parameters.',
+    },
+    status: { es: 'Pronto', en: 'Soon' },
+    statusTone: 'soon',
+    accessTier: 'premium',
+    toolkitView: 'constants',
+  },
+  {
+    id: 'lab-ranges',
+    title: { es: 'Rangos laboratoriales', en: 'Laboratory ranges' },
+    description: {
+      es: 'Bloque planificado para hematologia, bioquimica, electrolitos y gasometria con filtros por especie y etapa vital.',
+      en: 'Planned block for hematology, biochemistry, electrolytes, and blood gas values filtered by species and life stage.',
+    },
+    status: { es: 'Pronto', en: 'Soon' },
+    statusTone: 'soon',
+    accessTier: 'premium',
+    toolkitView: 'ranges',
+  },
+  {
     id: 'haemotherapy',
     title: { es: 'Hemoterapia', en: 'Haemotherapy' },
     description: {
       es: 'Calculadora transfusional orientativa con pautas de uso, compatibilidad y grupos sanguineos para perro y gato.',
       en: 'Guidance transfusion calculator with use notes, compatibility, and blood-group references for dogs and cats.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
     accessTier: 'premium',
     toolkitView: 'haemotherapy',
@@ -194,7 +222,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Guia de pruebas endocrinas por especie con cronogramas, ayuno, revisiones y ayuda de calculo para protocolos frecuentes.',
       en: 'Species-first endocrine testing guide with timelines, fasting notes, rechecks, and dose help for common protocols.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
     accessTier: 'premium',
     toolkitView: 'endocrine',
@@ -206,7 +234,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Cribado rapido de MDR1, predisposiciones metabolicas y enfermedades hereditarias por raza para apoyar decisiones seguras.',
       en: 'Quick screening of MDR1, metabolic predispositions, and hereditary breed diseases to support safer decisions.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
     toolkitView: 'genetics',
   },
@@ -217,7 +245,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Checker interno para revisar combinaciones de farmacos frecuentes de alto impacto y cruzarlas con notas editoriales.',
       en: 'Internal checker to review common high-impact drug combinations and cross-check them with editorial notes.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
     toolkitView: 'interactions',
   },
@@ -252,7 +280,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Linea con calculadoras energeticas y de nutrientes, base de datos de dietas terapeuticas y constructor de dieta casera para perro y gato.',
       en: 'Lane with energy and nutrient calculators, a therapeutic-diet database, and a homemade-diet builder for dogs and cats.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
     accessTier: 'premium',
     toolkitView: 'nutrition',
@@ -264,8 +292,10 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Modulo reservado para calculos de mantenimiento, deficit, perdidas y planes de rehidratacion.',
       en: 'Reserved module for maintenance, deficit, ongoing-loss, and rehydration planning calculations.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
+    accessTier: 'premium',
+    toolkitView: 'fluid',
   },
   {
     id: 'clinical-assistant',
@@ -298,18 +328,20 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Constructor de protocolos con premedicacion, induccion, mantenimiento, rescate y monitorizacion.',
       en: 'Protocol builder with premedication, induction, maintenance, rescue, and monitoring.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
   },
   {
     id: 'recover',
-    title: { es: 'Tablas RECOVER y urgencias', en: 'RECOVER and emergency charts' },
+    title: { es: 'Urgencias y RECOVER', en: 'Emergency and RECOVER' },
     description: {
-      es: 'Accesos rapidos a tablas de RCP, desfibrilacion, reversores y recordatorios de emergencias.',
-      en: 'Quick access to CPR, defibrillation, reversal, and emergency reminder charts.',
+      es: 'Estructura inicial para anafilaxia, hipoglucemia, status epilepticus, shock, tablas RECOVER y reversores.',
+      en: 'Initial structure for anaphylaxis, hypoglycemia, status epilepticus, shock, RECOVER charts, and reversal agents.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
+    accessTier: 'premium',
+    toolkitView: 'emergency',
   },
   {
     id: 'custom-workflows',
@@ -318,7 +350,7 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Atajos hacia formularios y guias internas para que el veterinario resuelva tareas frecuentes desde un mismo lugar.',
       en: 'Shortcuts into internal forms and guides so veterinarians can solve recurring tasks from one place.',
     },
-    status: { es: 'Proximamente', en: 'Coming soon' },
+    status: { es: 'Pronto', en: 'Soon' },
     statusTone: 'soon',
   },
 ];

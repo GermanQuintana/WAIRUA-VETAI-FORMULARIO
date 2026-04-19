@@ -1309,6 +1309,10 @@ select:focus-visible {
 }
 
 .feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  height: 100%;
   padding: 1rem;
   border-radius: 1rem;
   border: 1px solid #d7ddc8;
@@ -1342,13 +1346,22 @@ select:focus-visible {
   padding-left: 1.1rem;
 }
 
+.feature-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding-top: 0.9rem;
+}
+
 .feature-card-action {
   margin-top: 0.9rem;
 }
 
 .status-pill {
   display: inline-flex;
-  margin-top: 0.8rem;
   padding: 0.3rem 0.55rem;
   border-radius: 999px;
   background: #e9f8f1;
@@ -1373,7 +1386,6 @@ select:focus-visible {
 }
 
 .feature-card-link {
-  margin-top: 0.9rem;
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -1411,7 +1423,6 @@ select:focus-visible {
 }
 
 .feature-card-link-disabled {
-  margin-top: 0.9rem;
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -5428,4 +5439,273 @@ select {
   margin-top: 0.45rem;
   font-size: 0.78rem;
   color: rgba(34, 34, 34, 0.72);
+}
+
+.coming-soon-toolkit {
+  gap: 1rem;
+}
+
+.coming-soon-species-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.coming-soon-species-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #d9dfcc;
+  background: rgba(255, 255, 255, 0.78);
+  color: #335245;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.app.dark .coming-soon-species-chip {
+  background: #182329;
+  border-color: var(--border-dark);
+  color: var(--text-dark);
+}
+
+@media (max-width: 960px) {
+  .live-panel-header,
+  .live-panel-tools,
+  .live-pagination,
+  .search-grid-checkboxes,
+  .otc-card-header,
+  .genetics-card-header,
+  .toolkit-reference-header,
+  .toolkit-utility-result {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .live-panel-tools,
+  .live-page-size,
+  .live-card-links,
+  .topbar-status-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .live-page-size {
+    gap: 0.5rem;
+  }
+
+  .feature-card-footer {
+    align-items: stretch;
+  }
+
+  .live-page-size span,
+  .live-pagination p {
+    width: 100%;
+  }
+
+  .live-page-size button {
+    flex: 1 1 4rem;
+  }
+
+  .live-toggle,
+  .live-pagination button,
+  .module-back-button {
+    width: 100%;
+  }
+
+  .coming-soon-species-grid {
+    gap: 0.45rem;
+  }
+
+  .search-grid-checkboxes {
+    min-height: 0;
+  }
+
+  .checkbox-inline {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 0.7rem;
+  }
+
+  .app-topbar,
+  .product-tabs {
+    position: static;
+    top: auto;
+  }
+
+  .app-topbar,
+  .panel,
+  .module-panel {
+    padding: 0.95rem;
+  }
+
+  .topbar-brand,
+  .topbar-utilities,
+  .topbar-status-group,
+  .topbar-actions,
+  .account-menu-shell,
+  .topbar-account-button {
+    width: 100%;
+  }
+
+  .topbar-utilities,
+  .topbar-actions {
+    justify-content: stretch;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-actions > *,
+  .topbar-support,
+  .topbar-icon-button,
+  .topbar-account-button,
+  .topbar-lang-switch {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .topbar-support {
+    justify-content: flex-start;
+  }
+
+  .topbar-support-link-icon,
+  .topbar-icon-button,
+  .topbar-account-button {
+    justify-content: center;
+  }
+
+  .topbar-account-button strong,
+  .topbar-account-button small {
+    max-width: none;
+  }
+
+  .topbar-lang-switch {
+    display: flex;
+  }
+
+  .topbar-lang-switch button {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .account-menu-popover {
+    position: static;
+    top: auto;
+    right: auto;
+    left: auto;
+    width: 100%;
+    max-height: none;
+    margin-top: 0.75rem;
+  }
+
+  .product-tabs {
+    padding: 0.35rem;
+  }
+
+  .product-tabs button {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .feature-card-footer,
+  .module-header,
+  .live-meta-grid,
+  .otc-card-meta,
+  .management-breakdown-grid,
+  .management-discount-grid,
+  .management-base-row,
+  .auth-mode-switch,
+  .auth-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .management-base-row input {
+    text-align: left;
+  }
+
+  .otc-badge-row,
+  .otc-badge-row-single,
+  .otc-badge-row-single.otc-badge-row-long {
+    grid-template-columns: 1fr;
+  }
+
+  .otc-badge-row-single .otc-badge {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .feature-card-footer > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .live-card-footer,
+  .admin-role-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .app {
+    padding: 0.55rem;
+  }
+
+  .app-topbar,
+  .panel,
+  .module-panel,
+  .toolkit-utility-note,
+  .toolkit-utility-card,
+  .toolkit-reference-table,
+  .auth-card-screen {
+    padding: 0.85rem;
+    border-radius: 1rem;
+  }
+
+  .brand-logo-topbar {
+    width: 58px;
+  }
+
+  .topbar-brand {
+    align-items: flex-start;
+  }
+
+  .topbar-brand-copy strong,
+  .topbar-brand-copy span {
+    overflow-wrap: anywhere;
+  }
+
+  .topbar-support-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .topbar-support-link,
+  .topbar-icon-button,
+  .topbar-account-button {
+    min-height: 2.8rem;
+  }
+
+  .live-page-size button {
+    flex-basis: calc(50% - 0.25rem);
+  }
+
+  .coming-soon-species-chip {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .live-card-links a,
+  .live-card-footer a {
+    width: 100%;
+    text-align: center;
+  }
 }

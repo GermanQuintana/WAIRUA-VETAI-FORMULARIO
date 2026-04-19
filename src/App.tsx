@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
 import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
+import ComingSoonToolkit from './components/ComingSoonToolkit';
 import DoseCalculator from './components/DoseCalculator';
 import DrugInteractionChecker from './components/DrugInteractionChecker';
 import EntryCard from './components/EntryCard';
@@ -48,7 +49,7 @@ import {
   resolveCimavetBaseUrl,
 } from './services/cimavet';
 import { createSupabaseAccessService, createSupabaseEditorialService } from './services/supabase';
-import { AccessPreviewMode, AuthAccountSnapshot, OtcProductRecord, TherapeuticEntry, UserRole } from './types';
+import { AccessPreviewMode, AuthAccountSnapshot, LocalizedText, OtcProductRecord, TherapeuticEntry, UserRole } from './types';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -63,6 +64,10 @@ const toolkitViews = [
   'endocrine',
   'genetics',
   'interactions',
+  'constants',
+  'ranges',
+  'fluid',
+  'emergency',
   'converter',
   'surface',
   'assistant',
@@ -80,6 +85,10 @@ const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
   'dose',
   'infusion',
+  'constants',
+  'ranges',
+  'fluid',
+  'emergency',
   'converter',
   'surface',
   'assistant',
@@ -104,6 +113,223 @@ const getErrorMessage = (error: unknown) => {
 };
 const canAccessToolkitView = (view: ToolkitView, hasPremiumAccess: boolean) =>
   view === 'overview' || freeToolkitViewSet.has(view) || (hasPremiumAccess && availableToolkitViewSet.has(view));
+
+const speciesReferenceScope: LocalizedText[] = [
+  { es: 'Perro', en: 'Dog' },
+  { es: 'Gato', en: 'Cat' },
+  { es: 'Caballo', en: 'Horse' },
+  { es: 'Bovino', en: 'Cattle' },
+  { es: 'Porcino', en: 'Pig' },
+  { es: 'Ovino', en: 'Sheep' },
+  { es: 'Caprino', en: 'Goat' },
+  { es: 'Conejo', en: 'Rabbit' },
+  { es: 'Cobaya', en: 'Guinea pig' },
+  { es: 'Chinchilla', en: 'Chinchilla' },
+  { es: 'Hamster', en: 'Hamster' },
+  { es: 'Tortuga', en: 'Tortoise / turtle' },
+  { es: 'Pogona', en: 'Bearded dragon' },
+  { es: 'Gecko', en: 'Gecko' },
+  { es: 'Petauro', en: 'Sugar glider' },
+  { es: 'Periquito', en: 'Budgerigar' },
+  { es: 'Canario', en: 'Canary' },
+  { es: 'Loridos y loros', en: 'Parrots and lories' },
+  { es: 'Iguana', en: 'Iguana' },
+];
+
+const comingSoonToolkitContent: Record<
+  'constants' | 'ranges' | 'fluid' | 'emergency',
+  {
+    title: LocalizedText;
+    subtitle: LocalizedText;
+    statusNote: LocalizedText;
+    scopeTitle: LocalizedText;
+    scopeLabel: LocalizedText;
+    lanesTitle: LocalizedText;
+    footerNote: LocalizedText;
+    lanes: Array<{
+      id: string;
+      title: LocalizedText;
+      description: LocalizedText;
+    }>;
+  }
+> = {
+  constants: {
+    title: { es: 'Constantes fisiologicas y triage', en: 'Physiologic constants and triage' },
+    subtitle: {
+      es: 'Modulo reservado para centralizar temperatura, FC, FR, PANI/PAM, TRC, mucosas, diuresis y referencias de exploracion por especie.',
+      en: 'Reserved module to centralize temperature, HR, RR, NIBP/MAP, CRT, mucous membranes, urine output, and examination references by species.',
+    },
+    statusNote: {
+      es: 'Ya queda creada la estructura del modulo para ir completando rangos y alertas clinicas sin mezclarlo con las calculadoras.',
+      en: 'The module structure is now in place so we can progressively add ranges and clinical alerts without mixing them into the calculators.',
+    },
+    scopeTitle: { es: 'Especies objetivo iniciales', en: 'Initial target species' },
+    scopeLabel: { es: 'Cobertura prevista', en: 'Planned coverage' },
+    lanesTitle: { es: 'Bloques previstos', en: 'Planned lanes' },
+    footerNote: {
+      es: 'Este espacio queda preparado para añadir tablas por especie, filtros por etapa vital y alertas de valores criticos.',
+      en: 'This space is ready for species tables, life-stage filters, and critical value alerts.',
+    },
+    lanes: [
+      {
+        id: 'vital-signs',
+        title: { es: 'Signos vitales', en: 'Vital signs' },
+        description: {
+          es: 'Temperatura, FC, FR, pulsos, dolor, estado mental y patrones respiratorios esperados por especie.',
+          en: 'Temperature, HR, RR, pulses, pain, mentation, and expected respiratory patterns by species.',
+        },
+      },
+      {
+        id: 'perfusion-pressure',
+        title: { es: 'Perfusion y PANI', en: 'Perfusion and NIBP' },
+        description: {
+          es: 'PANI/PAM, perfusion periferica, TRC, mucosas, lactato y diuresis como referencia de monitorizacion.',
+          en: 'NIBP/MAP, peripheral perfusion, CRT, mucous membranes, lactate, and urine output as monitoring references.',
+        },
+      },
+      {
+        id: 'triage-warnings',
+        title: { es: 'Alertas de triage', en: 'Triage alerts' },
+        description: {
+          es: 'Banderas rojas y umbrales rapidos para urgencias, UCI, anestesia y pacientes exotic-friendly.',
+          en: 'Red flags and fast thresholds for ER, ICU, anesthesia, and exotic-friendly workflows.',
+        },
+      },
+    ],
+  },
+  ranges: {
+    title: { es: 'Rangos laboratoriales', en: 'Laboratory ranges' },
+    subtitle: {
+      es: 'Espacio para agrupar hemograma, bioquimica, electrolitos y gasometria con referencias comparables por especie.',
+      en: 'Workspace to group CBC, biochemistry, electrolytes, and blood gases with comparable references by species.',
+    },
+    statusNote: {
+      es: 'Queda preparado para crecer como repositorio de consulta rapida junto a filtros por especie, edad y contexto clinico.',
+      en: 'Prepared to grow as a quick-reference repository with filters by species, age, and clinical context.',
+    },
+    scopeTitle: { es: 'Especies previstas', en: 'Planned species' },
+    scopeLabel: { es: 'Primer alcance', en: 'First scope' },
+    lanesTitle: { es: 'Bloques previstos', en: 'Planned lanes' },
+    footerNote: {
+      es: 'La idea es poder navegar por laboratorio sin salir del toolkit y enlazar despues interpretaciones y causas frecuentes.',
+      en: 'The goal is to navigate lab references without leaving the toolkit and later connect them to interpretations and common causes.',
+    },
+    lanes: [
+      {
+        id: 'hematology',
+        title: { es: 'Hematologia', en: 'Hematology' },
+        description: {
+          es: 'RBC, HCT, Hb, leucograma y plaquetas con rangos base y notas sobre juveniles o geriatria.',
+          en: 'RBC, HCT, Hb, leukogram, and platelets with baseline ranges plus juvenile and geriatric notes.',
+        },
+      },
+      {
+        id: 'biochemistry',
+        title: { es: 'Bioquimica y electrolitos', en: 'Biochemistry and electrolytes' },
+        description: {
+          es: 'Renal, hepatica, glucosa, proteinas, calcio, fosforo, sodio, potasio y cloro por especie.',
+          en: 'Renal, hepatic, glucose, protein, calcium, phosphorus, sodium, potassium, and chloride values by species.',
+        },
+      },
+      {
+        id: 'acid-base',
+        title: { es: 'Gasometria y equilibrio acido-base', en: 'Blood gases and acid-base' },
+        description: {
+          es: 'pH, pCO2, HCO3, BE, lactato y patrones de interpretacion rapida en urgencias y UCI.',
+          en: 'pH, pCO2, HCO3, base excess, lactate, and fast interpretation patterns for ER and ICU.',
+        },
+      },
+    ],
+  },
+  fluid: {
+    title: { es: 'Fluidoterapia', en: 'Fluid therapy' },
+    subtitle: {
+      es: 'Modulo reservado para planes de mantenimiento, deficit, perdidas continuas, reanimacion y suplementaciones.',
+      en: 'Reserved module for maintenance, deficit, ongoing-loss, resuscitation, and supplementation plans.',
+    },
+    statusNote: {
+      es: 'Lo dejo estructurado para poder desarrollar despues calculo de fluidos por especie y contexto sin rehacer la navegacion.',
+      en: 'Structured so we can later build species-first fluid calculations without reworking navigation.',
+    },
+    scopeTitle: { es: 'Especies previstas', en: 'Planned species' },
+    scopeLabel: { es: 'Base de trabajo', en: 'Working base' },
+    lanesTitle: { es: 'Bloques previstos', en: 'Planned lanes' },
+    footerNote: {
+      es: 'Aqui podremos enlazar constantes, perfusion y objetivos de diuresis con calculos y advertencias de seguridad.',
+      en: 'Here we will be able to connect constants, perfusion, and urine-output goals with calculations and safety warnings.',
+    },
+    lanes: [
+      {
+        id: 'maintenance-deficit',
+        title: { es: 'Mantenimiento y deficit', en: 'Maintenance and deficit' },
+        description: {
+          es: 'Calculo de mantenimiento, porcentaje de deshidratacion y reposicion progresiva por especie.',
+          en: 'Maintenance, dehydration percentage, and staged replacement calculations by species.',
+        },
+      },
+      {
+        id: 'ongoing-losses',
+        title: { es: 'Perdidas continuas', en: 'Ongoing losses' },
+        description: {
+          es: 'Vomitos, diarrea, poliuria, drenajes y ajustes de ritmo con reevaluacion seriada.',
+          en: 'Vomiting, diarrhea, polyuria, drains, and rate adjustments with serial reassessment.',
+        },
+      },
+      {
+        id: 'supplementation',
+        title: { es: 'Suplementacion y seguridad', en: 'Supplementation and safety' },
+        description: {
+          es: 'Potasio, glucosa, calcio, limites de infusion y recordatorios de mezcla segura.',
+          en: 'Potassium, glucose, calcium, infusion limits, and safe-mixing reminders.',
+        },
+      },
+    ],
+  },
+  emergency: {
+    title: { es: 'Urgencias y RECOVER', en: 'Emergency and RECOVER' },
+    subtitle: {
+      es: 'Espacio reservado para algoritmos rapidos de actuacion, tablas RESUS/RECOVER, reversores y crisis frecuentes.',
+      en: 'Reserved space for rapid-response algorithms, RESUS/RECOVER charts, reversal agents, and common crises.',
+    },
+    statusNote: {
+      es: 'La estructura queda ya lista para ir cargando protocolos muy operativos sin dispersarlos en varias calculadoras.',
+      en: 'The structure is ready to absorb highly practical protocols without scattering them across multiple calculators.',
+    },
+    scopeTitle: { es: 'Especies previstas', en: 'Planned species' },
+    scopeLabel: { es: 'Cobertura de urgencias', en: 'Emergency scope' },
+    lanesTitle: { es: 'Bloques previstos', en: 'Planned lanes' },
+    footerNote: {
+      es: 'La idea es combinar checklist, dosis de rescate, tablas de referencia y acceso ultrarrapido para situaciones criticas.',
+      en: 'The idea is to combine checklists, rescue doses, reference charts, and ultra-fast access for critical situations.',
+    },
+    lanes: [
+      {
+        id: 'recover-cpr',
+        title: { es: 'RCP y RECOVER', en: 'CPR and RECOVER' },
+        description: {
+          es: 'Compresiones, ventilacion, ritmos, desfibrilacion, adrenalina y checklists de parada.',
+          en: 'Compressions, ventilation, rhythms, defibrillation, epinephrine, and arrest checklists.',
+        },
+      },
+      {
+        id: 'critical-events',
+        title: { es: 'Eventos criticos', en: 'Critical events' },
+        description: {
+          es: 'Anafilaxia, hipoglucemia, status epilepticus, golpe de calor y shock con pasos iniciales claros.',
+          en: 'Anaphylaxis, hypoglycemia, status epilepticus, heatstroke, and shock with clear first steps.',
+        },
+      },
+      {
+        id: 'reversal-tox',
+        title: { es: 'Reversores y toxicos', en: 'Reversal agents and toxics' },
+        description: {
+          es: 'Recordatorios rapidos de antagonistas, antidosis y notas de monitorizacion asociada.',
+          en: 'Quick reminders for antagonists, antidotes, and associated monitoring notes.',
+        },
+      },
+    ],
+  },
+};
 
 const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | undefined, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -1531,50 +1757,65 @@ function App() {
     };
   }, [activeHumanDetails, activeHumanResultsForDetails, activeKnowledgeView, activeTab, cimaService]);
 
-  const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => (
-    <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
-      {cards.map((card) => {
-        const isToolkitCard = Boolean(card.toolkitView);
-        const isOpenableToolkitCard = card.toolkitView ? canAccessToolkitView(card.toolkitView, hasPremiumAccess) : false;
-        const isLockedToolkitCard =
-          Boolean(
+  const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => {
+    const orderedCards = cards === toolkitModules ? [...cards].sort((left, right) => left.title[lang].localeCompare(right.title[lang], lang)) : cards;
+
+    return (
+      <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
+        {orderedCards.map((card) => {
+          const isToolkitCard = Boolean(card.toolkitView);
+          const isSoonToolkitCard = Boolean(card.toolkitView && card.statusTone === 'soon');
+          const canPreviewSoonToolkitCard = Boolean(isSoonToolkitCard && canActivateEditorial);
+          const isOpenableToolkitCard = card.toolkitView
+            ? canAccessToolkitView(card.toolkitView, hasPremiumAccess) || canPreviewSoonToolkitCard
+            : false;
+          const isLockedToolkitCard = Boolean(
             isToolkitCard &&
               card.toolkitView &&
               availableToolkitViewSet.has(card.toolkitView) &&
-              !canAccessToolkitView(card.toolkitView, hasPremiumAccess),
+              !canAccessToolkitView(card.toolkitView, hasPremiumAccess) &&
+              !canPreviewSoonToolkitCard,
           );
 
-        return (
-          <article key={card.id} className={`feature-card ${card.statusTone === 'soon' ? 'feature-card-soon' : ''}`.trim()}>
-            <h3>{card.title[lang]}</h3>
-            <p>{card.description[lang]}</p>
-            {card.status && <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>}
-            {card.bullets?.[lang]?.length ? (
-              <ul>
-                {card.bullets[lang].map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-            ) : null}
-            {isOpenableToolkitCard ? (
-              <button
-                type="button"
-                className="feature-card-link"
-                onClick={() => {
-                  setActiveTab('toolkit');
-                  setActiveToolkitView(card.toolkitView!);
-                }}
-              >
-                <span>{t.openToolkitModule}</span>
-              </button>
-            ) : isLockedToolkitCard ? (
-              <span className="feature-card-link feature-card-link-disabled">{accessText.lockedTitle}</span>
-            ) : null}
-          </article>
-        );
-      })}
-    </div>
-  );
+          return (
+            <article key={card.id} className={`feature-card ${card.statusTone === 'soon' ? 'feature-card-soon' : ''}`.trim()}>
+              <h3>{card.title[lang]}</h3>
+              <p>{card.description[lang]}</p>
+              {card.bullets?.[lang]?.length ? (
+                <ul>
+                  {card.bullets[lang].map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {(card.status || isOpenableToolkitCard || isLockedToolkitCard) && (
+                <div className="feature-card-footer">
+                  {card.status && (
+                    <span className={`status-pill ${card.statusTone ? `status-pill-${card.statusTone}` : ''}`}>{card.status[lang]}</span>
+                  )}
+                  {isOpenableToolkitCard ? (
+                    <button
+                      type="button"
+                      className="feature-card-link"
+                      onClick={() => {
+                        setActiveTab('toolkit');
+                        setActiveToolkitView(card.toolkitView!);
+                      }}
+                    >
+                      <span>{t.openToolkitModule}</span>
+                    </button>
+                  ) : isLockedToolkitCard ? (
+                    <span className="feature-card-link feature-card-link-disabled">{accessText.lockedTitle}</span>
+                  ) : null}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    );
+  };
 
   const isUuid = (value: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -3069,6 +3310,22 @@ function App() {
             {activeToolkitView === 'genetics' && <GeneticsToolkit lang={lang} />}
 
             {activeToolkitView === 'interactions' && <DrugInteractionChecker lang={lang} entries={entryCatalog} />}
+
+            {activeToolkitView === 'constants' && (
+              <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.constants} />
+            )}
+
+            {activeToolkitView === 'ranges' && (
+              <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.ranges} />
+            )}
+
+            {activeToolkitView === 'fluid' && (
+              <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.fluid} />
+            )}
+
+            {activeToolkitView === 'emergency' && (
+              <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.emergency} />
+            )}
 
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
