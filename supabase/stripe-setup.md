@@ -2,9 +2,10 @@
 
 ## 1. Create products and prices in Stripe
 
-- Create one recurring product for `WAIRUA VetAI Premium`.
-- Create one monthly price and copy its `price_...` id.
-- Create one annual price and copy its `price_...` id.
+- Create recurring prices for:
+  - `WAIRUA VetAI Individual Monthly` at 18 EUR/month.
+  - `WAIRUA VetAI Clinic Monthly Base` at 39 EUR/month.
+  - `WAIRUA VetAI Clinic Vet Seat Monthly` at 7 EUR/month per veterinarian.
 - If you want partner discounts inside Stripe, create the matching coupon or promotion code and copy its id.
 
 ## 2. Configure environment variables in Supabase
@@ -13,8 +14,9 @@ Set these secrets for Edge Functions:
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_MONTHLY_PRICE_ID`
-- `STRIPE_ANNUAL_PRICE_ID`
+- `STRIPE_INDIVIDUAL_MONTHLY_PRICE_ID`
+- `STRIPE_CLINIC_MONTHLY_BASE_PRICE_ID`
+- `STRIPE_CLINIC_VET_SEAT_MONTHLY_PRICE_ID`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`

@@ -63,6 +63,8 @@ Deno.serve(async (req) => {
         const { error } = await admin
           .from('user_memberships')
           .update({
+            plan_id: typeof session.metadata?.plan_id === 'string' ? session.metadata.plan_id : undefined,
+            seat_count: Number(session.metadata?.seat_count ?? 1),
             stripe_customer_id: typeof session.customer === 'string' ? session.customer : null,
             stripe_subscription_id: typeof session.subscription === 'string' ? session.subscription : null,
             stripe_checkout_session_id: session.id,
@@ -89,10 +91,14 @@ Deno.serve(async (req) => {
         const firstItem = subscription.items.data[0];
         const billingCycle = getBillingCycleFromInterval(firstItem?.price?.recurring?.interval ?? null);
         const localStatus = mapStripeStatusToMembershipStatus(subscription.status);
+        const planId = typeof subscription.metadata?.plan_id === 'string' ? subscription.metadata.plan_id : membership.plan_id ?? undefined;
+        const seatCount = Number(subscription.metadata?.seat_count ?? membership.seat_count ?? 1);
 
         const { error } = await admin
           .from('user_memberships')
           .update({
+            plan_id: planId,
+            seat_count: Number.isFinite(seatCount) && seatCount > 0 ? seatCount : 1,
             billing_cycle: billingCycle,
             status: localStatus,
             stripe_customer_id: customerId,

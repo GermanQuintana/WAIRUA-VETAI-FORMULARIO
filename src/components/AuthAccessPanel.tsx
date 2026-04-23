@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
-import { AccessPreviewMode, AuthAccountSnapshot, BillingCycle, DiscountCodeRecord, MembershipSelection, UserProfile, UserRole } from '../types';
+import {
+  AccessPreviewMode,
+  AdminDirectoryProfile,
+  AccountType,
+  AuthAccountSnapshot,
+  BillingCycle,
+  DiscountCodeRecord,
+  MembershipSelection,
+  MembershipPlanId,
+  PartnerCategory,
+  ReportVisibilityField,
+  UserProfile,
+  UserRole,
+} from '../types';
 import { SupabaseAccessService } from '../services/supabase';
 import wairuaLoginArt from '../assets/wairua-vetai-login-art.jpeg';
 
@@ -12,14 +25,44 @@ interface Props {
   layout?: 'compact' | 'screen';
   accessPreviewMode?: AccessPreviewMode;
   onChangeAccessPreviewMode?: (mode: AccessPreviewMode) => void;
+  onClose?: () => void;
 }
 
 type AuthMode = 'sign_in' | 'sign_up';
+type AccountSection = 'summary' | 'profile' | 'admin';
 
-const PLAN_PRICES: Record<BillingCycle, number> = {
-  monthly: 500,
-  annual: 3600,
+type PlanDefinition = {
+  id: MembershipPlanId;
+  accountType: AccountType;
+  billingCycle: BillingCycle;
+  listPriceCents: number;
+  perSeatPriceCents?: number;
+  title: { es: string; en: string };
+  priceLabel: { es: string; en: string };
+  note: { es: string; en: string };
 };
+
+const planDefinitions: PlanDefinition[] = [
+  {
+    id: 'individual_monthly',
+    accountType: 'premium',
+    billingCycle: 'monthly',
+    listPriceCents: 1800,
+    title: { es: 'Usuario individual', en: 'Individual user' },
+    priceLabel: { es: '18 €/mes', en: 'EUR 18/month' },
+    note: { es: 'Acceso premium para un veterinario.', en: 'Premium access for one veterinarian.' },
+  },
+  {
+    id: 'clinic_monthly',
+    accountType: 'company',
+    billingCycle: 'monthly',
+    listPriceCents: 3900,
+    perSeatPriceCents: 700,
+    title: { es: 'Clínica', en: 'Clinic' },
+    priceLabel: { es: '39 €/mes + 7 €/vet/mes', en: 'EUR 39/month + EUR 7/vet/month' },
+    note: { es: 'Cuenta de clínica con veterinarios vinculados.', en: 'Clinic account with linked veterinarians.' },
+  },
+];
 
 const roleLabels = {
   es: {
@@ -53,13 +96,21 @@ const copy = {
     password: 'Contraseña',
     trialBadge: '10 días gratis con acceso completo',
     planTitle: 'Plan tras la prueba',
+    individualPlansTitle: 'Plan individual',
+    companyPlansTitle: 'Plan clínica',
+    companyPlansHint: 'La clínica mantiene una cuota base y añade los veterinarios que necesite vincular.',
     monthly: 'Mensual',
     annual: 'Anual',
-    monthlyPrice: '5 €/mes',
-    annualPrice: '36 €/año',
+    monthlyPrice: '18 €/mes',
+    annualPrice: '18 €/mes',
+    seatsIncluded: 'Veterinarios',
+    clinicVetCount: 'Veterinarios vinculados',
+    clinicVetCountHint: 'La cuota se calcula como 39 €/mes de clínica + 7 €/veterinario/mes.',
+    planSelected: 'Plan seleccionado',
     partnerCode: 'Código descuento',
     partnerCodePlaceholder: 'Ej: CODIGO-DEMO',
     applyCode: 'Aplicar código',
+    partnerCodeHint: 'Los códigos partner se aplican sobre los planes individuales. Los packs empresa se gestionan como licencias agrupadas.',
     activeCode: 'Código activo',
     codeApplied: 'Código aplicado correctamente.',
     codeMissing: 'Ese código no existe o no está activo.',
@@ -77,8 +128,15 @@ const copy = {
     account: 'Cuenta',
     selectedPlan: 'Plan elegido',
     accountType: 'Cuenta',
+    accessKey: 'Clave WAIRUA',
+    accessKeyHint: 'Usa esta clave solo en herramientas WAIRUA compatibles. También podrás entrar con tu misma cuenta de Google o email.',
     rolesLabel: 'Roles',
+    accessModelLabel: 'Modelo de acceso',
+    partnerCategoryLabel: 'Categoria partner',
     freeAccount: 'Gratuita',
+    premiumAccount: 'Premium',
+    companyAccount: 'Empresa',
+    partnerAccount: 'Partner',
     status: 'Estado',
     trialUntil: 'Prueba hasta',
     updatePlan: 'Guardar plan',
@@ -99,7 +157,7 @@ const copy = {
     updateHint: 'Puedes cambiar el plan o aplicar un código partner. La parte premium se ajustará con ese estado.',
     trialStartHint: 'Activa ahora la prueba gratuita. Más tarde podrás cambiar el plan definitivo.',
     activateTrial: 'Activar prueba gratuita',
-    savePreference: 'Guardar preferencia en Supabase',
+    savePreference: 'Guardar preferencias',
     stripeCheckout: 'Ir a Stripe Checkout',
     stripePortal: 'Gestionar suscripción y facturas',
     billingTitle: 'Cobro premium',
@@ -140,6 +198,12 @@ const copy = {
     adminSubtitle: 'Autoriza quién puede editar la base colaborativa.',
     adminRefresh: 'Recargar usuarios',
     adminRole: 'Roles',
+    adminAccountType: 'Tipo de cuenta',
+    adminPartnerCategory: 'Categoria partner',
+    adminSubscriptionPlan: 'Plan',
+    adminSubscriptionEnds: 'Fin / renovacion',
+    adminDiscountCodeUsed: 'Codigo usado',
+    adminNoDiscountCode: 'Sin codigo',
     adminSaveRole: 'Guardar roles',
     adminLoading: 'Cargando usuarios...',
     adminEmpty: 'No se han encontrado perfiles.',
@@ -154,6 +218,71 @@ const copy = {
     previewContributor: 'Contributor premium',
     previewEditor: 'Editor premium',
     previewReviewer: 'Reviewer premium',
+    sectionSummary: 'Resumen',
+    sectionProfile: 'Perfil profesional',
+    sectionAdmin: 'Administración',
+    profileTitle: 'Perfil profesional opcional',
+    profileSubtitle:
+      'Estos datos no son obligatorios. Sirven para reutilizarlos más adelante en documentos, informes o plantillas profesionales.',
+    profileSave: 'Guardar perfil',
+    profileSaved: 'Perfil actualizado correctamente.',
+    billingManagedByStripe: 'La facturación premium ya se gestiona desde Stripe, así que aquí mantenemos el resumen y los accesos.',
+    professionalIdentity: 'Identidad profesional',
+    userData: 'Datos de usuario',
+    centerData: 'Datos de centro',
+    contactChannels: 'Canales de contacto',
+    digitalPresence: 'Presencia digital',
+    reportPreferences: 'Qué mostrar en informes',
+    fullLegalName: 'Nombre y apellidos',
+    nationalId: 'DNI / documento',
+    licenseNumber: 'Número de colegiado',
+    licenseProvince: 'Provincia del colegio',
+    workplaceName: 'Centro de trabajo',
+    centerFiscalName: 'Nombre fiscal del centro',
+    centerTaxId: 'CIF del centro',
+    centerType: 'Tipo de centro',
+    centerTypeConsultorio: 'Consultorio',
+    centerTypeClinic: 'Clínica',
+    centerTypeHospital: 'Hospital',
+    centerTypeSpecialty: 'Centro de especialidad',
+    centerTypeEmergency: 'Centro de urgencias',
+    centerTypeAmbulatory: 'Ambulante',
+    centerTypeFreelance: 'Freelance',
+    centerTypeOther: 'Otro',
+    partnerScientific: 'Partner cientifico',
+    partnerTraining: 'Partner formativo',
+    partnerStrategic: 'Partner estrategico',
+    partnerCommercial: 'Partner comercial',
+    professionalEmail: 'Email profesional',
+    privateEmail: 'Email privado',
+    websites: 'Web o webs',
+    websitesHint: 'Una URL por línea',
+    instagramUrl: 'Instagram',
+    tiktokUrl: 'TikTok',
+    youtubeUrl: 'YouTube',
+    facebookUrl: 'Facebook',
+    linkedinUrl: 'LinkedIn',
+    phoneMobile: 'Teléfono móvil',
+    reportFullName: 'Nombre y apellidos',
+    reportNationalId: 'DNI / documento',
+    reportLicense: 'Colegiado y provincia',
+    reportWorkplace: 'Centro de trabajo',
+    reportCenterFiscalName: 'Nombre fiscal del centro',
+    reportCenterTaxId: 'CIF del centro',
+    reportCenterType: 'Tipo de centro',
+    reportProfessionalEmail: 'Email profesional',
+    reportPrivateEmail: 'Email privado',
+    reportWebsites: 'Webs',
+    reportSocialProfiles: 'Redes sociales',
+    reportPhoneMobile: 'Teléfono móvil',
+    noReportFields: 'Todavía no has marcado ningún dato para mostrar en informes.',
+    adminDirectoryTitle: 'Directorio de usuarios',
+    adminDirectorySubtitle: 'Despliega la lista solo cuando la necesites. Puedes buscar por cualquier dato de la ficha.',
+    adminDirectoryOpen: 'Mostrar usuarios',
+    adminDirectoryClose: 'Ocultar usuarios',
+    adminSearchLabel: 'Buscar usuario',
+    adminSearchPlaceholder: 'Nombre, email, centro, colegiado, CIF, redes...',
+    adminResults: 'Resultados',
   },
   en: {
     open: 'Sign in / sign up',
@@ -169,13 +298,21 @@ const copy = {
     password: 'Password',
     trialBadge: '10 free days with full access',
     planTitle: 'Plan after trial',
+    individualPlansTitle: 'Individual plan',
+    companyPlansTitle: 'Clinic plan',
+    companyPlansHint: 'The clinic keeps a base fee and adds the veterinarians it needs to link.',
     monthly: 'Monthly',
     annual: 'Annual',
-    monthlyPrice: 'EUR 5/month',
-    annualPrice: 'EUR 36/year',
+    monthlyPrice: 'EUR 18/month',
+    annualPrice: 'EUR 18/month',
+    seatsIncluded: 'Veterinarians',
+    clinicVetCount: 'Linked veterinarians',
+    clinicVetCountHint: 'The fee is calculated as EUR 39/month for the clinic + EUR 7/veterinarian/month.',
+    planSelected: 'Selected plan',
     partnerCode: 'Discount code',
     partnerCodePlaceholder: 'Example: DEMO-CODE',
     applyCode: 'Apply code',
+    partnerCodeHint: 'Partner codes apply to individual plans. Company packs are handled as grouped licenses.',
     activeCode: 'Active code',
     codeApplied: 'Code applied successfully.',
     codeMissing: 'That code does not exist or is inactive.',
@@ -193,8 +330,15 @@ const copy = {
     account: 'Account',
     selectedPlan: 'Selected plan',
     accountType: 'Account',
+    accessKey: 'WAIRUA key',
+    accessKeyHint: 'Use this key only in compatible WAIRUA tools. You can also sign in with the same Google or email account.',
     rolesLabel: 'Roles',
+    accessModelLabel: 'Access model',
+    partnerCategoryLabel: 'Partner category',
     freeAccount: 'Free',
+    premiumAccount: 'Premium',
+    companyAccount: 'Company',
+    partnerAccount: 'Partner',
     status: 'Status',
     trialUntil: 'Trial until',
     updatePlan: 'Save plan',
@@ -215,7 +359,7 @@ const copy = {
     updateHint: 'You can change the plan or apply a partner code. Premium access will follow this state.',
     trialStartHint: 'Start the free trial now. You can change the final plan later.',
     activateTrial: 'Start free trial',
-    savePreference: 'Save preference in Supabase',
+    savePreference: 'Save preferences',
     stripeCheckout: 'Go to Stripe Checkout',
     stripePortal: 'Manage subscription and invoices',
     billingTitle: 'Premium billing',
@@ -256,6 +400,12 @@ const copy = {
     adminSubtitle: 'Authorize who can edit the collaborative knowledge base.',
     adminRefresh: 'Reload users',
     adminRole: 'Roles',
+    adminAccountType: 'Account type',
+    adminPartnerCategory: 'Partner category',
+    adminSubscriptionPlan: 'Plan',
+    adminSubscriptionEnds: 'End / renewal',
+    adminDiscountCodeUsed: 'Code used',
+    adminNoDiscountCode: 'No code',
     adminSaveRole: 'Save roles',
     adminLoading: 'Loading users...',
     adminEmpty: 'No profiles found.',
@@ -270,10 +420,105 @@ const copy = {
     previewContributor: 'Premium contributor',
     previewEditor: 'Premium editor',
     previewReviewer: 'Premium reviewer',
+    sectionSummary: 'Summary',
+    sectionProfile: 'Professional profile',
+    sectionAdmin: 'Administration',
+    profileTitle: 'Optional professional profile',
+    profileSubtitle:
+      'These details are optional. They are meant to be reused later in documents, reports, or professional templates.',
+    profileSave: 'Save profile',
+    profileSaved: 'Profile updated successfully.',
+    billingManagedByStripe: 'Premium billing is already handled in Stripe, so this area keeps the summary and access controls.',
+    professionalIdentity: 'Professional identity',
+    userData: 'User data',
+    centerData: 'Center data',
+    contactChannels: 'Contact channels',
+    digitalPresence: 'Digital presence',
+    reportPreferences: 'What to show in reports',
+    fullLegalName: 'Full name',
+    nationalId: 'ID / document',
+    licenseNumber: 'License number',
+    licenseProvince: 'License province',
+    workplaceName: 'Workplace',
+    centerFiscalName: 'Center fiscal name',
+    centerTaxId: 'Center tax ID',
+    centerType: 'Center type',
+    centerTypeConsultorio: 'Consulting room',
+    centerTypeClinic: 'Clinic',
+    centerTypeHospital: 'Hospital',
+    centerTypeSpecialty: 'Specialty center',
+    centerTypeEmergency: 'Emergency center',
+    centerTypeAmbulatory: 'Ambulatory',
+    centerTypeFreelance: 'Freelance',
+    centerTypeOther: 'Other',
+    partnerScientific: 'Scientific partner',
+    partnerTraining: 'Training partner',
+    partnerStrategic: 'Strategic partner',
+    partnerCommercial: 'Commercial partner',
+    professionalEmail: 'Professional email',
+    privateEmail: 'Private email',
+    websites: 'Website(s)',
+    websitesHint: 'One URL per line',
+    instagramUrl: 'Instagram',
+    tiktokUrl: 'TikTok',
+    youtubeUrl: 'YouTube',
+    facebookUrl: 'Facebook',
+    linkedinUrl: 'LinkedIn',
+    phoneMobile: 'Mobile phone',
+    reportFullName: 'Full name',
+    reportNationalId: 'ID / document',
+    reportLicense: 'License and province',
+    reportWorkplace: 'Workplace',
+    reportCenterFiscalName: 'Center fiscal name',
+    reportCenterTaxId: 'Center tax ID',
+    reportCenterType: 'Center type',
+    reportProfessionalEmail: 'Professional email',
+    reportPrivateEmail: 'Private email',
+    reportWebsites: 'Websites',
+    reportSocialProfiles: 'Social profiles',
+    reportPhoneMobile: 'Mobile phone',
+    noReportFields: 'You have not selected any fields for reports yet.',
+    adminDirectoryTitle: 'User directory',
+    adminDirectorySubtitle: 'Only expand the list when you need it. You can search by any profile field.',
+    adminDirectoryOpen: 'Show users',
+    adminDirectoryClose: 'Hide users',
+    adminSearchLabel: 'Search user',
+    adminSearchPlaceholder: 'Name, email, center, license, tax ID, socials...',
+    adminResults: 'Results',
   },
 } as const;
 
 const roleOptions: UserRole[] = ['viewer', 'contributor', 'editor', 'reviewer', 'admin'];
+const reportFieldOptions: ReportVisibilityField[] = [
+  'full_name',
+  'national_id',
+  'license',
+  'workplace',
+  'center_fiscal_name',
+  'center_tax_id',
+  'center_type',
+  'professional_email',
+  'private_email',
+  'websites',
+  'social_profiles',
+  'phone_mobile',
+];
+
+const centerTypeOptions = [
+  'consultorio',
+  'clinic',
+  'hospital',
+  'specialty',
+  'emergency',
+  'ambulatory',
+  'freelance',
+  'other',
+] as const;
+
+const accountTypeOptions: AccountType[] = ['free', 'premium', 'company', 'partner'];
+const partnerCategoryOptions: PartnerCategory[] = ['scientific', 'training', 'strategic', 'commercial'];
+const defaultPlanId: MembershipPlanId = 'individual_monthly';
+const findPlanDefinition = (planId?: MembershipPlanId | null) => planDefinitions.find((plan) => plan.id === planId) ?? planDefinitions[0];
 
 const formatPrice = (lang: Language, cents: number) =>
   new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-US', {
@@ -297,6 +542,39 @@ const formatStripeStatus = (status: string | undefined, t: (typeof copy)['es'] |
 
 const formatUserRole = (lang: Language, role: UserRole) => roleLabels[lang][role];
 
+const getAccountTypeLabel = (accountType: AccountType, t: (typeof copy)['es'] | (typeof copy)['en']) => {
+  switch (accountType) {
+    case 'premium':
+      return t.premiumAccount;
+    case 'company':
+      return t.companyAccount;
+    case 'partner':
+      return t.partnerAccount;
+    default:
+      return t.freeAccount;
+  }
+};
+
+const getPartnerCategoryLabel = (partnerCategory: PartnerCategory | undefined, t: (typeof copy)['es'] | (typeof copy)['en']) => {
+  switch (partnerCategory) {
+    case 'scientific':
+      return t.partnerScientific;
+    case 'training':
+      return t.partnerTraining;
+    case 'strategic':
+      return t.partnerStrategic;
+    case 'commercial':
+      return t.partnerCommercial;
+    default:
+      return '--';
+  }
+};
+
+const getPlanLabel = (planId: MembershipPlanId | undefined, lang: Language) => {
+  const plan = findPlanDefinition(planId);
+  return plan.title[lang];
+};
+
 const getAppReturnUrl = () => {
   const path = window.location.pathname || '/';
   return new URL(path, window.location.origin).toString();
@@ -313,6 +591,105 @@ const getDisplayErrorMessage = (error: unknown, t: (typeof copy)['es'] | (typeof
   if (message === 'DISCOUNT_CODE_ALREADY_USED') return t.codeAlreadyUsed;
   return message;
 };
+
+const getReportFieldLabel = (field: ReportVisibilityField, t: (typeof copy)['es'] | (typeof copy)['en']) => {
+  switch (field) {
+    case 'full_name':
+      return t.reportFullName;
+    case 'national_id':
+      return t.reportNationalId;
+    case 'license':
+      return t.reportLicense;
+    case 'workplace':
+      return t.reportWorkplace;
+    case 'center_fiscal_name':
+      return t.reportCenterFiscalName;
+    case 'center_tax_id':
+      return t.reportCenterTaxId;
+    case 'center_type':
+      return t.reportCenterType;
+    case 'professional_email':
+      return t.reportProfessionalEmail;
+    case 'private_email':
+      return t.reportPrivateEmail;
+    case 'websites':
+      return t.reportWebsites;
+    case 'social_profiles':
+      return t.reportSocialProfiles;
+    case 'phone_mobile':
+      return t.reportPhoneMobile;
+    default:
+      return field;
+  }
+};
+
+const formatWebsiteLines = (websites: string[]) => websites.join('\n');
+const parseWebsiteLines = (value: string) =>
+  value
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const normalizeSearchText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const getCenterTypeLabel = (value: string | undefined, t: (typeof copy)['es'] | (typeof copy)['en']) => {
+  switch (value) {
+    case 'consultorio':
+      return t.centerTypeConsultorio;
+    case 'clinic':
+      return t.centerTypeClinic;
+    case 'hospital':
+      return t.centerTypeHospital;
+    case 'specialty':
+      return t.centerTypeSpecialty;
+    case 'emergency':
+      return t.centerTypeEmergency;
+    case 'ambulatory':
+      return t.centerTypeAmbulatory;
+    case 'freelance':
+      return t.centerTypeFreelance;
+    case 'other':
+      return t.centerTypeOther;
+    default:
+      return value ?? '';
+  }
+};
+
+const getProfileSearchHaystack = (profile: UserProfile, t: (typeof copy)['es'] | (typeof copy)['en']) =>
+  normalizeSearchText(
+    [
+      profile.fullName,
+      profile.email,
+      profile.accessKey,
+      getAccountTypeLabel(profile.accountType, t),
+      getPartnerCategoryLabel(profile.partnerCategory, t),
+      profile.nationalId,
+      profile.licenseNumber,
+      profile.licenseProvince,
+      profile.workplaceName,
+      profile.centerFiscalName,
+      profile.centerTaxId,
+      getCenterTypeLabel(profile.centerType, t),
+      profile.professionalEmail,
+      profile.privateEmail,
+      profile.phoneMobile,
+      profile.instagramUrl,
+      profile.tiktokUrl,
+      profile.youtubeUrl,
+      profile.facebookUrl,
+      profile.linkedinUrl,
+      ...profile.websites,
+      ...profile.roles,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+const getProfileDisplayName = (profile: UserProfile) => profile.fullName?.trim() || profile.email?.trim() || profile.id;
 
 const GoogleMark = () => (
   <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
@@ -335,16 +712,23 @@ const GoogleMark = () => (
   </svg>
 );
 
-const isDiscountApplicable = (cycle: BillingCycle, discount: DiscountCodeRecord | null) =>
-  Boolean(discount && (discount.appliesTo === cycle || discount.appliesTo === 'both'));
+const isDiscountApplicable = (plan: PlanDefinition, discount: DiscountCodeRecord | null) =>
+  Boolean(plan.accountType === 'premium' && discount && (discount.appliesTo === plan.billingCycle || discount.appliesTo === 'both'));
 
-const buildMembershipSelection = (cycle: BillingCycle, discount: DiscountCodeRecord | null): MembershipSelection => {
-  const listPriceCents = PLAN_PRICES[cycle];
-  const applicableDiscount = isDiscountApplicable(cycle, discount) ? discount : null;
+const getPlanListPriceCents = (plan: PlanDefinition, seatCount: number) =>
+  plan.listPriceCents + (plan.perSeatPriceCents ?? 0) * Math.max(1, seatCount);
+
+const buildMembershipSelection = (planId: MembershipPlanId, discount: DiscountCodeRecord | null, seatCount = 1): MembershipSelection => {
+  const plan = findPlanDefinition(planId);
+  const normalizedSeatCount = plan.accountType === 'company' ? Math.max(1, Math.round(seatCount)) : 1;
+  const listPriceCents = getPlanListPriceCents(plan, normalizedSeatCount);
+  const applicableDiscount = isDiscountApplicable(plan, discount) ? discount : null;
 
   if (!applicableDiscount) {
     return {
-      billingCycle: cycle,
+      planId: plan.id,
+      billingCycle: plan.billingCycle,
+      seatCount: normalizedSeatCount,
       listPriceCents,
       finalPriceCents: listPriceCents,
     };
@@ -352,7 +736,9 @@ const buildMembershipSelection = (cycle: BillingCycle, discount: DiscountCodeRec
 
   if (applicableDiscount.discountMode === 'override_price' && applicableDiscount.overridePriceCents !== undefined) {
     return {
-      billingCycle: cycle,
+      planId: plan.id,
+      billingCycle: plan.billingCycle,
+      seatCount: normalizedSeatCount,
       listPriceCents,
       finalPriceCents: applicableDiscount.overridePriceCents,
       discountCode: applicableDiscount.code,
@@ -365,7 +751,9 @@ const buildMembershipSelection = (cycle: BillingCycle, discount: DiscountCodeRec
 
   const amount = applicableDiscount.discountAmountCents ?? 0;
   return {
-    billingCycle: cycle,
+    planId: plan.id,
+    billingCycle: plan.billingCycle,
+    seatCount: normalizedSeatCount,
     listPriceCents,
     finalPriceCents: Math.max(0, listPriceCents - amount),
     discountCode: applicableDiscount.code,
@@ -384,6 +772,7 @@ export default function AuthAccessPanel({
   layout = 'compact',
   accessPreviewMode = 'actual',
   onChangeAccessPreviewMode,
+  onClose,
 }: Props) {
   const t = copy[lang];
   const [isOpen, setIsOpen] = useState(layout === 'screen');
@@ -392,19 +781,47 @@ export default function AuthAccessPanel({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<BillingCycle>('monthly');
+  const [selectedPlanId, setSelectedPlanId] = useState<MembershipPlanId>(defaultPlanId);
+  const [selectedSeatCount, setSelectedSeatCount] = useState(1);
   const [discountInput, setDiscountInput] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<DiscountCodeRecord | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
-  const [adminProfiles, setAdminProfiles] = useState<UserProfile[]>([]);
+  const [accountSection, setAccountSection] = useState<AccountSection>('summary');
+  const [adminProfiles, setAdminProfiles] = useState<AdminDirectoryProfile[]>([]);
   const [adminRolesDraft, setAdminRolesDraft] = useState<Record<string, UserRole[]>>({});
+  const [adminAccountTypeDraft, setAdminAccountTypeDraft] = useState<Record<string, AccountType>>({});
+  const [adminPartnerCategoryDraft, setAdminPartnerCategoryDraft] = useState<Record<string, PartnerCategory | ''>>({});
   const [adminLoading, setAdminLoading] = useState(false);
+  const [isAdminDirectoryOpen, setIsAdminDirectoryOpen] = useState(false);
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [profileFullName, setProfileFullName] = useState('');
+  const [profileNationalId, setProfileNationalId] = useState('');
+  const [profileLicenseNumber, setProfileLicenseNumber] = useState('');
+  const [profileLicenseProvince, setProfileLicenseProvince] = useState('');
+  const [profileWorkplaceName, setProfileWorkplaceName] = useState('');
+  const [profileCenterFiscalName, setProfileCenterFiscalName] = useState('');
+  const [profileCenterTaxId, setProfileCenterTaxId] = useState('');
+  const [profileCenterType, setProfileCenterType] = useState('');
+  const [profileProfessionalEmail, setProfileProfessionalEmail] = useState('');
+  const [profilePrivateEmail, setProfilePrivateEmail] = useState('');
+  const [profileWebsiteLines, setProfileWebsiteLines] = useState('');
+  const [profileInstagramUrl, setProfileInstagramUrl] = useState('');
+  const [profileTiktokUrl, setProfileTiktokUrl] = useState('');
+  const [profileYoutubeUrl, setProfileYoutubeUrl] = useState('');
+  const [profileFacebookUrl, setProfileFacebookUrl] = useState('');
+  const [profileLinkedinUrl, setProfileLinkedinUrl] = useState('');
+  const [profilePhoneMobile, setProfilePhoneMobile] = useState('');
+  const [reportVisibleFieldsDraft, setReportVisibleFieldsDraft] = useState<ReportVisibilityField[]>([]);
 
-  const selection = useMemo(() => buildMembershipSelection(selectedPlan, appliedDiscount), [appliedDiscount, selectedPlan]);
-  const effectiveDiscount = isDiscountApplicable(selectedPlan, appliedDiscount) ? appliedDiscount : null;
-  const selectedPlanLabel = selectedPlan === 'monthly' ? t.monthly : t.annual;
+  const selectedPlanDefinition = useMemo(() => findPlanDefinition(selectedPlanId), [selectedPlanId]);
+  const selection = useMemo(
+    () => buildMembershipSelection(selectedPlanId, appliedDiscount, selectedSeatCount),
+    [appliedDiscount, selectedPlanId, selectedSeatCount],
+  );
+  const effectiveDiscount = isDiscountApplicable(selectedPlanDefinition, appliedDiscount) ? appliedDiscount : null;
+  const selectedPlanLabel = getPlanLabel(selectedPlanId, lang);
   const hasMembership = Boolean(account?.membership);
   const membership = account?.membership ?? null;
   const isScreenLayout = layout === 'screen';
@@ -415,7 +832,8 @@ export default function AuthAccessPanel({
     const rawRoles = account?.profile?.roles?.length ? account.profile.roles : [account?.profile?.role ?? 'viewer'];
     return roleOptions.filter((role) => rawRoles.includes(role));
   }, [account?.profile]);
-  const accountTypeLabel = !hasMembership ? t.freeAccount : t[membership?.status ?? 'trialing'];
+  const effectiveAccountType = account?.profile?.accountType ?? (!hasMembership ? 'free' : 'premium');
+  const accountTypeLabel = getAccountTypeLabel(effectiveAccountType, t);
   const now = Date.now();
   const trialTimeLeftMs = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() - now : null;
   const trialDaysLeft =
@@ -428,6 +846,57 @@ export default function AuthAccessPanel({
     { value: 'editor', label: t.previewEditor },
     { value: 'reviewer', label: t.previewReviewer },
   ];
+  const filteredAdminProfiles = useMemo(() => {
+    const locale = lang === 'es' ? 'es-ES' : 'en-US';
+    const query = normalizeSearchText(adminSearchQuery.trim());
+
+    return [...adminProfiles]
+      .sort((left, right) => getProfileDisplayName(left).localeCompare(getProfileDisplayName(right), locale))
+      .filter((profile) => !query || getProfileSearchHaystack(profile, t).includes(query));
+  }, [adminProfiles, adminSearchQuery, lang, t]);
+
+  useEffect(() => {
+    const profile = account?.profile;
+    if (!profile) return;
+
+    setProfileFullName(profile.fullName ?? '');
+    setProfileNationalId(profile.nationalId ?? '');
+    setProfileLicenseNumber(profile.licenseNumber ?? '');
+    setProfileLicenseProvince(profile.licenseProvince ?? '');
+    setProfileWorkplaceName(profile.workplaceName ?? '');
+    setProfileCenterFiscalName(profile.centerFiscalName ?? '');
+    setProfileCenterTaxId(profile.centerTaxId ?? '');
+    setProfileCenterType(profile.centerType ?? '');
+    setProfileProfessionalEmail(profile.professionalEmail ?? '');
+    setProfilePrivateEmail(profile.privateEmail ?? '');
+    setProfileWebsiteLines(formatWebsiteLines(profile.websites ?? []));
+    setProfileInstagramUrl(profile.instagramUrl ?? '');
+    setProfileTiktokUrl(profile.tiktokUrl ?? '');
+    setProfileYoutubeUrl(profile.youtubeUrl ?? '');
+    setProfileFacebookUrl(profile.facebookUrl ?? '');
+    setProfileLinkedinUrl(profile.linkedinUrl ?? '');
+    setProfilePhoneMobile(profile.phoneMobile ?? '');
+    setReportVisibleFieldsDraft(profile.reportVisibleFields ?? []);
+  }, [account?.profile]);
+
+  useEffect(() => {
+    if (!account?.membership?.planId) return;
+    setSelectedPlanId(account.membership.planId);
+    setSelectedSeatCount(account.membership.seatCount ?? 1);
+  }, [account?.membership?.planId, account?.membership?.seatCount]);
+
+  useEffect(() => {
+    if (!isAdmin && accountSection === 'admin') {
+      setAccountSection('summary');
+    }
+  }, [accountSection, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setIsAdminDirectoryOpen(false);
+      setAdminSearchQuery('');
+    }
+  }, [isAdmin]);
 
   const resetFeedback = () => {
     setMessage('');
@@ -446,9 +915,9 @@ export default function AuthAccessPanel({
         const profiles = await service.listProfiles();
         if (ignore) return;
         setAdminProfiles(profiles);
-        setAdminRolesDraft(
-          Object.fromEntries(profiles.map((profile) => [profile.id, profile.roles])),
-        );
+        setAdminRolesDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.roles])));
+        setAdminAccountTypeDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.accountType])));
+        setAdminPartnerCategoryDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.partnerCategory ?? ''])));
       } catch (error) {
         if (!ignore) setError(getDisplayErrorMessage(error, t));
       } finally {
@@ -477,7 +946,7 @@ export default function AuthAccessPanel({
       }
 
       setAppliedDiscount(discount);
-      setMessage(isDiscountApplicable(selectedPlan, discount) ? t.codeApplied : t.codeMonthlyOnly);
+      setMessage(isDiscountApplicable(selectedPlanDefinition, discount) ? t.codeApplied : t.codeMonthlyOnly);
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
@@ -540,7 +1009,7 @@ export default function AuthAccessPanel({
     try {
       await service.saveMembershipSelection(selection);
       await onRefreshAccount();
-      setMessage(t.adminRoleSaved);
+      setMessage(t.savedPlan);
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
@@ -597,6 +1066,41 @@ export default function AuthAccessPanel({
     }
   };
 
+  const handleSaveProfile = async () => {
+    if (!service || !account?.profile) return;
+    resetFeedback();
+    setIsBusy(true);
+
+    try {
+      await service.updateCurrentProfile(account.profile.id, {
+        fullName: profileFullName,
+        nationalId: profileNationalId,
+        licenseNumber: profileLicenseNumber,
+        licenseProvince: profileLicenseProvince,
+        workplaceName: profileWorkplaceName,
+        centerFiscalName: profileCenterFiscalName,
+        centerTaxId: profileCenterTaxId,
+        centerType: profileCenterType,
+        professionalEmail: profileProfessionalEmail,
+        privateEmail: profilePrivateEmail,
+        websites: parseWebsiteLines(profileWebsiteLines),
+        instagramUrl: profileInstagramUrl,
+        tiktokUrl: profileTiktokUrl,
+        youtubeUrl: profileYoutubeUrl,
+        facebookUrl: profileFacebookUrl,
+        linkedinUrl: profileLinkedinUrl,
+        phoneMobile: profilePhoneMobile,
+        reportVisibleFields: reportVisibleFieldsDraft,
+      });
+      await onRefreshAccount();
+      setMessage(t.profileSaved);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const handleReloadProfiles = async () => {
     if (!service || !isAdmin) return;
     resetFeedback();
@@ -606,6 +1110,8 @@ export default function AuthAccessPanel({
       const profiles = await service.listProfiles();
       setAdminProfiles(profiles);
       setAdminRolesDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.roles])));
+      setAdminAccountTypeDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.accountType])));
+      setAdminPartnerCategoryDraft(Object.fromEntries(profiles.map((profile) => [profile.id, profile.partnerCategory ?? ''])));
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
@@ -619,9 +1125,16 @@ export default function AuthAccessPanel({
     setIsBusy(true);
 
     try {
-      const updated = await service.updateUserRoles(profileId, adminRolesDraft[profileId] ?? ['viewer']);
-      setAdminProfiles((current) => current.map((profile) => (profile.id === updated.id ? updated : profile)));
-      setMessage(t.savedPlan);
+      const accountType = adminAccountTypeDraft[profileId] ?? 'free';
+      const updated = await service.updateUserAccessProfile(profileId, {
+        roles: adminRolesDraft[profileId] ?? ['viewer'],
+        accountType,
+        partnerCategory: accountType === 'partner' ? (adminPartnerCategoryDraft[profileId] || undefined) : undefined,
+      });
+      setAdminProfiles((current) =>
+        current.map((profile) => (profile.id === updated.id ? { ...profile, ...updated, membership: profile.membership ?? null } : profile)),
+      );
+      setMessage(t.adminRoleSaved);
       await onRefreshAccount();
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
@@ -634,43 +1147,83 @@ export default function AuthAccessPanel({
     <>
       <div className="auth-plan-block">
         <span className="auth-label">{t.planTitle}</span>
-        <div className="auth-plan-grid">
-          <button
-            type="button"
-            className={selectedPlan === 'monthly' ? 'active' : ''}
-            onClick={() => setSelectedPlan('monthly')}
-          >
-            <span>{t.monthly}</span>
-            <strong>{t.monthlyPrice}</strong>
-          </button>
-          <button
-            type="button"
-            className={selectedPlan === 'annual' ? 'active' : ''}
-            onClick={() => setSelectedPlan('annual')}
-          >
-            <span>{t.annual}</span>
-            <strong>{t.annualPrice}</strong>
-          </button>
+        <div className="auth-plan-section">
+          <span className="auth-label">{t.individualPlansTitle}</span>
+          <div className="auth-plan-grid">
+            {planDefinitions
+              .filter((plan) => plan.accountType === 'premium')
+              .map((plan) => (
+                <button
+                  key={plan.id}
+                  type="button"
+                  className={selectedPlanId === plan.id ? 'active' : ''}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                >
+                  <span>{plan.title[lang]}</span>
+                  <strong>{plan.priceLabel[lang]}</strong>
+                  <small>{plan.note[lang]}</small>
+                </button>
+              ))}
+          </div>
+        </div>
+
+        <div className="auth-plan-section">
+          <span className="auth-label">{t.companyPlansTitle}</span>
+          <p className="auth-account-hint">{t.companyPlansHint}</p>
+          <div className="auth-plan-grid auth-plan-grid-company">
+            {planDefinitions
+              .filter((plan) => plan.accountType === 'company')
+              .map((plan) => (
+                <button
+                  key={plan.id}
+                  type="button"
+                  className={selectedPlanId === plan.id ? 'active' : ''}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                >
+                  <span>{plan.title[lang]}</span>
+                  <strong>{plan.priceLabel[lang]}</strong>
+                  <small>{plan.note[lang]}</small>
+                </button>
+              ))}
+          </div>
+          {selectedPlanDefinition.accountType === 'company' ? (
+            <label className="auth-seat-field">
+              {t.clinicVetCount}
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={selectedSeatCount}
+                onChange={(event) => setSelectedSeatCount(Math.max(1, Number(event.target.value) || 1))}
+              />
+              <span>{t.clinicVetCountHint}</span>
+            </label>
+          ) : null}
         </div>
       </div>
 
-      <div className="auth-discount-row">
-        <label>
-          {t.partnerCode}
-          <input
-            type="text"
-            value={discountInput}
-            placeholder={t.partnerCodePlaceholder}
-            onChange={(event) => setDiscountInput(event.target.value)}
-          />
-        </label>
-        <button type="button" className="secondary-button" onClick={handleApplyDiscount} disabled={isBusy}>
-          {t.applyCode}
-        </button>
-      </div>
+      {selectedPlanDefinition.accountType === 'premium' ? (
+        <>
+          <div className="auth-discount-row">
+            <label>
+              {t.partnerCode}
+              <input
+                type="text"
+                value={discountInput}
+                placeholder={t.partnerCodePlaceholder}
+                onChange={(event) => setDiscountInput(event.target.value)}
+              />
+            </label>
+            <button type="button" className="secondary-button" onClick={handleApplyDiscount} disabled={isBusy}>
+              {t.applyCode}
+            </button>
+          </div>
+          <p className="auth-account-hint">{t.partnerCodeHint}</p>
+        </>
+      ) : null}
 
       <div className="auth-price-note">
-        <span>{t.thenLabel}</span>
+        <span>{t.planSelected}</span>
         <strong>
           {selectedPlanLabel} · {formatPrice(lang, selection.finalPriceCents)}
         </strong>
@@ -684,16 +1237,8 @@ export default function AuthAccessPanel({
     </>
   );
 
-  const renderCompactAccountCard = () => (
-    <div className="auth-account-card auth-account-card-compact">
-      <div className="auth-panel-heading">
-        <div>
-          <span className="section-kicker">{t.compactTitle}</span>
-          <strong>{account?.profile?.fullName || account?.email || 'WAIRUA VetAI'}</strong>
-          <p>{t.compactSubtitle}</p>
-        </div>
-      </div>
-
+  const renderAccountSummarySection = () => (
+    <>
       {membership?.status === 'trialing' || membership?.cancelAtPeriodEnd ? (
         <div className="auth-account-warning" title={t.managePlanHint}>
           <span>{membership?.status === 'trialing' ? t.trialWarning : t.status}</span>
@@ -714,19 +1259,27 @@ export default function AuthAccessPanel({
 
       <div className="auth-membership-summary">
         <div>
-          <span>{t.accountType}</span>
+          <span>{t.accessModelLabel}</span>
           <strong>{accountTypeLabel}</strong>
+        </div>
+        <div>
+          <span>{t.accessKey}</span>
+          <strong>{account?.profile?.accessKey ?? '--'}</strong>
         </div>
         <div>
           <span>{t.rolesLabel}</span>
           <strong>{accountRoles.map((role) => formatUserRole(lang, role)).join(' · ')}</strong>
         </div>
+        {effectiveAccountType === 'partner' ? (
+          <div>
+            <span>{t.partnerCategoryLabel}</span>
+            <strong>{getPartnerCategoryLabel(account?.profile?.partnerCategory, t)}</strong>
+          </div>
+        ) : null}
         <div>
           <span>{t.selectedPlan}</span>
           <strong>
-            {hasMembership
-              ? `${membership?.billingCycle === 'monthly' ? t.monthly : t.annual} · ${formatPrice(lang, membership?.finalPriceCents ?? selection.finalPriceCents)}`
-              : t.noPlan}
+            {hasMembership ? `${getPlanLabel(membership?.planId, lang)} · ${formatPrice(lang, membership?.finalPriceCents ?? selection.finalPriceCents)}` : t.noPlan}
           </strong>
         </div>
         <div>
@@ -748,6 +1301,8 @@ export default function AuthAccessPanel({
       </div>
 
       <p className="auth-account-hint">{t.managePlanHint}</p>
+      <p className="auth-account-hint">{t.accessKeyHint}</p>
+      <p className="auth-account-hint">{t.billingManagedByStripe}</p>
 
       {membership?.stripeCustomerId ? (
         <div className="auth-price-note">
@@ -758,9 +1313,6 @@ export default function AuthAccessPanel({
       ) : null}
 
       {renderPlanSelector()}
-
-      {message ? <p className="auth-feedback auth-feedback-success">{message}</p> : null}
-      {error ? <p className="auth-feedback auth-feedback-error">{error}</p> : null}
 
       <div className="auth-account-actions">
         {membership?.stripeCustomerId ? (
@@ -783,94 +1335,392 @@ export default function AuthAccessPanel({
       </div>
 
       {membership?.stripeCustomerId ? <p className="auth-account-hint">{t.stripePortalHelp}</p> : null}
+    </>
+  );
 
-      {isAdmin ? (
-        <section className="admin-role-panel">
-          <div className="auth-panel-heading admin-role-heading">
-            <div>
-              <span className="section-kicker">{t.previewTitle}</span>
-              <strong>{t.previewSubtitle}</strong>
-            </div>
-          </div>
+  const renderProfessionalProfileSection = () => (
+    <section className="account-profile-shell">
+      <div className="auth-panel-heading">
+        <div>
+          <span className="section-kicker">{t.profileTitle}</span>
+          <strong>{t.profileSubtitle}</strong>
+        </div>
+      </div>
 
-          <div className="admin-preview-panel">
-            <label>
-              {t.previewLabel}
-              <select
-                value={accessPreviewMode}
-                onChange={(event) => onChangeAccessPreviewMode?.(event.target.value as AccessPreviewMode)}
-              >
-                {previewOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+      <section className="account-profile-group">
+        <div className="account-profile-heading">
+          <strong>{t.userData}</strong>
+        </div>
+        <div className="account-profile-grid">
+          <label>
+            {t.fullLegalName}
+            <input type="text" value={profileFullName} onChange={(event) => setProfileFullName(event.target.value)} />
+          </label>
+          <label>
+            {t.nationalId}
+            <input type="text" value={profileNationalId} onChange={(event) => setProfileNationalId(event.target.value)} />
+          </label>
+          <label>
+            {t.licenseNumber}
+            <input type="text" value={profileLicenseNumber} onChange={(event) => setProfileLicenseNumber(event.target.value)} />
+          </label>
+          <label>
+            {t.licenseProvince}
+            <input type="text" value={profileLicenseProvince} onChange={(event) => setProfileLicenseProvince(event.target.value)} />
+          </label>
+        </div>
+      </section>
 
-          <div className="auth-panel-heading admin-role-heading">
-            <div>
-              <span className="section-kicker">{t.adminTitle}</span>
-              <strong>{t.adminSubtitle}</strong>
-              <p>{t.adminRoleHint}</p>
-            </div>
-            <button type="button" className="secondary-button" onClick={handleReloadProfiles} disabled={adminLoading || isBusy}>
-              {t.adminRefresh}
-            </button>
-          </div>
-
-          {adminLoading ? <p className="auth-account-hint">{t.adminLoading}</p> : null}
-          {!adminLoading && adminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
-
-          {!adminLoading && adminProfiles.length > 0 ? (
-            <div className="admin-role-list">
-              {adminProfiles.map((profile) => (
-                <article key={profile.id} className="admin-role-item">
-                  <div>
-                    <strong>{profile.fullName || profile.email || profile.id}</strong>
-                    <p>{profile.email ?? profile.id}</p>
-                  </div>
-                  <div className="admin-role-controls">
-                    <label>
-                      {t.adminRole}
-                      <div className="admin-role-checkboxes">
-                        {roleOptions.map((role) => {
-                          const checked = (adminRolesDraft[profile.id] ?? profile.roles).includes(role);
-                          return (
-                            <label key={`${profile.id}-${role}`} className="checkbox-inline admin-role-check">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() =>
-                                  setAdminRolesDraft((current) => {
-                                    const currentRoles = current[profile.id] ?? profile.roles;
-                                    const nextRoles = checked
-                                      ? currentRoles.filter((item) => item !== role)
-                                      : [...currentRoles, role];
-                                    return {
-                                      ...current,
-                                      [profile.id]: nextRoles.length > 0 ? nextRoles : ['viewer'],
-                                    };
-                                  })
-                                }
-                              />
-                              <span>{role}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </label>
-                    <button type="button" className="secondary-button" onClick={() => handleSaveRole(profile.id)} disabled={isBusy}>
-                      {t.adminSaveRole}
-                    </button>
-                  </div>
-                </article>
+      <section className="account-profile-group">
+        <div className="account-profile-heading">
+          <strong>{t.centerData}</strong>
+        </div>
+        <div className="account-profile-grid">
+          <label>
+            {t.workplaceName}
+            <input type="text" value={profileWorkplaceName} onChange={(event) => setProfileWorkplaceName(event.target.value)} />
+          </label>
+          <label>
+            {t.centerFiscalName}
+            <input
+              type="text"
+              value={profileCenterFiscalName}
+              onChange={(event) => setProfileCenterFiscalName(event.target.value)}
+            />
+          </label>
+          <label>
+            {t.centerTaxId}
+            <input type="text" value={profileCenterTaxId} onChange={(event) => setProfileCenterTaxId(event.target.value)} />
+          </label>
+          <label>
+            {t.centerType}
+            <select value={profileCenterType} onChange={(event) => setProfileCenterType(event.target.value)}>
+              <option value="">--</option>
+              {centerTypeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {getCenterTypeLabel(option, t)}
+                </option>
               ))}
-            </div>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section className="account-profile-group">
+        <div className="account-profile-heading">
+          <strong>{t.contactChannels}</strong>
+        </div>
+        <div className="account-profile-grid">
+          <label>
+            {t.professionalEmail}
+            <input
+              type="email"
+              value={profileProfessionalEmail}
+              onChange={(event) => setProfileProfessionalEmail(event.target.value)}
+            />
+          </label>
+          <label>
+            {t.privateEmail}
+            <input type="email" value={profilePrivateEmail} onChange={(event) => setProfilePrivateEmail(event.target.value)} />
+          </label>
+          <label>
+            {t.phoneMobile}
+            <input type="tel" value={profilePhoneMobile} onChange={(event) => setProfilePhoneMobile(event.target.value)} />
+          </label>
+          <label className="account-profile-span-full">
+            {t.websites}
+            <textarea
+              rows={4}
+              value={profileWebsiteLines}
+              onChange={(event) => setProfileWebsiteLines(event.target.value)}
+              placeholder={t.websitesHint}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="account-profile-group">
+        <div className="account-profile-heading">
+          <strong>{t.digitalPresence}</strong>
+        </div>
+        <div className="account-profile-grid">
+          <label>
+            {t.instagramUrl}
+            <input type="url" value={profileInstagramUrl} onChange={(event) => setProfileInstagramUrl(event.target.value)} />
+          </label>
+          <label>
+            {t.tiktokUrl}
+            <input type="url" value={profileTiktokUrl} onChange={(event) => setProfileTiktokUrl(event.target.value)} />
+          </label>
+          <label>
+            {t.youtubeUrl}
+            <input type="url" value={profileYoutubeUrl} onChange={(event) => setProfileYoutubeUrl(event.target.value)} />
+          </label>
+          <label>
+            {t.facebookUrl}
+            <input type="url" value={profileFacebookUrl} onChange={(event) => setProfileFacebookUrl(event.target.value)} />
+          </label>
+          <label>
+            {t.linkedinUrl}
+            <input type="url" value={profileLinkedinUrl} onChange={(event) => setProfileLinkedinUrl(event.target.value)} />
+          </label>
+        </div>
+      </section>
+
+      <section className="account-profile-group">
+        <div className="account-profile-heading">
+          <strong>{t.reportPreferences}</strong>
+          <p>{t.profileSubtitle}</p>
+        </div>
+        <div className="account-checkbox-grid">
+          {reportFieldOptions.map((field) => {
+            const checked = reportVisibleFieldsDraft.includes(field);
+            return (
+              <label key={field} className="checkbox-inline account-checkbox-card">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() =>
+                    setReportVisibleFieldsDraft((current) =>
+                      checked ? current.filter((item) => item !== field) : [...current, field],
+                    )
+                  }
+                />
+                <span>{getReportFieldLabel(field, t)}</span>
+              </label>
+            );
+          })}
+        </div>
+        {reportVisibleFieldsDraft.length === 0 ? <p className="auth-account-hint">{t.noReportFields}</p> : null}
+      </section>
+
+      <div className="auth-account-actions">
+        <button type="button" className="theme-button" onClick={handleSaveProfile} disabled={isBusy}>
+          {t.profileSave}
+        </button>
+      </div>
+    </section>
+  );
+
+  const renderAdminSection = () => (
+    <section className="admin-role-panel">
+      <div className="auth-panel-heading admin-role-heading">
+        <div>
+          <span className="section-kicker">{t.previewTitle}</span>
+          <strong>{t.previewSubtitle}</strong>
+        </div>
+      </div>
+
+      <div className="admin-preview-panel">
+        <label>
+          {t.previewLabel}
+          <select value={accessPreviewMode} onChange={(event) => onChangeAccessPreviewMode?.(event.target.value as AccessPreviewMode)}>
+            {previewOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="auth-panel-heading admin-role-heading">
+        <div>
+          <span className="section-kicker">{t.adminTitle}</span>
+          <strong>{t.adminSubtitle}</strong>
+          <p>{t.adminRoleHint}</p>
+        </div>
+        <button type="button" className="secondary-button" onClick={handleReloadProfiles} disabled={adminLoading || isBusy}>
+          {t.adminRefresh}
+        </button>
+      </div>
+
+      {adminLoading ? <p className="auth-account-hint">{t.adminLoading}</p> : null}
+      {!adminLoading && adminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
+
+      {!adminLoading && adminProfiles.length > 0 ? (
+        <section className="account-profile-group admin-directory-group">
+          <div className="account-profile-heading">
+            <strong>{t.adminDirectoryTitle}</strong>
+            <p>{t.adminDirectorySubtitle}</p>
+          </div>
+
+          <div className="admin-directory-toolbar">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setIsAdminDirectoryOpen((current) => !current)}
+            >
+              {isAdminDirectoryOpen ? t.adminDirectoryClose : t.adminDirectoryOpen}
+            </button>
+            <span className="admin-directory-count">
+              {t.adminResults}: {filteredAdminProfiles.length} / {adminProfiles.length}
+            </span>
+          </div>
+
+          {isAdminDirectoryOpen ? (
+            <>
+              <label className="admin-directory-search">
+                {t.adminSearchLabel}
+                <input
+                  type="search"
+                  value={adminSearchQuery}
+                  placeholder={t.adminSearchPlaceholder}
+                  onChange={(event) => setAdminSearchQuery(event.target.value)}
+                />
+              </label>
+
+              {filteredAdminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
+
+              {filteredAdminProfiles.length > 0 ? (
+                <div className="admin-role-list">
+                  {filteredAdminProfiles.map((profile) => (
+                    <article key={profile.id} className="admin-role-item">
+                      <div className="admin-role-identity">
+                        <strong>{getProfileDisplayName(profile)}</strong>
+                        <p>
+                          {[
+                            profile.email,
+                            profile.workplaceName,
+                            profile.licenseNumber,
+                            profile.centerTaxId,
+                            profile.phoneMobile,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || profile.id}
+                        </p>
+                        <div className="admin-role-membership">
+                          <span>
+                            <strong>{t.adminSubscriptionPlan}:</strong> {profile.membership ? getPlanLabel(profile.membership.planId, lang) : getAccountTypeLabel(profile.accountType, t)}
+                          </span>
+                          <span>
+                            <strong>{t.adminSubscriptionEnds}:</strong>{' '}
+                            {formatDate(lang, profile.membership?.currentPeriodEnd ?? profile.membership?.trialEndsAt)}
+                          </span>
+                          <span>
+                            <strong>{t.adminDiscountCodeUsed}:</strong> {profile.membership?.discountCode ?? t.adminNoDiscountCode}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="admin-role-controls">
+                        <label>
+                          {t.adminAccountType}
+                          <select
+                            value={adminAccountTypeDraft[profile.id] ?? profile.accountType}
+                            onChange={(event) =>
+                              setAdminAccountTypeDraft((current) => ({
+                                ...current,
+                                [profile.id]: event.target.value as AccountType,
+                              }))
+                            }
+                          >
+                            {accountTypeOptions.map((accountType) => (
+                              <option key={`${profile.id}-type-${accountType}`} value={accountType}>
+                                {getAccountTypeLabel(accountType, t)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {(adminAccountTypeDraft[profile.id] ?? profile.accountType) === 'partner' ? (
+                          <label>
+                            {t.adminPartnerCategory}
+                            <select
+                              value={adminPartnerCategoryDraft[profile.id] ?? profile.partnerCategory ?? ''}
+                              onChange={(event) =>
+                                setAdminPartnerCategoryDraft((current) => ({
+                                  ...current,
+                                  [profile.id]: event.target.value as PartnerCategory | '',
+                                }))
+                              }
+                            >
+                              <option value="">--</option>
+                              {partnerCategoryOptions.map((partnerCategory) => (
+                                <option key={`${profile.id}-partner-${partnerCategory}`} value={partnerCategory}>
+                                  {getPartnerCategoryLabel(partnerCategory, t)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
+                        <label>
+                          {t.adminRole}
+                          <div className="admin-role-checkboxes">
+                            {roleOptions.map((role) => {
+                              const checked = (adminRolesDraft[profile.id] ?? profile.roles).includes(role);
+                              return (
+                                <label key={`${profile.id}-${role}`} className="checkbox-inline admin-role-check">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() =>
+                                      setAdminRolesDraft((current) => {
+                                        const currentRoles = current[profile.id] ?? profile.roles;
+                                        const nextRoles = checked
+                                          ? currentRoles.filter((item) => item !== role)
+                                          : [...currentRoles, role];
+                                        return {
+                                          ...current,
+                                          [profile.id]: nextRoles.length > 0 ? nextRoles : ['viewer'],
+                                        };
+                                      })
+                                    }
+                                  />
+                                  <span>{formatUserRole(lang, role)}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </label>
+                        <button type="button" className="secondary-button" onClick={() => handleSaveRole(profile.id)} disabled={isBusy}>
+                          {t.adminSaveRole}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : null}
         </section>
       ) : null}
+    </section>
+  );
+
+  const renderCompactAccountCard = () => (
+    <div className="auth-account-card auth-account-card-compact account-card-expanded">
+      <div className="auth-panel-heading account-card-header">
+        <div>
+          <span className="section-kicker">{t.compactTitle}</span>
+          <strong>{account?.profile?.fullName || account?.email || 'WAIRUA VetAI'}</strong>
+          <p>{t.compactSubtitle}</p>
+        </div>
+        {onClose ? (
+          <button type="button" className="secondary-button account-close-button" onClick={onClose}>
+            {t.close}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="account-section-tabs" role="tablist" aria-label={t.account}>
+        <button type="button" className={accountSection === 'summary' ? 'active' : ''} onClick={() => setAccountSection('summary')}>
+          {t.sectionSummary}
+        </button>
+        <button type="button" className={accountSection === 'profile' ? 'active' : ''} onClick={() => setAccountSection('profile')}>
+          {t.sectionProfile}
+        </button>
+        {isAdmin ? (
+          <button type="button" className={accountSection === 'admin' ? 'active' : ''} onClick={() => setAccountSection('admin')}>
+            {t.sectionAdmin}
+          </button>
+        ) : null}
+      </div>
+
+      {message ? <p className="auth-feedback auth-feedback-success">{message}</p> : null}
+      {error ? <p className="auth-feedback auth-feedback-error">{error}</p> : null}
+
+      {accountSection === 'summary' ? renderAccountSummarySection() : null}
+      {accountSection === 'profile' ? renderProfessionalProfileSection() : null}
+      {isAdmin && accountSection === 'admin' ? renderAdminSection() : null}
     </div>
   );
 

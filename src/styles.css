@@ -292,6 +292,15 @@ select:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.auth-plan-section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.auth-plan-grid-company {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
 .auth-mode-switch button,
 .auth-plan-grid button {
   background: #fff;
@@ -299,6 +308,26 @@ select:focus-visible {
   text-align: left;
   display: grid;
   gap: 0.2rem;
+}
+
+.auth-plan-grid button small {
+  color: var(--muted-light);
+}
+
+.auth-seat-field {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.auth-seat-field input {
+  max-width: 9rem;
+}
+
+.auth-seat-field span {
+  color: var(--muted-light);
+  font-size: 0.88rem;
+  font-weight: 500;
 }
 
 .auth-mode-switch button.active,
@@ -4566,15 +4595,28 @@ body {
 }
 
 .account-menu-popover {
-  position: absolute;
-  top: calc(100% + 0.55rem);
-  right: 0;
-  width: min(34rem, calc(100vw - 1rem));
-  max-height: calc(100vh - 6rem);
+  position: fixed;
+  inset: 0;
   z-index: 30;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 1.25rem;
+}
+
+.account-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 21, 23, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.account-menu-panel {
+  position: relative;
+  z-index: 1;
+  width: min(64rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2.5rem);
+  border-radius: 1.35rem;
 }
 
 .account-menu-popover .auth-panel {
@@ -4582,11 +4624,175 @@ body {
 }
 
 .account-menu-popover .auth-account-card {
-  border-radius: 1.1rem;
-  background: rgba(255, 252, 244, 0.98);
-  box-shadow: 0 22px 50px rgba(16, 33, 38, 0.14);
-  max-height: none;
-  overflow: visible;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(110, 158, 170, 0.34);
+  background:
+    radial-gradient(circle at top right, rgba(61, 175, 206, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(240, 250, 252, 0.98) 0%, rgba(248, 253, 251, 0.98) 100%);
+  box-shadow: 0 26px 60px rgba(16, 33, 38, 0.18);
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.account-card-expanded {
+  gap: 1rem;
+}
+
+.account-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(110, 158, 170, 0.22);
+}
+
+.account-close-button {
+  flex: 0 0 auto;
+}
+
+.account-section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.account-section-tabs button {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(110, 158, 170, 0.24);
+}
+
+.account-section-tabs button.active {
+  background: linear-gradient(120deg, #0b5053, #2f8083);
+  color: #fff;
+  border-color: transparent;
+}
+
+.account-profile-shell,
+.account-profile-group {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.account-profile-group {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(110, 158, 170, 0.2);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.account-profile-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.account-profile-heading p {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.account-profile-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-profile-grid label,
+.account-profile-group label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.account-profile-span-full {
+  grid-column: 1 / -1;
+}
+
+.account-profile-group textarea {
+  width: 100%;
+  min-height: 7.5rem;
+  resize: vertical;
+  font: inherit;
+  border-radius: 0.9rem;
+  border: 1px solid var(--border-light);
+  padding: 0.7rem 0.75rem;
+  background: #ffffff;
+  color: inherit;
+  outline: none;
+}
+
+.account-profile-group textarea:focus-visible {
+  border-color: var(--accent-light);
+  box-shadow: 0 0 0 3px rgba(4, 126, 131, 0.16);
+}
+
+.account-profile-group select {
+  width: 100%;
+}
+
+.account-checkbox-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-checkbox-card {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(110, 158, 170, 0.2);
+  background: rgba(255, 255, 255, 0.64);
+  white-space: normal;
+}
+
+.admin-directory-group {
+  gap: 1rem;
+}
+
+.admin-directory-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-directory-count {
+  font-size: 0.9rem;
+  color: var(--muted-light);
+}
+
+.admin-directory-search {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.admin-role-identity {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.admin-role-identity p {
+  margin: 0;
+  color: var(--muted-light);
+  overflow-wrap: anywhere;
+}
+
+.admin-role-membership {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  font-size: 0.88rem;
+  color: var(--muted-light);
+}
+
+.admin-role-membership span {
+  white-space: nowrap;
 }
 
 .auth-account-warning {
@@ -4670,28 +4876,45 @@ body {
 
 .admin-role-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 0.75rem;
-  align-items: end;
+  align-items: start;
 }
 
 .admin-role-controls label {
   display: grid;
   gap: 0.35rem;
   font-weight: 600;
+  align-content: start;
 }
 
 .admin-role-checkboxes {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .admin-role-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.35rem 0.6rem;
   border: 1px solid rgba(209, 215, 191, 0.72);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
+  line-height: 1;
+}
+
+.admin-role-check input {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.admin-role-check span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1rem;
 }
 
 .app-backdrop {
@@ -5095,6 +5318,36 @@ body {
   padding-left: 1rem;
 }
 
+.editorial-queue-board {
+  display: grid;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.editorial-queue-header {
+  margin-bottom: 0;
+}
+
+.editorial-queue-grid {
+  align-items: stretch;
+}
+
+.editorial-queue-card {
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+}
+
+.editorial-queue-card strong {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.editorial-queue-card.is-active {
+  border-color: rgba(11, 80, 83, 0.55);
+  background: linear-gradient(180deg, rgba(232, 247, 248, 0.94) 0%, rgba(246, 251, 250, 0.94) 100%);
+}
+
 .search-grid,
 .otc-search-grid {
   gap: 0.7rem;
@@ -5167,8 +5420,10 @@ select {
 .app.dark .hero-preview-panel,
 .app.dark .app-topbar,
 .app.dark .account-menu-popover .auth-account-card {
-  background: rgba(18, 33, 38, 0.78);
-  border-color: rgba(39, 67, 74, 0.9);
+  background:
+    radial-gradient(circle at top right, rgba(118, 212, 191, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(16, 31, 36, 0.96) 0%, rgba(19, 35, 40, 0.96) 100%);
+  border-color: rgba(67, 103, 112, 0.88);
 }
 
 .app.dark .hero-rail {
@@ -5247,6 +5502,28 @@ select {
   border-color: rgba(148, 54, 45, 0.34);
 }
 
+.app.dark .account-card-header,
+.app.dark .admin-role-panel {
+  border-color: rgba(67, 103, 112, 0.88);
+}
+
+.app.dark .account-section-tabs button,
+.app.dark .account-profile-group,
+.app.dark .account-checkbox-card,
+.app.dark .account-profile-group textarea {
+  background: rgba(18, 33, 38, 0.72);
+  border-color: rgba(67, 103, 112, 0.72);
+  color: var(--text-dark);
+}
+
+.app.dark .account-profile-heading p {
+  color: var(--muted-dark);
+}
+
+.app.dark .auth-seat-field span {
+  color: var(--muted-dark);
+}
+
 .app.dark .topbar-trial-pill,
 .app.dark .auth-account-warning span,
 .app.dark .auth-account-warning p,
@@ -5269,6 +5546,10 @@ select {
 }
 
 .app.dark .admin-role-item p {
+  color: var(--muted-dark);
+}
+
+.app.dark .admin-role-membership {
   color: var(--muted-dark);
 }
 
@@ -5597,13 +5878,21 @@ select {
   }
 
   .account-menu-popover {
-    position: static;
-    top: auto;
-    right: auto;
-    left: auto;
+    padding: 0.75rem;
+  }
+
+  .account-menu-panel {
     width: 100%;
-    max-height: none;
-    margin-top: 0.75rem;
+    max-height: calc(100vh - 1.5rem);
+  }
+
+  .account-menu-popover .auth-account-card {
+    max-height: calc(100vh - 1.5rem);
+  }
+
+  .account-profile-grid,
+  .account-checkbox-grid {
+    grid-template-columns: 1fr;
   }
 
   .product-tabs {
@@ -5672,6 +5961,10 @@ select {
 
   .brand-logo-topbar {
     width: 58px;
+  }
+
+  .account-card-header {
+    flex-direction: column;
   }
 
   .topbar-brand {

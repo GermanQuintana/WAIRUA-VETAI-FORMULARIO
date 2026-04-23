@@ -2,6 +2,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import {
   getAdminClient,
   getAuthProvider,
+  getStripeClinicSeatPriceId,
   getStripePriceId,
   getUserClient,
   json,
@@ -33,7 +34,10 @@ Deno.serve(async (req) => {
     }
 
     const { selection, origin } = await req.json();
-    const billingCycle = selection?.billingCycle === 'annual' ? 'annual' : 'monthly';
+    const billingCycle = 'monthly';
+    const rawPlanId = typeof selection?.planId === 'string' ? selection.planId : 'individual_monthly';
+    const planId = rawPlanId === 'clinic_monthly' ? 'clinic_monthly' : 'individual_monthly';
+    const seatCount = planId === 'clinic_monthly' ? Math.max(1, Math.round(Number(selection?.seatCount ?? 1))) : 1;
 
     const [{ data: profile }, { data: membership }] = await Promise.all([
       admin.from('profiles').select('*').eq('id', user.id).maybeSingle(),
@@ -111,6 +115,21 @@ Deno.serve(async (req) => {
     const trialEndTimestamp = Math.floor(trialEndsAt.getTime() / 1000);
     const hasRemainingTrial = trialEndTimestamp > Math.floor(now.getTime() / 1000);
 
+    const lineItems = [
+      {
+        price: getStripePriceId(planId, billingCycle),
+        quantity: 1,
+      },
+      ...(planId === 'clinic_monthly'
+        ? [
+            {
+              price: getStripeClinicSeatPriceId(),
+              quantity: seatCount,
+            },
+          ]
+        : []),
+    ];
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: stripeCustomerId,
@@ -122,22 +141,21 @@ Deno.serve(async (req) => {
         name: 'auto',
         address: 'auto',
       },
-      line_items: [
-        {
-          price: getStripePriceId(billingCycle),
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       discounts,
       metadata: {
         supabase_user_id: user.id,
+        plan_id: planId,
         billing_cycle: billingCycle,
+        seat_count: String(seatCount),
         discount_code: selection?.discountCode ?? '',
       },
       subscription_data: {
         metadata: {
           supabase_user_id: user.id,
+          plan_id: planId,
           billing_cycle: billingCycle,
+          seat_count: String(seatCount),
           discount_code: selection?.discountCode ?? '',
         },
         ...(hasRemainingTrial ? { trial_end: trialEndTimestamp } : {}),
@@ -156,7 +174,9 @@ Deno.serve(async (req) => {
     const payload = {
       user_id: user.id,
       signup_method: membership?.signup_method ?? authProvider,
+      plan_id: planId,
       billing_cycle: billingCycle,
+      seat_count: seatCount,
       status: membership?.status ?? (hasRemainingTrial ? 'trialing' : 'pending_payment'),
       list_price_cents: Number(selection?.listPriceCents ?? membership?.list_price_cents ?? 0),
       final_price_cents: Number(selection?.finalPriceCents ?? membership?.final_price_cents ?? 0),
@@ -170,7 +190,7 @@ Deno.serve(async (req) => {
       discount_amount_cents: selection?.discountAmountCents ?? membership?.discount_amount_cents ?? null,
       override_price_cents: selection?.overridePriceCents ?? membership?.override_price_cents ?? null,
       stripe_customer_id: stripeCustomerId,
-      stripe_price_id: getStripePriceId(billingCycle),
+      stripe_price_id: getStripePriceId(planId, billingCycle),
       stripe_checkout_session_id: session.id,
       updated_at: new Date().toISOString(),
     };

@@ -23,7 +23,25 @@ export type MembershipStatus = 'trialing' | 'pending_payment' | 'active' | 'expi
 export type AuthProvider = 'google' | 'email' | 'unknown';
 export type DiscountMode = 'fixed_amount' | 'override_price';
 export type UserRole = 'viewer' | 'contributor' | 'editor' | 'reviewer' | 'admin';
+export type AccountType = 'free' | 'premium' | 'company' | 'partner';
+export type PartnerCategory = 'scientific' | 'training' | 'strategic' | 'commercial';
+export type MembershipPlanId =
+  | 'individual_monthly'
+  | 'clinic_monthly';
 export type AccessPreviewMode = 'actual' | 'free_viewer' | 'premium_viewer' | 'contributor' | 'editor' | 'reviewer';
+export type ReportVisibilityField =
+  | 'full_name'
+  | 'national_id'
+  | 'license'
+  | 'workplace'
+  | 'center_fiscal_name'
+  | 'center_tax_id'
+  | 'center_type'
+  | 'professional_email'
+  | 'private_email'
+  | 'websites'
+  | 'social_profiles'
+  | 'phone_mobile';
 
 export interface LocalizedText {
   es: string;
@@ -69,6 +87,8 @@ export interface TherapeuticEntry {
   reviewSummary?: EntryReviewSummary;
   calculatorPresets?: DoseCalculatorPreset[];
   references: ScientificReference[];
+  createdById?: string;
+  reviewedById?: string;
   cimavet?: {
     nregistro?: string;
     url?: string;
@@ -239,7 +259,9 @@ export interface DiscountCodeRecord {
 }
 
 export interface MembershipSelection {
+  planId: MembershipPlanId;
   billingCycle: BillingCycle;
+  seatCount?: number;
   discountCode?: string;
   discountCodeId?: string;
   discountMonths?: number;
@@ -254,7 +276,9 @@ export interface UserMembership {
   id: string;
   userId: string;
   signupMethod: AuthProvider;
+  planId: MembershipPlanId;
   billingCycle: BillingCycle;
+  seatCount?: number;
   status: MembershipStatus;
   listPriceCents: number;
   finalPriceCents: number;
@@ -282,11 +306,35 @@ export interface UserProfile {
   id: string;
   fullName: string;
   email?: string;
+  accessKey?: string;
+  accountType: AccountType;
+  partnerCategory?: PartnerCategory;
+  nationalId?: string;
+  licenseNumber?: string;
+  licenseProvince?: string;
+  workplaceName?: string;
+  centerFiscalName?: string;
+  centerTaxId?: string;
+  centerType?: string;
+  professionalEmail?: string;
+  privateEmail?: string;
+  websites: string[];
+  instagramUrl?: string;
+  tiktokUrl?: string;
+  youtubeUrl?: string;
+  facebookUrl?: string;
+  linkedinUrl?: string;
+  phoneMobile?: string;
+  reportVisibleFields: ReportVisibilityField[];
   role: UserRole;
   roles: UserRole[];
   authProvider: AuthProvider;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminDirectoryProfile extends UserProfile {
+  membership?: UserMembership | null;
 }
 
 export interface AuthAccountSnapshot {

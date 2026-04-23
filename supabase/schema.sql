@@ -7,6 +7,26 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   email text,
+  access_key text not null unique default ('WR-' || upper(encode(gen_random_bytes(12), 'hex'))),
+  account_type text not null default 'free' check (account_type in ('free', 'premium', 'company', 'partner')),
+  partner_category text check (partner_category in ('scientific', 'training', 'strategic', 'commercial')),
+  national_id text,
+  license_number text,
+  license_province text,
+  workplace_name text,
+  center_fiscal_name text,
+  center_tax_id text,
+  center_type text,
+  professional_email text,
+  private_email text,
+  websites text[] not null default array[]::text[],
+  instagram_url text,
+  tiktok_url text,
+  youtube_url text,
+  facebook_url text,
+  linkedin_url text,
+  phone_mobile text,
+  report_visible_fields text[] not null default array[]::text[],
   auth_provider text not null default 'email' check (auth_provider in ('google', 'email', 'unknown')),
   role text not null default 'viewer' check (role in ('viewer', 'contributor', 'editor', 'reviewer', 'admin')),
   roles text[] not null default array['viewer']::text[],
@@ -16,6 +36,26 @@ create table if not exists public.profiles (
 
 alter table if exists public.profiles
   add column if not exists email text,
+  add column if not exists access_key text,
+  add column if not exists account_type text not null default 'free',
+  add column if not exists partner_category text,
+  add column if not exists national_id text,
+  add column if not exists license_number text,
+  add column if not exists license_province text,
+  add column if not exists workplace_name text,
+  add column if not exists center_fiscal_name text,
+  add column if not exists center_tax_id text,
+  add column if not exists center_type text,
+  add column if not exists professional_email text,
+  add column if not exists private_email text,
+  add column if not exists websites text[] not null default array[]::text[],
+  add column if not exists instagram_url text,
+  add column if not exists tiktok_url text,
+  add column if not exists youtube_url text,
+  add column if not exists facebook_url text,
+  add column if not exists linkedin_url text,
+  add column if not exists phone_mobile text,
+  add column if not exists report_visible_fields text[] not null default array[]::text[],
   add column if not exists auth_provider text not null default 'email',
   add column if not exists roles text[] not null default array['viewer']::text[],
   add column if not exists updated_at timestamptz not null default now();
@@ -23,6 +63,18 @@ alter table if exists public.profiles
 update public.profiles
 set roles = array[role]
 where roles is null or cardinality(roles) = 0;
+
+alter table if exists public.profiles
+  alter column access_key set default ('WR-' || upper(encode(gen_random_bytes(12), 'hex')));
+
+update public.profiles
+set access_key = 'WR-' || upper(encode(gen_random_bytes(12), 'hex'))
+where access_key is null or access_key = '';
+
+alter table if exists public.profiles
+  alter column access_key set not null;
+
+create unique index if not exists profiles_access_key_idx on public.profiles (access_key);
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -52,8 +104,8 @@ begin
     derived_roles := array['admin', 'reviewer', 'editor', 'contributor', 'viewer']::text[];
   end if;
 
-  insert into public.profiles (id, full_name, email, auth_provider, role, roles)
-  values (new.id, derived_name, new.email, provider, derived_role, derived_roles)
+  insert into public.profiles (id, full_name, email, account_type, auth_provider, role, roles)
+  values (new.id, derived_name, new.email, 'free', provider, derived_role, derived_roles)
   on conflict (id) do update
     set full_name = excluded.full_name,
         email = excluded.email,
@@ -81,6 +133,8 @@ begin
   if auth.uid() = new.id then
     new.role := old.role;
     new.roles := old.roles;
+    new.account_type := old.account_type;
+    new.partner_category := old.partner_category;
   end if;
 
   return new;
@@ -114,7 +168,9 @@ create table if not exists public.user_memberships (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique references public.profiles(id) on delete cascade,
   signup_method text not null default 'email' check (signup_method in ('google', 'email', 'unknown')),
+  plan_id text not null default 'individual_monthly' check (plan_id in ('individual_monthly', 'clinic_monthly')),
   billing_cycle text not null check (billing_cycle in ('monthly', 'annual')),
+  seat_count integer not null default 1 check (seat_count > 0),
   status text not null default 'trialing' check (status in ('trialing', 'pending_payment', 'active', 'expired', 'cancelled')),
   list_price_cents integer not null,
   final_price_cents integer not null,
@@ -154,6 +210,8 @@ alter table if exists public.discount_codes
   add column if not exists stripe_promotion_code_id text;
 
 alter table if exists public.user_memberships
+  add column if not exists plan_id text not null default 'individual_monthly',
+  add column if not exists seat_count integer not null default 1,
   add column if not exists stripe_customer_id text,
   add column if not exists stripe_subscription_id text,
   add column if not exists stripe_price_id text,
@@ -168,11 +226,25 @@ create table if not exists public.stripe_webhook_events (
   created_at timestamptz not null default now()
 );
 
+alter table if exists public.user_memberships
+  drop constraint if exists user_memberships_plan_id_check,
+  add constraint user_memberships_plan_id_check check (plan_id in ('individual_monthly', 'clinic_monthly')),
+  drop constraint if exists user_memberships_seat_count_check,
+  add constraint user_memberships_seat_count_check check (seat_count > 0);
+
 create index if not exists user_memberships_status_idx on public.user_memberships (status);
 create index if not exists discount_codes_active_idx on public.discount_codes (active, code);
 create index if not exists discount_code_redemptions_user_idx on public.discount_code_redemptions (user_id, created_at desc);
 create unique index if not exists user_memberships_stripe_customer_id_idx on public.user_memberships (stripe_customer_id) where stripe_customer_id is not null;
 create unique index if not exists user_memberships_stripe_subscription_id_idx on public.user_memberships (stripe_subscription_id) where stripe_subscription_id is not null;
+
+update public.discount_codes
+set code = 'PARTNER1E3M',
+    label = 'Partner 3 meses',
+    description = 'Codigo promocional partner para acceso mensual bonificado durante 3 meses.',
+    updated_at = now()
+where code = 'PARTNER1EURO3M'
+  and not exists (select 1 from public.discount_codes where code = 'PARTNER1E3M');
 
 insert into public.discount_codes (
   code,
@@ -186,9 +258,9 @@ insert into public.discount_codes (
   active
 )
 values (
-  'PARTNER1EURO3M',
-  'Partner 1 EUR/mes durante 3 meses',
-  'Codigo promocional para distribuidores partners: mensual a 1 EUR/mes durante 3 meses.',
+  'PARTNER1E3M',
+  'Partner 3 meses',
+  'Codigo promocional partner para acceso mensual bonificado durante 3 meses.',
   'Distribuidores partners',
   'monthly',
   'override_price',
@@ -241,6 +313,32 @@ values (
   'Acceso premium 15 dias',
   'Codigo de acceso completo durante 15 dias sin coste. Despues mantiene solo la parte gratuita salvo que active suscripcion.',
   'Invitacion WAIRUA',
+  'both',
+  'override_price',
+  0,
+  1,
+  15,
+  true
+)
+on conflict (code) do nothing;
+
+insert into public.discount_codes (
+  code,
+  label,
+  description,
+  partner_name,
+  applies_to,
+  discount_mode,
+  override_price_cents,
+  discount_months,
+  grant_days,
+  active
+)
+values (
+  'GTABILBAO2026',
+  'GTA Bilbao 2026',
+  'Acceso premium 15 dias para asistentes. Despues mantiene la capa gratuita salvo que active suscripcion.',
+  'GTA Bilbao 2026',
   'both',
   'override_price',
   0,
@@ -333,6 +431,13 @@ create policy "memberships_select_own"
   for select
   to authenticated
   using ((select auth.uid()) = user_id);
+
+drop policy if exists "memberships_select_admin" on public.user_memberships;
+create policy "memberships_select_admin"
+  on public.user_memberships
+  for select
+  to authenticated
+  using (public.current_profile_role() = 'admin');
 
 drop policy if exists "memberships_insert_own" on public.user_memberships;
 create policy "memberships_insert_own"

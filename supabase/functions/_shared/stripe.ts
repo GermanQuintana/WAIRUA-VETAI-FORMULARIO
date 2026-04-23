@@ -43,10 +43,22 @@ export const json = (body: unknown, init?: ResponseInit) =>
     },
   });
 
-export const getStripePriceId = (billingCycle: string) => {
-  if (billingCycle === 'annual') return getEnv('STRIPE_ANNUAL_PRICE_ID');
-  return getEnv('STRIPE_MONTHLY_PRICE_ID');
+export const getStripePriceId = (planId?: string, billingCycle?: string) => {
+  switch (planId) {
+    case 'clinic_monthly':
+      return getEnv('STRIPE_CLINIC_MONTHLY_BASE_PRICE_ID');
+    case 'individual_monthly':
+      return getEnv('STRIPE_INDIVIDUAL_MONTHLY_PRICE_ID');
+    default:
+      try {
+        return getEnv('STRIPE_INDIVIDUAL_MONTHLY_PRICE_ID');
+      } catch {
+        return billingCycle === 'annual' ? getEnv('STRIPE_ANNUAL_PRICE_ID') : getEnv('STRIPE_MONTHLY_PRICE_ID');
+      }
+  }
 };
+
+export const getStripeClinicSeatPriceId = () => getEnv('STRIPE_CLINIC_VET_SEAT_MONTHLY_PRICE_ID');
 
 export const mapStripeStatusToMembershipStatus = (status?: string | null) => {
   switch (status) {

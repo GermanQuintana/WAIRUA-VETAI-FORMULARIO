@@ -80,6 +80,7 @@ const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE
 type ProductTab = (typeof productTabs)[number];
 type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
+type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'rejected';
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
@@ -637,6 +638,7 @@ function App() {
   const [isActiveHumanExpanded, setIsActiveHumanExpanded] = useState(true);
   const [activeRecordPageSize, setActiveRecordPageSize] = useState<(typeof activeRecordPageSizeOptions)[number]>(24);
   const [activeRecordPage, setActiveRecordPage] = useState(1);
+  const [editorialQueueFilter, setEditorialQueueFilter] = useState<EditorialQueueFilter>('all');
 
   const [humanQuery, setHumanQuery] = useState('');
   const [humanDoseFilter, setHumanDoseFilter] = useState('');
@@ -686,7 +688,6 @@ function App() {
   const [supportFeedback, setSupportFeedback] = useState('');
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
-  const accountMenuShellRef = useRef<HTMLDivElement | null>(null);
   const authResolvedRef = useRef(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -924,10 +925,14 @@ function App() {
   };
 
   const membership = authAccount?.membership ?? null;
+  const accountType = authAccount?.profile?.accountType ?? 'free';
   const isAuthenticated = Boolean(authAccount?.profile);
   const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
   const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
-  const actualHasPremiumAccess = Boolean(membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired)));
+  const hasManualPremiumAccess = ['premium', 'company', 'partner'].includes(accountType);
+  const actualHasPremiumAccess = Boolean(
+    hasManualPremiumAccess || (membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired))),
+  );
   const actualProfileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
   const isActualAdmin = actualProfileRoles.includes('admin');
   const effectiveProfileRoles =
@@ -982,23 +987,40 @@ function App() {
   useEffect(() => {
     if (!isAccountMenuOpen) return;
 
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (accountMenuShellRef.current?.contains(target)) return;
-      setIsAccountMenuOpen(false);
-    };
-
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setIsAccountMenuOpen(false);
     };
 
-    document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isAccountMenuOpen]);
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    const scrollY = window.scrollY;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyWidth = document.body.style.width;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.width = previousBodyWidth;
+      window.scrollTo(0, scrollY);
     };
   }, [isAccountMenuOpen]);
 
@@ -1033,7 +1055,7 @@ function App() {
     }
   };
 
-  const filteredEntries = useMemo(
+  const searchedEntries = useMemo(
     () =>
       filterTherapeuticEntries(
         entryCatalog,
@@ -1045,6 +1067,30 @@ function App() {
       ),
     [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeTags, entryCatalog],
   );
+  const draftEntries = useMemo(() => entryCatalog.filter((entry) => entry.editorialStatus === 'draft'), [entryCatalog]);
+  const reviewQueueEntries = useMemo(() => entryCatalog.filter((entry) => entry.editorialStatus === 'under_review'), [entryCatalog]);
+  const publicationQueueEntries = useMemo(
+    () => entryCatalog.filter((entry) => (entry.publicationStatus ?? 'pending_activation') === 'pending_activation'),
+    [entryCatalog],
+  );
+  const rejectedEntries = useMemo(
+    () => entryCatalog.filter((entry) => (entry.publicationStatus ?? 'active') === 'rejected'),
+    [entryCatalog],
+  );
+  const filteredEntries = useMemo(() => {
+    switch (editorialQueueFilter) {
+      case 'draft':
+        return searchedEntries.filter((entry) => entry.editorialStatus === 'draft');
+      case 'review':
+        return searchedEntries.filter((entry) => entry.editorialStatus === 'under_review');
+      case 'publication':
+        return searchedEntries.filter((entry) => (entry.publicationStatus ?? 'pending_activation') === 'pending_activation');
+      case 'rejected':
+        return searchedEntries.filter((entry) => (entry.publicationStatus ?? 'active') === 'rejected');
+      default:
+        return searchedEntries;
+    }
+  }, [editorialQueueFilter, searchedEntries]);
   const hasActiveSearchCriteria = Boolean(
     activeQuery.trim().length > 0 ||
       activeSpecies ||
@@ -1052,7 +1098,7 @@ function App() {
       activeConcentrationQuery.trim().length > 0 ||
       activeTags.length > 0,
   );
-  const shouldShowActiveRecords = hasActiveSearchCriteria;
+  const shouldShowActiveRecords = hasActiveSearchCriteria || editorialQueueFilter !== 'all';
   const activeFilteredCount = filteredEntries.length;
   const activeRecordTotalPages = useMemo(() => {
     if (activeRecordPageSize === 'all') return 1;
@@ -1338,7 +1384,7 @@ function App() {
 
   useEffect(() => {
     setActiveRecordPage(1);
-  }, [activeQuery, activeSpecies, activeIndication, activeTags, activeConcentrationQuery, activeRecordPageSize]);
+  }, [activeQuery, activeSpecies, activeIndication, activeTags, activeConcentrationQuery, activeRecordPageSize, editorialQueueFilter]);
 
   useEffect(() => {
     setActiveRecordPage((current) => Math.min(current, activeRecordTotalPages));
@@ -2009,6 +2055,33 @@ function App() {
     }
   };
 
+  const editorialQueueCards = [
+    {
+      id: 'draft' as const,
+      label: t.editorialQueueDraft,
+      count: draftEntries.length,
+      note: t.editorialQueueSummaryDraft,
+    },
+    {
+      id: 'review' as const,
+      label: t.editorialQueueReview,
+      count: reviewQueueEntries.length,
+      note: t.editorialQueueSummaryReview,
+    },
+    {
+      id: 'publication' as const,
+      label: t.editorialQueuePublication,
+      count: publicationQueueEntries.length,
+      note: t.editorialQueueSummaryPublication,
+    },
+    {
+      id: 'rejected' as const,
+      label: t.editorialQueueRejected,
+      count: rejectedEntries.length,
+      note: t.editorialQueueSummaryRejected,
+    },
+  ];
+
   const renderAppearanceControls = () => (
     <>
       <button className="theme-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
@@ -2114,24 +2187,10 @@ function App() {
                 EN
               </button>
             </div>
-            <div className="account-menu-shell" ref={accountMenuShellRef}>
-              <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen((current) => !current)}>
-                <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
-                <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
-              </button>
-              {isAccountMenuOpen ? (
-                <div className="account-menu-popover">
-                  <AuthAccessPanel
-                    lang={lang}
-                    service={supabaseAccessService}
-                    account={authAccount}
-                    onRefreshAccount={refreshAuthAccount}
-                    accessPreviewMode={accessPreviewMode}
-                    onChangeAccessPreviewMode={setAccessPreviewMode}
-                  />
-                </div>
-              ) : null}
-            </div>
+            <button type="button" className="topbar-account-button" onClick={() => setIsAccountMenuOpen(true)}>
+              <span>{lang === 'es' ? 'Mi cuenta' : 'My account'}</span>
+              <strong>{authAccount?.profile?.fullName || authAccount?.email || 'WAIRUA'}</strong>
+            </button>
           </div>
         </div>
       </header>
@@ -3143,6 +3202,52 @@ function App() {
 
             {remoteSyncMessage && <p className="form-message form-error">{remoteSyncMessage}</p>}
 
+            {canCreateEditorial ? (
+              <section className="editorial-queue-board">
+                <div className="module-header editorial-queue-header">
+                  <div>
+                    <p className="section-kicker">{t.editorialWorkflowTitle}</p>
+                    <h3>{t.editorialWorkflowTitle}</h3>
+                    <p>{t.editorialWorkflowText}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setActiveKnowledgeView('create');
+                      setEditingEntry(null);
+                    }}
+                  >
+                    {t.editorialQueueOpenCreate}
+                  </button>
+                </div>
+
+                <div className="feature-grid editorial-queue-grid">
+                  {editorialQueueCards.map((card) => (
+                    <button
+                      key={card.id}
+                      type="button"
+                      className={`feature-card editorial-queue-card ${editorialQueueFilter === card.id ? 'is-active' : ''}`}
+                      onClick={() => setEditorialQueueFilter((current) => (current === card.id ? 'all' : card.id))}
+                    >
+                      <span className="section-kicker">{card.label}</span>
+                      <strong>{card.count}</strong>
+                      <p>{card.note}</p>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`feature-card editorial-queue-card ${editorialQueueFilter === 'all' ? 'is-active' : ''}`}
+                    onClick={() => setEditorialQueueFilter('all')}
+                  >
+                    <span className="section-kicker">{t.editorialQueueAll}</span>
+                    <strong>{entryCatalog.length}</strong>
+                    <p>{t.activeIngredientSummaries}</p>
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
             <div className="subtabs" role="tablist" aria-label="Knowledge views">
               <button
                 onClick={() => {
@@ -3714,6 +3819,28 @@ function App() {
         <strong>PhD LV MSc German Quintana Diez</strong>
         <span>WAIRUA Veterinary Precision Medicine</span>
       </section>
+
+      {isAccountMenuOpen ? (
+        <div className="account-menu-popover" role="dialog" aria-modal="true" aria-label={lang === 'es' ? 'Mi cuenta' : 'My account'}>
+          <button
+            type="button"
+            className="account-menu-backdrop"
+            aria-label={lang === 'es' ? 'Cerrar panel de cuenta' : 'Close account panel'}
+            onClick={() => setIsAccountMenuOpen(false)}
+          />
+          <div className="account-menu-panel">
+            <AuthAccessPanel
+              lang={lang}
+              service={supabaseAccessService}
+              account={authAccount}
+              onRefreshAccount={refreshAuthAccount}
+              accessPreviewMode={accessPreviewMode}
+              onChangeAccessPreviewMode={setAccessPreviewMode}
+              onClose={() => setIsAccountMenuOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

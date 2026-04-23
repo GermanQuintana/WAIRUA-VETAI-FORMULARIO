@@ -35,6 +35,19 @@ export const labels = {
     collaborativeNoticeTitle: 'Base colaborativa',
     collaborativeNoticeText:
       'Este modulo esta pensado para que colaboradores y revisores completen dosis, vias, indicaciones, protocolos, tiempos de muestreo y referencias verificables por principio activo.',
+    editorialWorkflowTitle: 'Bandeja editorial',
+    editorialWorkflowText:
+      'Contributors proponen, editores consolidan, revisores validan y administracion publica. Asi nadie tiene que buscar fichas a mano.',
+    editorialQueueAll: 'Todas',
+    editorialQueueDraft: 'Borradores',
+    editorialQueueReview: 'En revision',
+    editorialQueuePublication: 'Pendientes de publicar',
+    editorialQueueRejected: 'Rechazadas',
+    editorialQueueOpenCreate: 'Nueva ficha',
+    editorialQueueSummaryDraft: 'Preparar o completar antes de pasar a revision.',
+    editorialQueueSummaryReview: 'Fichas listas para validacion cientifica/editorial.',
+    editorialQueueSummaryPublication: 'Fichas validadas esperando activacion.',
+    editorialQueueSummaryRejected: 'Fichas devueltas o descartadas.',
     liveKnowledgeTitle: 'Cruce regulatorio por principio activo',
     liveKnowledgeText:
       'Consulta en paralelo las bases oficiales veterinaria y humana mientras completas la ficha editorial del principio activo.',
@@ -263,6 +276,19 @@ export const labels = {
     collaborativeNoticeTitle: 'Collaborative knowledge base',
     collaborativeNoticeText:
       'This module is meant for contributors and reviewers to complete dose, route, indication, protocol, sampling-window, and verifiable-reference data per active ingredient.',
+    editorialWorkflowTitle: 'Editorial queue',
+    editorialWorkflowText:
+      'Contributors propose, editors consolidate, reviewers validate, and admins publish. That way nobody has to hunt down records manually.',
+    editorialQueueAll: 'All',
+    editorialQueueDraft: 'Drafts',
+    editorialQueueReview: 'Under review',
+    editorialQueuePublication: 'Pending publication',
+    editorialQueueRejected: 'Rejected',
+    editorialQueueOpenCreate: 'New record',
+    editorialQueueSummaryDraft: 'Prepare or complete before sending to review.',
+    editorialQueueSummaryReview: 'Records ready for scientific/editorial validation.',
+    editorialQueueSummaryPublication: 'Validated records waiting for activation.',
+    editorialQueueSummaryRejected: 'Returned or discarded records.',
     liveKnowledgeTitle: 'Regulatory cross-check by active ingredient',
     liveKnowledgeText:
       'Query the veterinary and human official sources in parallel while completing the editorial active-ingredient record.',

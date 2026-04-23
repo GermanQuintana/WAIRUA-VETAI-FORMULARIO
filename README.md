@@ -67,8 +67,10 @@ Notas rapidas:
 
 - Login con Supabase Auth y Google OAuth.
 - Roles (`viewer`, `contributor`, `editor`, `reviewer`, `admin`) para control de cambios.
+- Cada perfil tiene una `access_key` WAIRUA para integrar otras herramientas del ecosistema, aunque la ruta preferente sigue siendo usar la misma cuenta Supabase/Google.
 - Flujo editorial con estados `draft`, `under_review`, `approved` y `publication_status`.
 - Integracion con Stripe lista para Edge Functions de Supabase.
+- Suscripciones previstas: usuario individual 18 EUR/mes; clinica 39 EUR/mes + 7 EUR/veterinario/mes.
 
 ## Siguientes pasos recomendados
 

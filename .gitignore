@@ -6,3 +6,4 @@ dist/
 .playwright-cli/
 .vercel
 .env*.local
+supabase/.temp/

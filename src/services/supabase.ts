@@ -10,12 +10,17 @@ import {
 import { specialtyTags, therapeuticClassTags } from '../data/taxonomy';
 import { excludeEquivalentValues, normalizeStringList } from '../lib/entryNormalization';
 import {
+  AdminDirectoryProfile,
+  AccountType,
   AuthAccountSnapshot,
   AuthProvider,
   DiscountCodeRecord,
   DoseCalculatorPreset,
   EntryReviewSummary,
   MembershipSelection,
+  MembershipPlanId,
+  PartnerCategory,
+  ReportVisibilityField,
   ScientificReference,
   TherapeuticEntry,
   UserMembership,
@@ -111,10 +116,78 @@ const getEffectiveRole = (roles: UserRole[], fallback?: unknown): UserRole => {
   return roles[0] ?? (rolePriority.includes(normalizedFallback) ? normalizedFallback : 'viewer');
 };
 
+const normalizeStringArray = (value: unknown) =>
+  Array.isArray(value)
+    ? value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean)
+    : [];
+
+const accountTypes: AccountType[] = ['free', 'premium', 'company', 'partner'];
+const partnerCategories: PartnerCategory[] = ['scientific', 'training', 'strategic', 'commercial'];
+const membershipPlanIds: MembershipPlanId[] = [
+  'individual_monthly',
+  'clinic_monthly',
+];
+
+const normalizeAccountType = (value: unknown): AccountType => {
+  const accountType = typeof value === 'string' ? value : '';
+  return accountTypes.includes(accountType as AccountType) ? (accountType as AccountType) : 'free';
+};
+
+const normalizePartnerCategory = (value: unknown): PartnerCategory | undefined => {
+  const partnerCategory = typeof value === 'string' ? value : '';
+  return partnerCategories.includes(partnerCategory as PartnerCategory) ? (partnerCategory as PartnerCategory) : undefined;
+};
+
+const normalizeMembershipPlanId = (value: unknown, billingCycle?: unknown): MembershipPlanId => {
+  const planId = typeof value === 'string' ? value : '';
+  if (membershipPlanIds.includes(planId as MembershipPlanId)) return planId as MembershipPlanId;
+  return billingCycle === 'annual' ? 'individual_monthly' : 'individual_monthly';
+};
+
+const reportVisibilityFields: ReportVisibilityField[] = [
+  'full_name',
+  'national_id',
+  'license',
+  'workplace',
+  'center_fiscal_name',
+  'center_tax_id',
+  'center_type',
+  'professional_email',
+  'private_email',
+  'websites',
+  'social_profiles',
+  'phone_mobile',
+];
+
+const normalizeReportVisibilityFields = (value: unknown): ReportVisibilityField[] =>
+  normalizeStringArray(value).filter((item): item is ReportVisibilityField => reportVisibilityFields.includes(item as ReportVisibilityField));
+
 const mapProfileRow = (row: Record<string, unknown>): UserProfile => ({
   id: String(row.id),
   fullName: String(row.full_name ?? ''),
   email: typeof row.email === 'string' ? row.email : undefined,
+  accessKey: typeof row.access_key === 'string' ? row.access_key : undefined,
+  accountType: normalizeAccountType(row.account_type),
+  partnerCategory: normalizePartnerCategory(row.partner_category),
+  nationalId: typeof row.national_id === 'string' ? row.national_id : undefined,
+  licenseNumber: typeof row.license_number === 'string' ? row.license_number : undefined,
+  licenseProvince: typeof row.license_province === 'string' ? row.license_province : undefined,
+  workplaceName: typeof row.workplace_name === 'string' ? row.workplace_name : undefined,
+  centerFiscalName: typeof row.center_fiscal_name === 'string' ? row.center_fiscal_name : undefined,
+  centerTaxId: typeof row.center_tax_id === 'string' ? row.center_tax_id : undefined,
+  centerType: typeof row.center_type === 'string' ? row.center_type : undefined,
+  professionalEmail: typeof row.professional_email === 'string' ? row.professional_email : undefined,
+  privateEmail: typeof row.private_email === 'string' ? row.private_email : undefined,
+  websites: normalizeStringArray(row.websites),
+  instagramUrl: typeof row.instagram_url === 'string' ? row.instagram_url : undefined,
+  tiktokUrl: typeof row.tiktok_url === 'string' ? row.tiktok_url : undefined,
+  youtubeUrl: typeof row.youtube_url === 'string' ? row.youtube_url : undefined,
+  facebookUrl: typeof row.facebook_url === 'string' ? row.facebook_url : undefined,
+  linkedinUrl: typeof row.linkedin_url === 'string' ? row.linkedin_url : undefined,
+  phoneMobile: typeof row.phone_mobile === 'string' ? row.phone_mobile : undefined,
+  reportVisibleFields: normalizeReportVisibilityFields(row.report_visible_fields),
   roles: normalizeRoles(row.roles ?? row.role),
   role: getEffectiveRole(normalizeRoles(row.roles ?? row.role), row.role),
   authProvider: String(row.auth_provider ?? 'unknown') as AuthProvider,
@@ -126,7 +199,9 @@ const mapMembershipRow = (row: Record<string, unknown>): UserMembership => ({
   id: String(row.id),
   userId: String(row.user_id),
   signupMethod: String(row.signup_method ?? 'unknown') as AuthProvider,
+  planId: normalizeMembershipPlanId(row.plan_id, row.billing_cycle),
   billingCycle: String(row.billing_cycle) as UserMembership['billingCycle'],
+  seatCount: typeof row.seat_count === 'number' ? row.seat_count : undefined,
   status: String(row.status ?? 'trialing') as UserMembership['status'],
   listPriceCents: Number(row.list_price_cents ?? 0),
   finalPriceCents: Number(row.final_price_cents ?? 0),
@@ -343,6 +418,8 @@ const mapActiveIngredientRecord = (row: Record<string, unknown>): TherapeuticEnt
     references: referenceRows
       .filter((reference) => reference.scope !== 'dosing_rule')
       .map(({ scope: _scope, scopeLabel: _scopeLabel, ...reference }) => reference),
+    createdById: typeof row.created_by === 'string' ? row.created_by : undefined,
+    reviewedById: typeof row.reviewed_by === 'string' ? row.reviewed_by : undefined,
     lastUpdated: String(row.updated_at ?? '').slice(0, 10) || new Date().toISOString().slice(0, 10),
   };
 };
@@ -357,6 +434,7 @@ const activeIngredientSelect = `
   status,
   publication_status,
   created_by,
+  reviewed_by,
   updated_at,
   active_ingredient_trade_names ( trade_name ),
   active_ingredient_tags ( tag_name ),
@@ -717,25 +795,113 @@ export class SupabaseAccessService {
     return data ? mapProfileRow(data as Record<string, unknown>) : null;
   }
 
-  async listProfiles() {
-    const { data, error } = await this.client.from('profiles').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    return ((data ?? []) as Array<Record<string, unknown>>).map(mapProfileRow);
+  async listProfiles(): Promise<AdminDirectoryProfile[]> {
+    const [{ data: profilesData, error: profilesError }, { data: membershipsData, error: membershipsError }] = await Promise.all([
+      this.client.from('profiles').select('*').order('updated_at', { ascending: false }),
+      this.client.from('user_memberships').select('*'),
+    ]);
+    if (profilesError) throw profilesError;
+    if (membershipsError) throw membershipsError;
+
+    const membershipsByUserId = new Map(
+      ((membershipsData ?? []) as Array<Record<string, unknown>>).map((row) => {
+        const membership = mapMembershipRow(row);
+        return [membership.userId, membership] as const;
+      }),
+    );
+
+    return ((profilesData ?? []) as Array<Record<string, unknown>>).map((row) => {
+      const profile = mapProfileRow(row);
+      return {
+        ...profile,
+        membership: membershipsByUserId.get(profile.id) ?? null,
+      };
+    });
   }
 
-  async updateUserRoles(userId: string, roles: UserRole[]) {
-    const normalizedRoles = normalizeRoles(roles);
+  async updateUserAccessProfile(
+    userId: string,
+    payload: {
+      roles: UserRole[];
+      accountType: AccountType;
+      partnerCategory?: PartnerCategory;
+    },
+  ) {
+    const normalizedRoles = normalizeRoles(payload.roles);
     const { data, error } = await this.client
       .from('profiles')
       .update({
         role: getEffectiveRole(normalizedRoles),
         roles: normalizedRoles,
+        account_type: payload.accountType,
+        partner_category: payload.accountType === 'partner' ? payload.partnerCategory ?? null : null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)
       .select('*')
       .single();
 
+    if (error) throw error;
+    return mapProfileRow(data as Record<string, unknown>);
+  }
+
+  async updateCurrentProfile(
+    userId: string,
+    profile: {
+      fullName: string;
+      accountType?: AccountType;
+      partnerCategory?: PartnerCategory;
+      nationalId?: string;
+      licenseNumber?: string;
+      licenseProvince?: string;
+      workplaceName?: string;
+      centerFiscalName?: string;
+      centerTaxId?: string;
+      centerType?: string;
+      professionalEmail?: string;
+      privateEmail?: string;
+      websites?: string[];
+      instagramUrl?: string;
+      tiktokUrl?: string;
+      youtubeUrl?: string;
+      facebookUrl?: string;
+      linkedinUrl?: string;
+      phoneMobile?: string;
+      reportVisibleFields?: ReportVisibilityField[];
+    },
+  ) {
+    const payload = {
+      full_name: profile.fullName.trim(),
+      national_id: profile.nationalId?.trim() || null,
+      license_number: profile.licenseNumber?.trim() || null,
+      license_province: profile.licenseProvince?.trim() || null,
+      workplace_name: profile.workplaceName?.trim() || null,
+      center_fiscal_name: profile.centerFiscalName?.trim() || null,
+      center_tax_id: profile.centerTaxId?.trim() || null,
+      center_type: profile.centerType?.trim() || null,
+      professional_email: profile.professionalEmail?.trim() || null,
+      private_email: profile.privateEmail?.trim() || null,
+      websites: (profile.websites ?? []).map((item) => item.trim()).filter(Boolean),
+      instagram_url: profile.instagramUrl?.trim() || null,
+      tiktok_url: profile.tiktokUrl?.trim() || null,
+      youtube_url: profile.youtubeUrl?.trim() || null,
+      facebook_url: profile.facebookUrl?.trim() || null,
+      linkedin_url: profile.linkedinUrl?.trim() || null,
+      phone_mobile: profile.phoneMobile?.trim() || null,
+      report_visible_fields: Array.from(new Set(profile.reportVisibleFields ?? [])).filter((item) =>
+        reportVisibilityFields.includes(item),
+      ),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (profile.accountType) {
+      Object.assign(payload, {
+        account_type: profile.accountType,
+        partner_category: profile.accountType === 'partner' ? profile.partnerCategory ?? null : null,
+      });
+    }
+
+    const { data, error } = await this.client.from('profiles').update(payload).eq('id', userId).select('*').single();
     if (error) throw error;
     return mapProfileRow(data as Record<string, unknown>);
   }
@@ -998,7 +1164,9 @@ export class SupabaseAccessService {
     const payload = {
       user_id: user.id,
       signup_method: signupMethod ?? existing?.signupMethod ?? getAuthProvider(user),
+      plan_id: selection.planId,
       billing_cycle: selection.billingCycle,
+      seat_count: selection.seatCount ?? 1,
       status: existing?.status ?? 'trialing',
       list_price_cents: selection.listPriceCents,
       final_price_cents: selection.finalPriceCents,
