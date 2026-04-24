@@ -302,6 +302,16 @@ export interface UserMembership {
   updatedAt: string;
 }
 
+export interface ClinicAccess {
+  clinicId: string;
+  clinicName: string;
+  inviteCode?: string;
+  allowedEmails: string[];
+  seatLimit: number;
+  linkedSeatCount: number;
+  role: 'owner' | 'member';
+}
+
 export interface UserProfile {
   id: string;
   fullName: string;
@@ -340,5 +350,6 @@ export interface AdminDirectoryProfile extends UserProfile {
 export interface AuthAccountSnapshot {
   profile: UserProfile | null;
   membership: UserMembership | null;
+  clinicAccess: ClinicAccess | null;
   email: string | null;
 }

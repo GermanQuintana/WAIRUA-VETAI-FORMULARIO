@@ -121,7 +121,12 @@ const copy = {
     signUpHelp: 'Crea tu cuenta, deja guardado tu plan preferido y activa la prueba gratuita completa.',
     signUpGoogle: 'Crear cuenta con Google',
     createAccount: 'Crear cuenta y activar prueba',
+    createLinkedAccount: 'Crear cuenta vinculada',
     accessAccount: 'Entrar en la cuenta',
+    clinicInviteCode: 'Código de clínica',
+    clinicInvitePlaceholder: 'Ej: CLINICA-ABCD12',
+    clinicInviteHint: 'Si tu clínica te ha dado un código, úsalo para vincular tu alta a esa cuenta sin contratar un plan individual.',
+    clinicLinkedSignup: 'El alta quedará vinculada a la clínica indicada por el código.',
     emailConfirmation:
       'Cuenta creada. Si Supabase exige confirmación de email, revisa tu correo y después inicia sesión.',
     genericError: 'No se pudo completar la operación.',
@@ -227,6 +232,16 @@ const copy = {
     profileSave: 'Guardar perfil',
     profileSaved: 'Perfil actualizado correctamente.',
     billingManagedByStripe: 'La facturación premium ya se gestiona desde Stripe, así que aquí mantenemos el resumen y los accesos.',
+    clinicAccessTitle: 'Acceso de clínica',
+    clinicAccessSubtitle: 'Vincula veterinarios a esta cuenta por email autorizado o con un código de inscripción.',
+    clinicInviteCodeLabel: 'Código para el equipo',
+    clinicAllowedEmails: 'Emails autorizados',
+    clinicAllowedEmailsHint: 'Un email por línea. También pueden registrarse con el código de clínica.',
+    clinicSeats: 'Plazas vinculadas',
+    clinicSave: 'Guardar acceso de clínica',
+    clinicSaved: 'Acceso de clínica guardado.',
+    clinicMemberTitle: 'Clínica vinculada',
+    clinicMemberText: 'Tu acceso premium queda cubierto por esta clínica.',
     professionalIdentity: 'Identidad profesional',
     userData: 'Datos de usuario',
     centerData: 'Datos de centro',
@@ -323,7 +338,12 @@ const copy = {
     signUpHelp: 'Create your account, save your preferred plan, and start the full free trial.',
     signUpGoogle: 'Create account with Google',
     createAccount: 'Create account and start trial',
+    createLinkedAccount: 'Create linked account',
     accessAccount: 'Access account',
+    clinicInviteCode: 'Clinic code',
+    clinicInvitePlaceholder: 'Example: CLINIC-ABCD12',
+    clinicInviteHint: 'If your clinic gave you a code, use it to link your sign-up to that account without buying an individual plan.',
+    clinicLinkedSignup: 'This sign-up will be linked to the clinic from the code.',
     emailConfirmation:
       'Account created. If Supabase requires email confirmation, check your inbox and then sign in.',
     genericError: 'The operation could not be completed.',
@@ -429,6 +449,16 @@ const copy = {
     profileSave: 'Save profile',
     profileSaved: 'Profile updated successfully.',
     billingManagedByStripe: 'Premium billing is already handled in Stripe, so this area keeps the summary and access controls.',
+    clinicAccessTitle: 'Clinic access',
+    clinicAccessSubtitle: 'Link veterinarians to this account by authorized email or with a sign-up code.',
+    clinicInviteCodeLabel: 'Team code',
+    clinicAllowedEmails: 'Authorized emails',
+    clinicAllowedEmailsHint: 'One email per line. They can also sign up with the clinic code.',
+    clinicSeats: 'Linked seats',
+    clinicSave: 'Save clinic access',
+    clinicSaved: 'Clinic access saved.',
+    clinicMemberTitle: 'Linked clinic',
+    clinicMemberText: 'Your premium access is covered by this clinic.',
     professionalIdentity: 'Professional identity',
     userData: 'User data',
     centerData: 'Center data',
@@ -796,6 +826,8 @@ export default function AuthAccessPanel({
   const [selectedSeatCount, setSelectedSeatCount] = useState(1);
   const [discountInput, setDiscountInput] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<DiscountCodeRecord | null>(null);
+  const [clinicInviteCode, setClinicInviteCode] = useState('');
+  const [clinicAllowedEmailLines, setClinicAllowedEmailLines] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
@@ -844,6 +876,7 @@ export default function AuthAccessPanel({
     return roleOptions.filter((role) => rawRoles.includes(role));
   }, [account?.profile]);
   const effectiveAccountType = account?.profile?.accountType ?? (!hasMembership ? 'free' : 'premium');
+  const clinicAccess = account?.clinicAccess ?? null;
   const accountTypeLabel = getAccountTypeLabel(effectiveAccountType, t);
   const now = Date.now();
   const trialTimeLeftMs = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() - now : null;
@@ -895,6 +928,12 @@ export default function AuthAccessPanel({
     setSelectedPlanId(account.membership.planId);
     setSelectedSeatCount(account.membership.seatCount ?? 1);
   }, [account?.membership?.planId, account?.membership?.seatCount]);
+
+  useEffect(() => {
+    if (!clinicAccess || clinicAccess.role !== 'owner') return;
+    setClinicAllowedEmailLines(clinicAccess.allowedEmails.join('\n'));
+    setSelectedSeatCount(clinicAccess.seatLimit || 1);
+  }, [clinicAccess?.clinicId, clinicAccess?.role]);
 
   useEffect(() => {
     if (!isAdmin && accountSection === 'admin') {
@@ -972,7 +1011,12 @@ export default function AuthAccessPanel({
 
     try {
       const redirectTo = getAppReturnUrl();
-      await service.signInWithGoogle(redirectTo, mode === 'sign_up' ? selection : undefined);
+      const normalizedClinicInvite = clinicInviteCode.trim().toUpperCase();
+      await service.signInWithGoogle(
+        redirectTo,
+        mode === 'sign_up' && !normalizedClinicInvite ? selection : undefined,
+        mode === 'sign_up' ? normalizedClinicInvite : undefined,
+      );
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
       setIsBusy(false);
@@ -987,11 +1031,13 @@ export default function AuthAccessPanel({
 
     try {
       if (mode === 'sign_up') {
+        const normalizedClinicInvite = clinicInviteCode.trim().toUpperCase();
         const result = await service.signUpWithEmail({
           email,
           password,
           fullName,
-          selection,
+          selection: normalizedClinicInvite ? undefined : selection,
+          clinicInviteCode: normalizedClinicInvite || undefined,
         });
 
         await onRefreshAccount();
@@ -1004,6 +1050,7 @@ export default function AuthAccessPanel({
 
       setPassword('');
       setShowPassword(false);
+      setClinicInviteCode('');
       setIsOpen(false);
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
@@ -1105,6 +1152,26 @@ export default function AuthAccessPanel({
       });
       await onRefreshAccount();
       setMessage(t.profileSaved);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleSaveClinicAccess = async () => {
+    if (!service || !account?.profile) return;
+    resetFeedback();
+    setIsBusy(true);
+
+    try {
+      await service.saveOwnedClinicAccess({
+        name: account.profile.workplaceName || account.profile.centerFiscalName || account.profile.fullName || account.email || 'Clinica',
+        seatLimit: selectedSeatCount,
+        allowedEmails: parseWebsiteLines(clinicAllowedEmailLines),
+      });
+      await onRefreshAccount();
+      setMessage(t.clinicSaved);
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
@@ -1324,6 +1391,8 @@ export default function AuthAccessPanel({
         </div>
       ) : null}
 
+      {renderClinicAccessSection()}
+
       {renderPlanSelector()}
 
       <div className="auth-account-actions">
@@ -1349,6 +1418,63 @@ export default function AuthAccessPanel({
       {membership?.stripeCustomerId ? <p className="auth-account-hint">{t.stripePortalHelp}</p> : null}
     </>
   );
+
+  const renderClinicAccessSection = () => {
+    if (!clinicAccess && membership?.planId !== 'clinic_monthly' && effectiveAccountType !== 'company') return null;
+
+    if (clinicAccess?.role === 'member') {
+      return (
+        <section className="account-profile-group">
+          <div className="account-profile-heading">
+            <strong>{t.clinicMemberTitle}</strong>
+            <p>{t.clinicMemberText}</p>
+          </div>
+          <div className="auth-membership-summary">
+            <div>
+              <span>{t.companyPlansTitle}</span>
+              <strong>{clinicAccess.clinicName}</strong>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="account-profile-group">
+        <div className="account-profile-heading">
+          <strong>{t.clinicAccessTitle}</strong>
+          <p>{t.clinicAccessSubtitle}</p>
+        </div>
+        <div className="auth-membership-summary">
+          <div>
+            <span>{t.clinicInviteCodeLabel}</span>
+            <strong>{clinicAccess?.inviteCode ?? '--'}</strong>
+          </div>
+          <div>
+            <span>{t.clinicSeats}</span>
+            <strong>
+              {clinicAccess?.linkedSeatCount ?? 0} / {selectedSeatCount}
+            </strong>
+          </div>
+        </div>
+        <label className="account-profile-span-full">
+          {t.clinicAllowedEmails}
+          <textarea
+            rows={4}
+            value={clinicAllowedEmailLines}
+            onChange={(event) => setClinicAllowedEmailLines(event.target.value)}
+            placeholder="vet1@clinica.com&#10;vet2@clinica.com"
+          />
+          <span className="auth-account-hint">{t.clinicAllowedEmailsHint}</span>
+        </label>
+        <div className="auth-account-actions">
+          <button type="button" className="theme-button" onClick={handleSaveClinicAccess} disabled={isBusy}>
+            {t.clinicSave}
+          </button>
+        </div>
+      </section>
+    );
+  };
 
   const renderProfessionalProfileSection = () => (
     <section className="account-profile-shell">
@@ -1762,7 +1888,20 @@ export default function AuthAccessPanel({
         </div>
       ) : null}
 
-      {mode === 'sign_up' ? renderPlanSelector() : null}
+      {mode === 'sign_up' ? (
+        <label>
+          {t.clinicInviteCode}
+          <input
+            type="text"
+            value={clinicInviteCode}
+            placeholder={t.clinicInvitePlaceholder}
+            onChange={(event) => setClinicInviteCode(event.target.value.toUpperCase())}
+          />
+          <span className="auth-account-hint">{clinicInviteCode.trim() ? t.clinicLinkedSignup : t.clinicInviteHint}</span>
+        </label>
+      ) : null}
+
+      {mode === 'sign_up' && !clinicInviteCode.trim() ? renderPlanSelector() : null}
 
       <button type="button" className="secondary-button auth-google-button" onClick={handleGoogle} disabled={isBusy}>
         <GoogleMark />
@@ -1816,7 +1955,7 @@ export default function AuthAccessPanel({
         </label>
 
         <button type="submit" className="theme-button" disabled={isBusy}>
-          {mode === 'sign_up' ? t.createAccount : t.accessAccount}
+          {mode === 'sign_up' ? (clinicInviteCode.trim() ? t.createLinkedAccount : t.createAccount) : t.accessAccount}
         </button>
       </form>
 

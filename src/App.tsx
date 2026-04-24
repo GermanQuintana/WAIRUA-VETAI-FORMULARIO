@@ -849,7 +849,7 @@ function App() {
         const snapshot = await supabaseAccessService.getAccountSnapshot();
         if (!ignore) setAuthAccount(snapshot);
       } catch {
-        if (!ignore) setAuthAccount({ profile: null, membership: null, email: null });
+        if (!ignore) setAuthAccount({ profile: null, membership: null, clinicAccess: null, email: null });
       } finally {
         authResolvedRef.current = true;
         if (!ignore) setAuthLoading(false);
@@ -918,20 +918,23 @@ function App() {
       const snapshot = await supabaseAccessService.getAccountSnapshot();
       setAuthAccount(snapshot);
     } catch {
-      setAuthAccount({ profile: null, membership: null, email: null });
+      setAuthAccount({ profile: null, membership: null, clinicAccess: null, email: null });
     } finally {
       setAuthLoading(false);
     }
   };
 
   const membership = authAccount?.membership ?? null;
+  const hasClinicAccess = Boolean(authAccount?.clinicAccess);
   const accountType = authAccount?.profile?.accountType ?? 'free';
   const isAuthenticated = Boolean(authAccount?.profile);
   const trialEndsAtTime = membership?.trialEndsAt ? new Date(membership.trialEndsAt).getTime() : null;
   const isTrialExpired = Boolean(membership && membership.status !== 'active' && trialEndsAtTime && trialEndsAtTime < Date.now());
   const hasManualPremiumAccess = ['premium', 'company', 'partner'].includes(accountType);
   const actualHasPremiumAccess = Boolean(
-    hasManualPremiumAccess || (membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired))),
+    hasClinicAccess ||
+      hasManualPremiumAccess ||
+      (membership && (membership.status === 'active' || (membership.status === 'trialing' && !isTrialExpired))),
   );
   const actualProfileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
   const isActualAdmin = actualProfileRoles.includes('admin');

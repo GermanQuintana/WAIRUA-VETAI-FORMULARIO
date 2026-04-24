@@ -14,6 +14,7 @@ import {
   AccountType,
   AuthAccountSnapshot,
   AuthProvider,
+  ClinicAccess,
   DiscountCodeRecord,
   DoseCalculatorPreset,
   EntryReviewSummary,
@@ -31,6 +32,7 @@ import {
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
 const MEMBERSHIP_PENDING_STORAGE_KEY = 'wairua.pending-membership-selection';
+const CLINIC_INVITE_PENDING_STORAGE_KEY = 'wairua.pending-clinic-invite-code';
 const TRIAL_DAYS = 10;
 const ADMIN_EMAILS = new Set(['gerqd79@gmail.com']);
 const DISCOUNT_CODE_ALREADY_USED_ERROR = 'DISCOUNT_CODE_ALREADY_USED';
@@ -164,6 +166,17 @@ const reportVisibilityFields: ReportVisibilityField[] = [
 const normalizeReportVisibilityFields = (value: unknown): ReportVisibilityField[] =>
   normalizeStringArray(value).filter((item): item is ReportVisibilityField => reportVisibilityFields.includes(item as ReportVisibilityField));
 
+const normalizeEmail = (value: unknown) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+const normalizeEmailArray = (value: unknown) => Array.from(new Set(normalizeStringArray(value).map(normalizeEmail).filter(Boolean)));
+
+const isMissingClinicSchemaError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : '';
+  const message = 'message' in error && typeof error.message === 'string' ? error.message : '';
+  return code === '42P01' || code === 'PGRST202' || code === 'PGRST205' || message.includes('clinic_accounts');
+};
+
 const mapProfileRow = (row: Record<string, unknown>): UserProfile => ({
   id: String(row.id),
   fullName: String(row.full_name ?? ''),
@@ -193,6 +206,16 @@ const mapProfileRow = (row: Record<string, unknown>): UserProfile => ({
   authProvider: String(row.auth_provider ?? 'unknown') as AuthProvider,
   createdAt: String(row.created_at ?? ''),
   updatedAt: String(row.updated_at ?? ''),
+});
+
+const mapClinicAccessRow = (row: Record<string, unknown>, role: ClinicAccess['role'], linkedSeatCount = 0): ClinicAccess => ({
+  clinicId: String(row.id),
+  clinicName: String(row.name ?? ''),
+  inviteCode: typeof row.invite_code === 'string' ? row.invite_code : undefined,
+  allowedEmails: normalizeEmailArray(row.allowed_emails),
+  seatLimit: Number(row.seat_limit ?? 1),
+  linkedSeatCount,
+  role,
 });
 
 const mapMembershipRow = (row: Record<string, unknown>): UserMembership => ({
@@ -764,6 +787,22 @@ export class SupabaseAccessService {
     window.localStorage.setItem(MEMBERSHIP_PENDING_STORAGE_KEY, JSON.stringify(selection));
   }
 
+  private readPendingClinicInviteCode() {
+    if (typeof window === 'undefined') return '';
+    return window.localStorage.getItem(CLINIC_INVITE_PENDING_STORAGE_KEY)?.trim().toUpperCase() ?? '';
+  }
+
+  private clearPendingClinicInviteCode() {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(CLINIC_INVITE_PENDING_STORAGE_KEY);
+  }
+
+  savePendingClinicInviteCode(code: string) {
+    const normalized = code.trim().toUpperCase();
+    if (typeof window === 'undefined' || !normalized) return;
+    window.localStorage.setItem(CLINIC_INVITE_PENDING_STORAGE_KEY, normalized);
+  }
+
   private async ensureProfile(user: User, preferredName?: string) {
     const payload = {
       id: user.id,
@@ -956,6 +995,111 @@ export class SupabaseAccessService {
     }
   }
 
+  private async getClinicLinkedSeatCount(clinicId: string) {
+    const { count, error } = await this.client
+      .from('clinic_users')
+      .select('id', { count: 'exact', head: true })
+      .eq('clinic_id', clinicId)
+      .eq('status', 'linked');
+
+    if (error) throw error;
+    return count ?? 0;
+  }
+
+  private async getClinicAccessByUserId(userId: string): Promise<ClinicAccess | null> {
+    try {
+      const { data: ownedClinic, error: ownedError } = await this.client
+        .from('clinic_accounts')
+        .select('*')
+        .eq('owner_user_id', userId)
+        .maybeSingle();
+
+      if (ownedError) throw ownedError;
+      if (ownedClinic) {
+        const linkedSeatCount = await this.getClinicLinkedSeatCount(String(ownedClinic.id));
+        return mapClinicAccessRow(ownedClinic as Record<string, unknown>, 'owner', linkedSeatCount);
+      }
+
+      const { data: linkedRow, error: linkedError } = await this.client
+        .from('clinic_users')
+        .select('clinic_id')
+        .eq('user_id', userId)
+        .eq('status', 'linked')
+        .maybeSingle();
+
+      if (linkedError) throw linkedError;
+      if (!linkedRow?.clinic_id) return null;
+
+      const { data: clinic, error: clinicError } = await this.client
+        .from('clinic_accounts')
+        .select('*')
+        .eq('id', String(linkedRow.clinic_id))
+        .maybeSingle();
+
+      if (clinicError) throw clinicError;
+      return clinic ? mapClinicAccessRow(clinic as Record<string, unknown>, 'member') : null;
+    } catch (error) {
+      if (isMissingClinicSchemaError(error)) return null;
+      throw error;
+    }
+  }
+
+  async saveOwnedClinicAccess({
+    name,
+    seatLimit,
+    allowedEmails,
+  }: {
+    name: string;
+    seatLimit: number;
+    allowedEmails: string[];
+  }) {
+    const { data, error } = await this.client.rpc('upsert_owned_clinic', {
+      p_name: name.trim(),
+      p_seat_limit: Math.max(1, Math.round(seatLimit)),
+      p_allowed_emails: normalizeEmailArray(allowedEmails),
+    });
+
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error('Clinic access could not be saved.');
+    const linkedSeatCount = await this.getClinicLinkedSeatCount(String((row as Record<string, unknown>).id));
+    return mapClinicAccessRow(row as Record<string, unknown>, 'owner', linkedSeatCount);
+  }
+
+  async joinClinicWithCode(code: string) {
+    const normalized = code.trim().toUpperCase();
+    if (!normalized) return null;
+
+    const { data, error } = await this.client.rpc('join_clinic_with_code', {
+      p_invite_code: normalized,
+    });
+
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? mapClinicAccessRow(row as Record<string, unknown>, 'member') : null;
+  }
+
+  private async syncClinicAccessForUser(inviteCode?: string) {
+    const session = await this.getCurrentSession();
+    if (!session?.user) return null;
+    const normalized = inviteCode?.trim().toUpperCase() || this.readPendingClinicInviteCode();
+    try {
+      if (normalized) {
+        const clinic = await this.joinClinicWithCode(normalized);
+        this.clearPendingClinicInviteCode();
+        return clinic;
+      }
+
+      const { data, error } = await this.client.rpc('join_clinic_by_email');
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return row ? mapClinicAccessRow(row as Record<string, unknown>, 'member') : null;
+    } catch (error) {
+      if (isMissingClinicSchemaError(error)) return null;
+      throw error;
+    }
+  }
+
   async getCurrentSession() {
     const { data, error } = await this.client.auth.getSession();
     if (error) throw error;
@@ -978,20 +1122,23 @@ export class SupabaseAccessService {
   async getAccountSnapshot(): Promise<AuthAccountSnapshot> {
     const session = await this.getCurrentSession();
     if (!session?.user) {
-      return { profile: null, membership: null, email: null };
+      return { profile: null, membership: null, clinicAccess: null, email: null };
     }
 
     await this.ensureProfile(session.user);
     await this.syncPendingMembershipSelection(session);
+    await this.syncClinicAccessForUser();
 
-    const [profile, membership] = await Promise.all([
+    const [profile, membership, clinicAccess] = await Promise.all([
       this.getProfileByUserId(session.user.id),
       this.getMembershipByUserId(session.user.id),
+      this.getClinicAccessByUserId(session.user.id),
     ]);
 
     return {
       profile,
       membership,
+      clinicAccess,
       email: session.user.email ?? null,
     };
   }
@@ -999,12 +1146,14 @@ export class SupabaseAccessService {
   onAuthStateChange(callback: (session: Session | null) => void) {
     return this.client.auth.onAuthStateChange((_event, session) => {
       void this.syncPendingMembershipSelection(session);
+      void this.syncClinicAccessForUser();
       callback(session);
     });
   }
 
-  async signInWithGoogle(redirectTo: string, selection?: MembershipSelection) {
+  async signInWithGoogle(redirectTo: string, selection?: MembershipSelection, clinicInviteCode?: string) {
     if (selection) this.savePendingMembershipSelection(selection);
+    if (clinicInviteCode) this.savePendingClinicInviteCode(clinicInviteCode);
     const { error } = await this.client.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -1022,13 +1171,16 @@ export class SupabaseAccessService {
     password,
     fullName,
     selection,
+    clinicInviteCode,
   }: {
     email: string;
     password: string;
     fullName: string;
-    selection: MembershipSelection;
+    selection?: MembershipSelection;
+    clinicInviteCode?: string;
   }) {
-    this.savePendingMembershipSelection(selection);
+    if (selection) this.savePendingMembershipSelection(selection);
+    if (clinicInviteCode) this.savePendingClinicInviteCode(clinicInviteCode);
 
     const { data, error } = await this.client.auth.signUp({
       email,
@@ -1048,6 +1200,7 @@ export class SupabaseAccessService {
 
     if (data.session) {
       await this.syncPendingMembershipSelection(data.session);
+      await this.syncClinicAccessForUser(clinicInviteCode);
     }
 
     return {
@@ -1069,6 +1222,7 @@ export class SupabaseAccessService {
     if (data.session?.user) {
       await this.ensureProfile(data.session.user);
       await this.syncPendingMembershipSelection(data.session);
+      await this.syncClinicAccessForUser();
     }
 
     return data.session;
