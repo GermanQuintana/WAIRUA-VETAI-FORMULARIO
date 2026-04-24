@@ -575,6 +575,17 @@ const getPlanLabel = (planId: MembershipPlanId | undefined, lang: Language) => {
   return plan.title[lang];
 };
 
+const getMembershipDisplayPriceCents = (membership: AuthAccountSnapshot['membership'], fallbackPriceCents: number) => {
+  if (!membership) return fallbackPriceCents;
+  const hasStripeBilling = Boolean(membership.stripeCustomerId || membership.stripeSubscriptionId);
+
+  if (!hasStripeBilling && membership.finalPriceCents === 0 && membership.listPriceCents > 0) {
+    return membership.listPriceCents;
+  }
+
+  return membership.finalPriceCents ?? fallbackPriceCents;
+};
+
 const getAppReturnUrl = () => {
   const path = window.location.pathname || '/';
   return new URL(path, window.location.origin).toString();
@@ -1279,7 +1290,12 @@ export default function AuthAccessPanel({
         <div>
           <span>{t.selectedPlan}</span>
           <strong>
-            {hasMembership ? `${getPlanLabel(membership?.planId, lang)} · ${formatPrice(lang, membership?.finalPriceCents ?? selection.finalPriceCents)}` : t.noPlan}
+            {hasMembership
+              ? `${getPlanLabel(membership?.planId, lang)} · ${formatPrice(
+                  lang,
+                  getMembershipDisplayPriceCents(membership, selection.finalPriceCents),
+                )}`
+              : t.noPlan}
           </strong>
         </div>
         <div>
