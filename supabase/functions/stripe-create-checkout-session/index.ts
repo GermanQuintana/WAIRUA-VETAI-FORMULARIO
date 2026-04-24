@@ -10,6 +10,9 @@ import {
 } from '../_shared/stripe.ts';
 
 const TRIAL_DAYS = 10;
+const INDIVIDUAL_MONTHLY_PRICE_CENTS = 1800;
+const CLINIC_MONTHLY_BASE_PRICE_CENTS = 3900;
+const CLINIC_MONTHLY_SEAT_PRICE_CENTS = 700;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -38,6 +41,12 @@ Deno.serve(async (req) => {
     const rawPlanId = typeof selection?.planId === 'string' ? selection.planId : 'individual_monthly';
     const planId = rawPlanId === 'clinic_monthly' ? 'clinic_monthly' : 'individual_monthly';
     const seatCount = planId === 'clinic_monthly' ? Math.max(1, Math.round(Number(selection?.seatCount ?? 1))) : 1;
+    const discountCode = String(selection?.discountCode ?? '').trim().toUpperCase();
+    const listPriceCents =
+      planId === 'clinic_monthly'
+        ? CLINIC_MONTHLY_BASE_PRICE_CENTS + CLINIC_MONTHLY_SEAT_PRICE_CENTS * seatCount
+        : Number(selection?.listPriceCents ?? INDIVIDUAL_MONTHLY_PRICE_CENTS);
+    const finalPriceCents = discountCode ? Number(selection?.finalPriceCents ?? listPriceCents) : listPriceCents;
 
     const [{ data: profile }, { data: membership }] = await Promise.all([
       admin.from('profiles').select('*').eq('id', user.id).maybeSingle(),
@@ -74,11 +83,11 @@ Deno.serve(async (req) => {
     let discounts: Array<{ coupon?: string; promotion_code?: string }> | undefined;
     let redeemedDiscountId: string | null = null;
     let redeemedDiscountCode: string | null = null;
-    if (selection?.discountCode) {
+    if (discountCode) {
       const discountQuery = await admin
         .from('discount_codes')
         .select('*')
-        .eq('code', String(selection.discountCode).trim().toUpperCase())
+        .eq('code', discountCode)
         .eq('active', true)
         .maybeSingle();
 
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
         }
 
         redeemedDiscountId = String(discount.id);
-        redeemedDiscountCode = String(discount.code ?? selection.discountCode).trim().toUpperCase();
+        redeemedDiscountCode = String(discount.code ?? discountCode).trim().toUpperCase();
       }
 
       if (discount?.stripe_promotion_code_id) {
@@ -148,7 +157,7 @@ Deno.serve(async (req) => {
         plan_id: planId,
         billing_cycle: billingCycle,
         seat_count: String(seatCount),
-        discount_code: selection?.discountCode ?? '',
+        discount_code: discountCode,
       },
       subscription_data: {
         metadata: {
@@ -156,7 +165,7 @@ Deno.serve(async (req) => {
           plan_id: planId,
           billing_cycle: billingCycle,
           seat_count: String(seatCount),
-          discount_code: selection?.discountCode ?? '',
+          discount_code: discountCode,
         },
         ...(hasRemainingTrial ? { trial_end: trialEndTimestamp } : {}),
       },
@@ -178,8 +187,8 @@ Deno.serve(async (req) => {
       billing_cycle: billingCycle,
       seat_count: seatCount,
       status: membership?.status ?? (hasRemainingTrial ? 'trialing' : 'pending_payment'),
-      list_price_cents: Number(selection?.listPriceCents ?? membership?.list_price_cents ?? 0),
-      final_price_cents: Number(selection?.finalPriceCents ?? membership?.final_price_cents ?? 0),
+      list_price_cents: listPriceCents,
+      final_price_cents: finalPriceCents,
       currency: 'EUR',
       trial_days: Number(membership?.trial_days ?? TRIAL_DAYS),
       trial_started_at: trialStartedAt,

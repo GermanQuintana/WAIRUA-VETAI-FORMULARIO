@@ -110,7 +110,7 @@ const copy = {
     partnerCode: 'Código descuento',
     partnerCodePlaceholder: 'Ej: CODIGO-DEMO',
     applyCode: 'Aplicar código',
-    partnerCodeHint: 'Los códigos partner se aplican sobre los planes individuales. Los packs empresa se gestionan como licencias agrupadas.',
+    partnerCodeHint: 'Los códigos de descuento se aplican al plan seleccionado cuando sean compatibles.',
     activeCode: 'Código activo',
     codeApplied: 'Código aplicado correctamente.',
     codeMissing: 'Ese código no existe o no está activo.',
@@ -312,7 +312,7 @@ const copy = {
     partnerCode: 'Discount code',
     partnerCodePlaceholder: 'Example: DEMO-CODE',
     applyCode: 'Apply code',
-    partnerCodeHint: 'Partner codes apply to individual plans. Company packs are handled as grouped licenses.',
+    partnerCodeHint: 'Discount codes apply to the selected plan when compatible.',
     activeCode: 'Active code',
     codeApplied: 'Code applied successfully.',
     codeMissing: 'That code does not exist or is inactive.',
@@ -724,7 +724,7 @@ const GoogleMark = () => (
 );
 
 const isDiscountApplicable = (plan: PlanDefinition, discount: DiscountCodeRecord | null) =>
-  Boolean(plan.accountType === 'premium' && discount && (discount.appliesTo === plan.billingCycle || discount.appliesTo === 'both'));
+  Boolean(discount && (discount.appliesTo === plan.billingCycle || discount.appliesTo === 'both'));
 
 const getPlanListPriceCents = (plan: PlanDefinition, seatCount: number) =>
   plan.listPriceCents + (plan.perSeatPriceCents ?? 0) * Math.max(1, seatCount);
@@ -1213,25 +1213,21 @@ export default function AuthAccessPanel({
         </div>
       </div>
 
-      {selectedPlanDefinition.accountType === 'premium' ? (
-        <>
-          <div className="auth-discount-row">
-            <label>
-              {t.partnerCode}
-              <input
-                type="text"
-                value={discountInput}
-                placeholder={t.partnerCodePlaceholder}
-                onChange={(event) => setDiscountInput(event.target.value)}
-              />
-            </label>
-            <button type="button" className="secondary-button" onClick={handleApplyDiscount} disabled={isBusy}>
-              {t.applyCode}
-            </button>
-          </div>
-          <p className="auth-account-hint">{t.partnerCodeHint}</p>
-        </>
-      ) : null}
+      <div className="auth-discount-row">
+        <label>
+          {t.partnerCode}
+          <input
+            type="text"
+            value={discountInput}
+            placeholder={t.partnerCodePlaceholder}
+            onChange={(event) => setDiscountInput(event.target.value)}
+          />
+        </label>
+        <button type="button" className="secondary-button" onClick={handleApplyDiscount} disabled={isBusy}>
+          {t.applyCode}
+        </button>
+      </div>
+      <p className="auth-account-hint">{t.partnerCodeHint}</p>
 
       <div className="auth-price-note">
         <span>{t.planSelected}</span>
