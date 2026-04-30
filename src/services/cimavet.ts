@@ -91,6 +91,11 @@ interface CimavetMedicationPage {
   results: CimavetMedicationSummary[];
 }
 
+interface CimavetMedicationPageFilters {
+  nombre?: string;
+  especie?: string;
+}
+
 export interface CimavetConfig {
   baseUrl: string;
   apiKey?: string;
@@ -101,6 +106,7 @@ export interface CimavetConfig {
 export interface CimavetSearchOptions {
   maxPages?: number;
   species?: string;
+  speciesResultLimit?: number;
   includeActiveIngredientSearch?: boolean;
   preferExactActiveIngredient?: boolean;
 }
@@ -308,11 +314,12 @@ export class CimavetService {
     return { Authorization: `Bearer ${this.config.apiKey}` };
   }
 
-  private async fetchMedicationPage(page: number, pageSize: number, nombre?: string): Promise<CimavetMedicationPage> {
+  private async fetchMedicationPage(page: number, pageSize: number, filters: CimavetMedicationPageFilters = {}): Promise<CimavetMedicationPage> {
     const url = buildCimavetEndpointUrl(this.config.baseUrl, 'medicamentos');
     url.searchParams.set('pagina', String(page));
     url.searchParams.set('tamanioPagina', String(pageSize));
-    if (nombre) url.searchParams.set('nombre', nombre);
+    if (filters.nombre) url.searchParams.set('nombre', filters.nombre);
+    if (filters.especie) url.searchParams.set('especie', filters.especie);
 
     const response = await fetch(url.toString(), { headers: this.buildHeaders() });
     if (!response.ok) throw new Error(`Cimavet list error: ${response.status}`);
@@ -325,12 +332,12 @@ export class CimavetService {
     };
   }
 
-  private async fetchMedicationPageWithRetry(page: number, pageSize: number, nombre?: string, retries = 3) {
+  private async fetchMedicationPageWithRetry(page: number, pageSize: number, filters: CimavetMedicationPageFilters = {}, retries = 3) {
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= retries; attempt += 1) {
       try {
-        return await this.fetchMedicationPage(page, pageSize, nombre);
+        return await this.fetchMedicationPage(page, pageSize, filters);
       } catch (error) {
         lastError = error;
         if (attempt < retries) {
@@ -342,12 +349,12 @@ export class CimavetService {
     throw lastError instanceof Error ? lastError : new Error('Cimavet page fetch failed');
   }
 
-  async listMedications(page = 1, pageSize = this.config.pageSize ?? 100) {
-    return this.fetchMedicationPageWithRetry(page, pageSize);
+  async listMedications(page = 1, pageSize = this.config.pageSize ?? 100, especie?: string) {
+    return this.fetchMedicationPageWithRetry(page, pageSize, { especie });
   }
 
-  async searchByTradeName(query: string, page = 1, pageSize = 25) {
-    const firstPage = await this.fetchMedicationPageWithRetry(page, pageSize, query);
+  async searchByTradeName(query: string, page = 1, pageSize = 25, especie?: string) {
+    const firstPage = await this.fetchMedicationPageWithRetry(page, pageSize, { nombre: query, especie });
     const all = [...firstPage.results];
     const actualPageSize = Math.max(firstPage.pageSize, 1);
     const totalPages = Math.ceil(firstPage.total / actualPageSize);
@@ -360,7 +367,7 @@ export class CimavetService {
       );
 
       const batchResponses = await Promise.all(
-        batchPages.map((batchPage) => this.fetchMedicationPageWithRetry(batchPage, actualPageSize, query)),
+        batchPages.map((batchPage) => this.fetchMedicationPageWithRetry(batchPage, actualPageSize, { nombre: query, especie })),
       );
       batchResponses.forEach((batch) => all.push(...batch.results));
     }
@@ -388,6 +395,50 @@ export class CimavetService {
     return catalog
       .filter((medication) => matchesCimavetMedicationQuery(medication, query, includeActiveIngredient))
       .sort((left, right) => scoreCimavetMedication(right, query) - scoreCimavetMedication(left, query));
+  }
+
+  private async filterResultsBySpecies(results: CimavetMedicationSummary[], speciesQuery: string, limit?: number) {
+    const parallelRequests = this.config.parallelRequests ?? 6;
+    const filtered: CimavetMedicationSummary[] = [];
+
+    for (let i = 0; i < results.length; i += parallelRequests) {
+      if (limit && filtered.length >= limit) break;
+
+      const batch = results.slice(i, i + parallelRequests);
+      const details = await Promise.all(
+        batch.map(async (medication) => ({
+          summary: medication,
+          detail: await this.getMedicationByRegistration(medication.nregistro).catch(() => null),
+        })),
+      );
+
+      details
+        .filter((item) => {
+          if (!item.detail?.especies?.length) return true;
+          return item.detail.especies.some((species) => cimavetSpeciesMatches(speciesQuery, species.nombre));
+        })
+        .forEach((item) => {
+          if (!limit || filtered.length < limit) filtered.push(item.summary);
+        });
+    }
+
+    return filtered;
+  }
+
+  private async listCatalogBySpecies(speciesQuery: string, limit = 120, maxPages?: number) {
+    const pageSize = this.config.pageSize ?? 100;
+    const firstPage = await this.listMedications(1, pageSize, speciesQuery);
+    const filtered = [...firstPage.results];
+    const actualPageSize = Math.max(firstPage.pageSize, 1);
+    const totalPages = Math.ceil(firstPage.total / actualPageSize);
+    const pageLimit = maxPages ? Math.min(maxPages, totalPages) : totalPages;
+
+    for (let page = 2; page <= pageLimit && filtered.length < limit; page += 1) {
+      const nextPage = await this.listMedications(page, actualPageSize, speciesQuery);
+      filtered.push(...nextPage.results);
+    }
+
+    return filtered.slice(0, limit).sort((left, right) => left.nombre.localeCompare(right.nombre));
   }
 
   async loadCatalog(options: { maxPages?: number } = {}): Promise<CimavetMedicationSummary[]> {
@@ -431,7 +482,17 @@ export class CimavetService {
 
   async searchMedications(query: string, options: CimavetSearchOptions = {}) {
     const q = normalizeSearchText(query);
-    if (!q) return [];
+    const isCatalogQuery = !q || ['*', 'todo', 'todos', 'toda', 'todas', 'all'].includes(q);
+    if (isCatalogQuery) {
+      if (options.species) {
+        return this.listCatalogBySpecies(options.species, options.speciesResultLimit ?? 120, options.maxPages);
+      }
+
+      const catalog = [...(await this.loadCatalog({ maxPages: options.maxPages }))].sort((left, right) =>
+        left.nombre.localeCompare(right.nombre),
+      );
+      return catalog;
+    }
 
     const includeActiveIngredientSearch = options.includeActiveIngredientSearch ?? true;
     const tokenQueries = getSearchTokens(query).filter((token) => token.length >= 3).slice(0, 4);
@@ -448,7 +509,9 @@ export class CimavetService {
       });
     } else {
       const tradeQueries = Array.from(new Set([query.trim(), ...tokenQueries]));
-      const tradeResults = await Promise.all(tradeQueries.map((tradeQuery) => this.searchByTradeName(tradeQuery).catch(() => [])));
+      const tradeResults = await Promise.all(
+        tradeQueries.map((tradeQuery) => this.searchByTradeName(tradeQuery, 1, 25, options.species).catch(() => [])),
+      );
       const merged = new Map<string, CimavetMedicationSummary>();
 
       tradeResults
@@ -478,22 +541,7 @@ export class CimavetService {
       }
     }
 
-    if (!options.species) return results;
-
-    const speciesQuery = options.species;
-    const details = await Promise.all(
-      results.map(async (medication) => ({
-        summary: medication,
-        detail: await this.getMedicationByRegistration(medication.nregistro).catch(() => null),
-      })),
-    );
-
-    return details
-      .filter((item) => {
-        if (!item.detail?.especies?.length) return true;
-        return item.detail.especies.some((species) => cimavetSpeciesMatches(speciesQuery, species.nombre));
-      })
-      .map((item) => item.summary);
+    return options.species ? this.filterResultsBySpecies(results, options.species, options.speciesResultLimit) : results;
   }
 
   mapMedicationToDraftEntry(detail: CimavetMedicationDetail): TherapeuticEntry {

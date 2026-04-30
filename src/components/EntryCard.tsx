@@ -22,10 +22,12 @@ interface Props {
   canActivate?: boolean;
 }
 
-const renderApprovalIcons = (count: number, score: number) => {
-  if (count <= 0) return 'Sin revision';
-  const stars = score > 0 ? '⭐'.repeat(Math.min(3, Math.max(1, Math.round(score / count)))) : '👍';
-  return `${stars} x${count}`;
+const renderApprovalIcons = (count: number, score: number, lang: Language) => {
+  if (count <= 0) return lang === 'es' ? 'Sin revision' : 'No review';
+  const average = Math.min(3, Math.max(1, Math.round(score / count)));
+  return lang === 'es'
+    ? `${count} revision${count === 1 ? '' : 'es'} · nivel ${average}/3`
+    : `${count} review${count === 1 ? '' : 's'} · level ${average}/3`;
 };
 
 export default function EntryCard({
@@ -129,7 +131,7 @@ export default function EntryCard({
               {translatePublicationStatus(publicationStatus, lang)}
             </span>
             <span className="entry-review-pill">
-              {renderApprovalIcons(entry.reviewSummary?.approvalCount ?? 0, entry.reviewSummary?.approvalScore ?? 0)}
+              {renderApprovalIcons(entry.reviewSummary?.approvalCount ?? 0, entry.reviewSummary?.approvalScore ?? 0, lang)}
             </span>
           </div>
         </div>
@@ -143,13 +145,13 @@ export default function EntryCard({
             {canReview && onReview ? (
               <>
                 <button type="button" className="secondary-button" onClick={() => onReview(entry, 1)}>
-                  👍
+                  {lang === 'es' ? 'Revision basica' : 'Basic review'}
                 </button>
                 <button type="button" className="secondary-button" onClick={() => onReview(entry, 2)}>
-                  👍👍
+                  {lang === 'es' ? 'Revision completa' : 'Full review'}
                 </button>
                 <button type="button" className="secondary-button" onClick={() => onReview(entry, 3)}>
-                  ⭐⭐⭐
+                  {lang === 'es' ? 'Validacion final' : 'Final validation'}
                 </button>
               </>
             ) : null}
@@ -253,7 +255,7 @@ export default function EntryCard({
       </p>
       <p>
         <strong>{t.reviewStatus}:</strong>{' '}
-        {renderApprovalIcons(entry.reviewSummary?.approvalCount ?? 0, entry.reviewSummary?.approvalScore ?? 0)}
+        {renderApprovalIcons(entry.reviewSummary?.approvalCount ?? 0, entry.reviewSummary?.approvalScore ?? 0, lang)}
       </p>
 
       {validatedReferences.length > 0 && (

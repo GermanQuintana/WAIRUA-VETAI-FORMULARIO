@@ -80,7 +80,7 @@ const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE
 type ProductTab = (typeof productTabs)[number];
 type ActiveView = (typeof activeViews)[number];
 type ToolkitView = (typeof toolkitViews)[number];
-type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'rejected';
+type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'active' | 'rejected';
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
@@ -114,6 +114,14 @@ const getErrorMessage = (error: unknown) => {
 };
 const canAccessToolkitView = (view: ToolkitView, hasPremiumAccess: boolean) =>
   view === 'overview' || freeToolkitViewSet.has(view) || (hasPremiumAccess && availableToolkitViewSet.has(view));
+const isCatalogSearchQuery = (value: string) =>
+  ['*', 'todo', 'todos', 'toda', 'todas', 'all'].includes(value.trim().toLowerCase());
+const getEffectivePublicationStatus = (entry: TherapeuticEntry) =>
+  entry.publicationStatus ?? (entry.editorialStatus === 'approved' ? 'active' : 'pending_activation');
+const isPendingPublicationEntry = (entry: TherapeuticEntry) =>
+  entry.editorialStatus === 'approved' && getEffectivePublicationStatus(entry) === 'pending_activation';
+const isActivePublishedEntry = (entry: TherapeuticEntry) =>
+  entry.editorialStatus === 'approved' && getEffectivePublicationStatus(entry) === 'active';
 
 const speciesReferenceScope: LocalizedText[] = [
   { es: 'Perro', en: 'Dog' },
@@ -384,7 +392,9 @@ const formatDelimitedText = (value: string) =>
     .filter(Boolean)
     .join(', ');
 
-const getPresentationCodeItems = (presentations?: Array<{ cn?: string; nombre: string }> | null) => {
+type PresentationCodeItem = { cn?: string; nombre: string; comerc?: boolean };
+
+const getPresentationCodeItems = (presentations?: PresentationCodeItem[] | null) => {
   const seen = new Set<string>();
 
   return (presentations ?? []).filter((item) => {
@@ -395,14 +405,40 @@ const getPresentationCodeItems = (presentations?: Array<{ cn?: string; nombre: s
   });
 };
 
-const formatNationalCodeSummary = (presentations?: Array<{ cn?: string; nombre: string }> | null) => {
+const formatNationalCodeSummary = (presentations?: PresentationCodeItem[] | null) => {
   const items = getPresentationCodeItems(presentations);
   if (items.length === 0) return '-';
   if (items.length === 1) return items[0].cn?.trim() || '-';
   return 'Ver presentaciones';
 };
 
-const formatPresentationCodeLine = (item: { cn?: string; nombre: string }) => (item.cn ? `${item.nombre} · CN ${item.cn}` : item.nombre);
+const formatPresentationCodeLine = (item: PresentationCodeItem) => (item.cn ? `${item.nombre} · CN ${item.cn}` : item.nombre);
+
+const renderPresentationCodeLine = (item: PresentationCodeItem, lang: Language) => {
+  const statusLabel =
+    item.comerc === true
+      ? lang === 'es'
+        ? 'Comercializada'
+        : 'Commercialized'
+      : item.comerc === false
+        ? lang === 'es'
+          ? 'No comercializada'
+          : 'Not commercialized'
+        : '';
+
+  return (
+    <span className="presentation-code-line">
+      {item.comerc !== undefined ? (
+        <span
+          className={`presentation-status-dot ${item.comerc ? 'is-available' : 'is-unavailable'}`}
+          aria-label={statusLabel}
+          title={statusLabel}
+        />
+      ) : null}
+      <span>{formatPresentationCodeLine(item)}</span>
+    </span>
+  );
+};
 
 const hasEquivalentMedicalTerm = (left: string, right: string) => {
   const leftAliases = new Set(expandMedicalTermAliases(left));
@@ -546,7 +582,7 @@ const filterTherapeuticEntries = (
   selectedTags: string[],
   concentrationQuery: string,
 ) => {
-  const loweredQuery = query.trim().toLowerCase();
+  const loweredQuery = isCatalogSearchQuery(query) ? '' : query.trim().toLowerCase();
   const loweredConcentration = concentrationQuery.trim().toLowerCase();
 
   return entries.filter((entry) => {
@@ -686,6 +722,11 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [accessPreviewMode, setAccessPreviewMode] = useState<AccessPreviewMode>('actual');
   const [supportFeedback, setSupportFeedback] = useState('');
+  const [isSupportFormOpen, setIsSupportFormOpen] = useState(false);
+  const [supportIssueType, setSupportIssueType] = useState('incidencia');
+  const [supportIssueText, setSupportIssueText] = useState('');
+  const [supportIssueStatus, setSupportIssueStatus] = useState('');
+  const [supportIssueSubmitting, setSupportIssueSubmitting] = useState(false);
   const appShellRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const authResolvedRef = useRef(false);
@@ -767,6 +808,13 @@ function App() {
         };
 
   const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
+  const sortedSpeciesOptions = useMemo(
+    () =>
+      [...speciesOptions].sort((left, right) =>
+        translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en'),
+      ),
+    [lang, speciesOptions],
+  );
   const prescriptionSpeciesOptions = useMemo(
     () =>
       Array.from(new Set([...speciesOptions, ...productionSpeciesOptions])).sort((left, right) =>
@@ -969,6 +1017,20 @@ function App() {
       ? 'Describe aqui el problema o la idea.%0A%0AModulo:%20%0APantalla:%20%0APasos:%20%0AResultado%20esperado:%20%0AResultado%20actual:%20'
       : 'Describe the issue or idea here.%0A%0AModule:%20%0AScreen:%20%0ASteps:%20%0AExpected%20result:%20%0ACurrent%20result:%20';
   const supportMailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}&body=${supportBody}`;
+  const supportIssueOptions =
+    lang === 'es'
+      ? [
+          { value: 'incidencia', label: 'Incidencia' },
+          { value: 'dato', label: 'Dato incorrecto' },
+          { value: 'mejora', label: 'Mejora' },
+          { value: 'propuesta', label: 'Propuesta' },
+        ]
+      : [
+          { value: 'incidencia', label: 'Issue' },
+          { value: 'dato', label: 'Incorrect data' },
+          { value: 'mejora', label: 'Improvement' },
+          { value: 'propuesta', label: 'Proposal' },
+        ];
 
   const handleCopySupportEmail = async () => {
     try {
@@ -978,6 +1040,60 @@ function App() {
     } catch {
       setSupportFeedback(SUPPORT_EMAIL);
       window.setTimeout(() => setSupportFeedback(''), 2200);
+    }
+  };
+
+  const handleSubmitSupportIssue = async () => {
+    const selectedLabel = supportIssueOptions.find((option) => option.value === supportIssueType)?.label ?? supportIssueType;
+    const description = supportIssueText.trim();
+    if (!description) return;
+
+    setSupportIssueSubmitting(true);
+    setSupportIssueStatus('');
+
+    try {
+      if (supabaseAccessService) {
+        await supabaseAccessService.createSupportIssue({
+          type: selectedLabel,
+          module: currentWorkspaceLabel,
+          description,
+          url: window.location.href,
+          accountEmail: authAccount?.email,
+        });
+      } else {
+        const storageKey = 'wairua.support-issues';
+        const current = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]') as unknown[];
+        window.localStorage.setItem(
+          storageKey,
+          JSON.stringify([
+            {
+              type: selectedLabel,
+              module: currentWorkspaceLabel,
+              description,
+              url: window.location.href,
+              createdAt: new Date().toISOString(),
+            },
+            ...current,
+          ]),
+        );
+      }
+
+      setSupportIssueText('');
+      setSupportIssueStatus(
+        supabaseAccessService
+          ? lang === 'es'
+            ? 'Incidencia enviada.'
+            : 'Issue sent.'
+          : lang === 'es'
+            ? 'Modo demo: incidencia guardada localmente.'
+            : 'Demo mode: issue saved locally.',
+      );
+    } catch (error) {
+      setSupportIssueStatus(
+        `${lang === 'es' ? 'No se pudo enviar.' : 'Could not send.'} ${getErrorMessage(error)}`,
+      );
+    } finally {
+      setSupportIssueSubmitting(false);
     }
   };
 
@@ -1073,27 +1189,43 @@ function App() {
   const draftEntries = useMemo(() => entryCatalog.filter((entry) => entry.editorialStatus === 'draft'), [entryCatalog]);
   const reviewQueueEntries = useMemo(() => entryCatalog.filter((entry) => entry.editorialStatus === 'under_review'), [entryCatalog]);
   const publicationQueueEntries = useMemo(
-    () => entryCatalog.filter((entry) => (entry.publicationStatus ?? 'pending_activation') === 'pending_activation'),
+    () => entryCatalog.filter(isPendingPublicationEntry),
+    [entryCatalog],
+  );
+  const activePublishedEntries = useMemo(
+    () => entryCatalog.filter(isActivePublishedEntry),
     [entryCatalog],
   );
   const rejectedEntries = useMemo(
-    () => entryCatalog.filter((entry) => (entry.publicationStatus ?? 'active') === 'rejected'),
+    () => entryCatalog.filter((entry) => getEffectivePublicationStatus(entry) === 'rejected'),
     [entryCatalog],
   );
   const filteredEntries = useMemo(() => {
+    let entries: TherapeuticEntry[];
     switch (editorialQueueFilter) {
       case 'draft':
-        return searchedEntries.filter((entry) => entry.editorialStatus === 'draft');
+        entries = searchedEntries.filter((entry) => entry.editorialStatus === 'draft');
+        break;
       case 'review':
-        return searchedEntries.filter((entry) => entry.editorialStatus === 'under_review');
+        entries = searchedEntries.filter((entry) => entry.editorialStatus === 'under_review');
+        break;
       case 'publication':
-        return searchedEntries.filter((entry) => (entry.publicationStatus ?? 'pending_activation') === 'pending_activation');
+        entries = searchedEntries.filter(isPendingPublicationEntry);
+        break;
+      case 'active':
+        entries = searchedEntries.filter(isActivePublishedEntry);
+        break;
       case 'rejected':
-        return searchedEntries.filter((entry) => (entry.publicationStatus ?? 'active') === 'rejected');
+        entries = searchedEntries.filter((entry) => getEffectivePublicationStatus(entry) === 'rejected');
+        break;
       default:
-        return searchedEntries;
+        entries = searchedEntries;
     }
-  }, [editorialQueueFilter, searchedEntries]);
+
+    return [...entries].sort((left, right) =>
+      left.activeIngredient.localeCompare(right.activeIngredient, lang === 'es' ? 'es' : 'en', { sensitivity: 'base' }),
+    );
+  }, [editorialQueueFilter, lang, searchedEntries]);
   const hasActiveSearchCriteria = Boolean(
     activeQuery.trim().length > 0 ||
       activeSpecies ||
@@ -1101,8 +1233,10 @@ function App() {
       activeConcentrationQuery.trim().length > 0 ||
       activeTags.length > 0,
   );
-  const shouldShowActiveRecords = hasActiveSearchCriteria || editorialQueueFilter !== 'all';
+  const shouldShowActiveRecords = true;
   const activeFilteredCount = filteredEntries.length;
+  const hasActiveVetCatalogRequest = isCatalogSearchQuery(activeQuery);
+  const hasActiveVetSearchRequest = activeQuery.trim().length >= 2 || hasActiveVetCatalogRequest;
   const activeRecordTotalPages = useMemo(() => {
     if (activeRecordPageSize === 'all') return 1;
     return Math.max(1, Math.ceil(activeFilteredCount / activeRecordPageSize));
@@ -1146,6 +1280,8 @@ function App() {
   }, [liveDetails, liveResults]);
 
   const rxSpeciesLabel = useMemo(() => (rxSpecies ? translateMedicalTerm(rxSpecies, 'es') : undefined), [rxSpecies]);
+  const hasRxCatalogRequest = isCatalogSearchQuery(rxQuery);
+  const hasRxSearchRequest = rxQuery.trim().length >= 2 || hasRxCatalogRequest;
 
   const filteredLiveResults = useMemo(() => {
     const normalizedDose = normalizeFilterText(rxDoseFilter);
@@ -1459,7 +1595,8 @@ function App() {
     if (activeTab !== 'prescription') return;
 
     const q = rxQuery.trim();
-    if (q.length < 2) {
+    const shouldLoadCatalog = isCatalogSearchQuery(q);
+    if (q.length < 2 && !shouldLoadCatalog) {
       setLiveResults([]);
       setLiveError(null);
       setLiveLoading(false);
@@ -1474,8 +1611,9 @@ function App() {
       const cimavetSpecies = rxSpecies ? translateMedicalTerm(rxSpecies, 'es') : undefined;
 
       try {
-        const fastResults = await cimavetService.searchMedications(q, {
+        const fastResults = await cimavetService.searchMedications(q || '*', {
           species: cimavetSpecies,
+          speciesResultLimit: 120,
           includeActiveIngredientSearch: false,
         });
 
@@ -1487,6 +1625,7 @@ function App() {
           try {
             const expanded = await cimavetService.searchMedications(q, {
               species: cimavetSpecies,
+              speciesResultLimit: 120,
               includeActiveIngredientSearch: true,
             });
 
@@ -1644,7 +1783,8 @@ function App() {
     if (activeTab !== 'active' || activeKnowledgeView !== 'records') return;
 
     const q = activeQuery.trim();
-    if (q.length < 2) {
+    const shouldLoadCatalog = isCatalogSearchQuery(q);
+    if (q.length < 2 && !shouldLoadCatalog) {
       setActiveVetResults([]);
       setActiveVetError(null);
       setActiveVetLoading(false);
@@ -1657,8 +1797,9 @@ function App() {
       setActiveVetError(null);
 
       try {
-        const results = await cimavetService.searchMedications(q, {
+        const results = await cimavetService.searchMedications(q || '*', {
           species: activeSpecies ? translateMedicalTerm(activeSpecies, 'es') : undefined,
+          speciesResultLimit: 120,
           includeActiveIngredientSearch: true,
           preferExactActiveIngredient: true,
         });
@@ -2078,6 +2219,12 @@ function App() {
       note: t.editorialQueueSummaryPublication,
     },
     {
+      id: 'active' as const,
+      label: t.editorialQueueActive,
+      count: activePublishedEntries.length,
+      note: t.editorialQueueSummaryActive,
+    },
+    {
       id: 'rejected' as const,
       label: t.editorialQueueRejected,
       count: rejectedEntries.length,
@@ -2178,6 +2325,9 @@ function App() {
                   />
                 </svg>
               </a>
+              <button type="button" className="topbar-support-link topbar-support-form-button" onClick={() => setIsSupportFormOpen(true)}>
+                {lang === 'es' ? 'Incidencia' : 'Issue'}
+              </button>
             </div>
             <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               {theme === 'light' ? t.dark : t.light}
@@ -2252,11 +2402,16 @@ function App() {
                 {t.search}
                 <input
                   type="search"
-                  placeholder={t.searchPlaceholder}
+                  placeholder={t.activeSearchPlaceholder}
                   title={t.searchPlaceholder}
                   value={rxQuery}
                   onChange={(event) => setRxQuery(event.target.value)}
                 />
+                <span className="field-hint">
+                  {lang === 'es'
+                    ? 'Para listar por especie, elige especie y escribe *.'
+                    : 'To list by species, choose a species and type *.'}
+                </span>
               </label>
 
               <label>
@@ -2357,7 +2512,7 @@ function App() {
 
               {isLiveExpanded && liveLoading && <p>{t.liveLoading}</p>}
               {isLiveExpanded && !liveLoading && liveError && <p>{t.liveError} ({liveError})</p>}
-              {isLiveExpanded && !liveLoading && !liveError && rxQuery.trim().length >= 2 && filteredLiveResults.length === 0 && (
+              {isLiveExpanded && !liveLoading && !liveError && hasRxSearchRequest && filteredLiveResults.length === 0 && (
                 <p>{t.liveEmpty}</p>
               )}
 
@@ -2472,10 +2627,10 @@ function App() {
 
                             {presentationCodeItems.length > 0 ? (
                               <section className="live-indications">
-                                <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
-                                <ul>
-                                  {presentationCodeItems.slice(0, 4).map((item, index) => (
-                                    <li key={`${medication.nregistro}-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                  <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
+                                  <ul>
+                                    {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                    <li key={`${medication.nregistro}-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
                                   ))}
                                 </ul>
                               </section>
@@ -2787,13 +2942,18 @@ function App() {
                   value={activeQuery}
                   onChange={(event) => setActiveQuery(event.target.value)}
                 />
+                <span className="field-hint">
+                  {lang === 'es'
+                    ? 'Para CIMAVET: escribe un principio activo o usa * con una especie para listar medicamentos autorizados.'
+                    : 'For CIMAVET: type an active ingredient or use * with a species to list authorized medicines.'}
+                </span>
               </label>
 
               <label>
                 {t.species}
                 <select value={activeSpecies} onChange={(event) => setActiveSpecies(event.target.value)}>
                   <option value="">{t.all}</option>
-                  {speciesOptions.map((species) => (
+                  {prescriptionSpeciesOptions.map((species) => (
                     <option key={species} value={species}>
                       {translateMedicalTerm(species, lang)}
                     </option>
@@ -2897,12 +3057,16 @@ function App() {
 
                     {isActiveVetExpanded && activeVetLoading && <p>{t.liveLoading}</p>}
                     {isActiveVetExpanded && !activeVetLoading && activeVetError && <p>{t.liveError} ({activeVetError})</p>}
-                    {isActiveVetExpanded && !activeQuery.trim().length && (
-                      <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMAVET.' : 'Type an active ingredient to query CIMAVET.'}</p>
+                    {isActiveVetExpanded && !hasActiveVetSearchRequest && (
+                      <p>
+                        {lang === 'es'
+                          ? 'Escribe un principio activo o usa * con una especie para listar CIMAVET.'
+                          : 'Type an active ingredient or use * with a species to list CIMAVET.'}
+                      </p>
                     )}
-                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && filteredActiveVetResults.length === 0 && <p>{t.liveEmpty}</p>}
+                    {isActiveVetExpanded && hasActiveVetSearchRequest && !activeVetLoading && !activeVetError && filteredActiveVetResults.length === 0 && <p>{t.liveEmpty}</p>}
 
-                    {isActiveVetExpanded && activeQuery.trim().length >= 2 && !activeVetLoading && !activeVetError && filteredActiveVetResults.length > 0 && (
+                    {isActiveVetExpanded && hasActiveVetSearchRequest && !activeVetLoading && !activeVetError && filteredActiveVetResults.length > 0 && (
                       <>
                         <p className="live-summary">
                           {t.liveShowing}: <strong>{filteredActiveVetResults.length}</strong>
@@ -2991,7 +3155,7 @@ function App() {
                                       <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                       <ul>
                                         {presentationCodeItems.slice(0, 4).map((item, index) => (
-                                          <li key={`${medication.nregistro}-active-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                          <li key={`${medication.nregistro}-active-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
                                         ))}
                                       </ul>
                                     </section>
@@ -3051,7 +3215,7 @@ function App() {
 
                     {isActiveHumanExpanded && activeHumanLoading && <p>{t.humanLiveLoading}</p>}
                     {isActiveHumanExpanded && !activeHumanLoading && activeHumanError && <p>{t.humanLiveError} ({activeHumanError})</p>}
-                    {isActiveHumanExpanded && !activeQuery.trim().length && (
+                    {isActiveHumanExpanded && activeQuery.trim().length < 2 && (
                       <p>{lang === 'es' ? 'Escribe un principio activo para consultar CIMA.' : 'Type an active ingredient to query CIMA.'}</p>
                     )}
                     {isActiveHumanExpanded && activeQuery.trim().length >= 2 && !activeHumanLoading && !activeHumanError && filteredActiveHumanResults.length === 0 && (
@@ -3278,14 +3442,12 @@ function App() {
               <>
                 <div className="live-panel-header active-records-header">
                   <div>
-                    <h3>{hasActiveSearchCriteria ? `${t.activeIngredientSummaries}: ${activeFilteredCount}` : t.activeIngredientSummaries}</h3>
-                    {!hasActiveSearchCriteria && (
-                      <p className="live-hint">
-                        {lang === 'es'
-                          ? 'Empieza escribiendo o aplicando filtros para mostrar principios activos.'
-                          : 'Start typing or applying filters to display active ingredients.'}
-                      </p>
-                    )}
+                    <h3>{`${t.activeIngredientSummaries}: ${activeFilteredCount}`}</h3>
+                    <p className="live-hint">
+                      {lang === 'es'
+                        ? 'Listado alfabetico. Busca por principio activo o filtra por especie, indicacion, tags o presentacion.'
+                        : 'Alphabetical list. Search by active ingredient or filter by species, indication, tags, or presentation.'}
+                    </p>
                   </div>
                   {shouldShowActiveRecords && (
                     <div className="live-panel-tools">
@@ -3358,7 +3520,7 @@ function App() {
               <section className="embedded-section">
                 <ActiveIngredientForm
                   lang={lang}
-                  speciesOptions={speciesOptions}
+                  speciesOptions={sortedSpeciesOptions}
                   systemOptions={systemOptions}
                   tagOptions={tagOptions}
                   initialEntry={editingEntry}
@@ -3455,7 +3617,7 @@ function App() {
                     {t.patientSpecies}
                     <select value={assistantSpecies} onChange={(event) => setAssistantSpecies(event.target.value)}>
                       <option value="">{t.all}</option>
-                      {speciesOptions.map((species) => (
+                      {sortedSpeciesOptions.map((species) => (
                         <option key={species} value={species}>
                           {translateMedicalTerm(species, lang)}
                         </option>
@@ -3842,6 +4004,68 @@ function App() {
               onClose={() => setIsAccountMenuOpen(false)}
             />
           </div>
+        </div>
+      ) : null}
+
+      {isSupportFormOpen ? (
+        <div className="support-modal" role="dialog" aria-modal="true" aria-label={lang === 'es' ? 'Formulario de incidencias' : 'Issue form'}>
+          <button
+            type="button"
+            className="account-menu-backdrop"
+            aria-label={lang === 'es' ? 'Cerrar formulario' : 'Close form'}
+            onClick={() => setIsSupportFormOpen(false)}
+          />
+          <form
+            className="support-form-panel"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleSubmitSupportIssue();
+            }}
+          >
+            <div className="support-form-header">
+              <div>
+                <span className="section-kicker">{lang === 'es' ? 'Soporte' : 'Support'}</span>
+                <h3>{lang === 'es' ? 'Enviar incidencia o propuesta' : 'Send an issue or proposal'}</h3>
+                <p>
+                  {lang === 'es'
+                    ? 'Se guardará directamente en el panel de soporte de la app.'
+                    : 'It will be saved directly in the app support queue.'}
+                </p>
+              </div>
+              <button type="button" className="secondary-button" onClick={() => setIsSupportFormOpen(false)}>
+                {lang === 'es' ? 'Cerrar' : 'Close'}
+              </button>
+            </div>
+            <label>
+              {lang === 'es' ? 'Tipo' : 'Type'}
+              <select value={supportIssueType} onChange={(event) => setSupportIssueType(event.target.value)}>
+                {supportIssueOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {lang === 'es' ? 'Descripcion' : 'Description'}
+              <textarea
+                rows={7}
+                value={supportIssueText}
+                onChange={(event) => setSupportIssueText(event.target.value)}
+                placeholder={
+                  lang === 'es'
+                    ? 'Qué estabas haciendo, qué esperabas ver y qué ha pasado.'
+                    : 'What you were doing, what you expected, and what happened.'
+                }
+              />
+            </label>
+            <div className="support-form-actions">
+              <button type="submit" className="theme-button" disabled={!supportIssueText.trim() || supportIssueSubmitting}>
+                {supportIssueSubmitting ? (lang === 'es' ? 'Enviando...' : 'Sending...') : lang === 'es' ? 'Enviar incidencia' : 'Send issue'}
+              </button>
+            </div>
+            {supportIssueStatus ? <p className="form-message form-success">{supportIssueStatus}</p> : null}
+          </form>
         </div>
       ) : null}
     </div>

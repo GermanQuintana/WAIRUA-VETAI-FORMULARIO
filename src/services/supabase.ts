@@ -23,6 +23,7 @@ import {
   PartnerCategory,
   ReportVisibilityField,
   ScientificReference,
+  SupportIssue,
   TherapeuticEntry,
   UserMembership,
   UserProfile,
@@ -206,6 +207,21 @@ const mapProfileRow = (row: Record<string, unknown>): UserProfile => ({
   authProvider: String(row.auth_provider ?? 'unknown') as AuthProvider,
   createdAt: String(row.created_at ?? ''),
   updatedAt: String(row.updated_at ?? ''),
+});
+
+const supportIssueStatuses: SupportIssue['status'][] = ['open', 'in_progress', 'resolved', 'closed'];
+
+const mapSupportIssueRow = (row: Record<string, unknown>): SupportIssue => ({
+  id: String(row.id),
+  userId: typeof row.user_id === 'string' ? row.user_id : undefined,
+  email: typeof row.email === 'string' ? row.email : undefined,
+  type: String(row.issue_type ?? 'incidencia'),
+  module: typeof row.module === 'string' ? row.module : undefined,
+  description: String(row.description ?? ''),
+  pageUrl: typeof row.page_url === 'string' ? row.page_url : undefined,
+  status: supportIssueStatuses.includes(row.status as SupportIssue['status']) ? (row.status as SupportIssue['status']) : 'open',
+  createdAt: String(row.created_at ?? ''),
+  updatedAt: String(row.updated_at ?? row.created_at ?? ''),
 });
 
 const mapClinicAccessRow = (row: Record<string, unknown>, role: ClinicAccess['role'], linkedSeatCount = 0): ClinicAccess => ({
@@ -943,6 +959,49 @@ export class SupabaseAccessService {
     const { data, error } = await this.client.from('profiles').update(payload).eq('id', userId).select('*').single();
     if (error) throw error;
     return mapProfileRow(data as Record<string, unknown>);
+  }
+
+  async createSupportIssue(issue: {
+    type: string;
+    module: string;
+    description: string;
+    url?: string;
+    accountEmail?: string | null;
+  }) {
+    const user = (await this.client.auth.getUser()).data.user;
+    const { error } = await this.client.from('support_issues').insert({
+      user_id: user?.id ?? null,
+      email: issue.accountEmail ?? user?.email ?? null,
+      issue_type: issue.type,
+      module: issue.module,
+      description: issue.description.trim(),
+      page_url: issue.url ?? null,
+      status: 'open',
+    });
+
+    if (error) throw error;
+  }
+
+  async listSupportIssues(): Promise<SupportIssue[]> {
+    const { data, error } = await this.client
+      .from('support_issues')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return ((data ?? []) as Array<Record<string, unknown>>).map(mapSupportIssueRow);
+  }
+
+  async updateSupportIssueStatus(issueId: string, status: SupportIssue['status']): Promise<SupportIssue> {
+    const { data, error } = await this.client
+      .from('support_issues')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', issueId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return mapSupportIssueRow(data as Record<string, unknown>);
   }
 
   private async getMembershipByUserId(userId: string) {

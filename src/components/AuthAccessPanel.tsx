@@ -11,6 +11,7 @@ import {
   MembershipPlanId,
   PartnerCategory,
   ReportVisibilityField,
+  SupportIssue,
   UserProfile,
   UserRole,
 } from '../types';
@@ -30,6 +31,7 @@ interface Props {
 
 type AuthMode = 'sign_in' | 'sign_up';
 type AccountSection = 'summary' | 'profile' | 'admin';
+type AdminTool = 'preview' | 'users' | 'issues';
 
 type PlanDefinition = {
   id: MembershipPlanId;
@@ -214,6 +216,28 @@ const copy = {
     adminEmpty: 'No se han encontrado perfiles.',
     adminRoleSaved: 'Roles actualizados correctamente.',
     adminRoleHint: 'Puedes marcar varios roles para el mismo usuario.',
+    adminToolsTitle: 'Herramientas de administración',
+    adminToolsSubtitle: 'Abre solo el bloque que quieras revisar para mantener el panel limpio.',
+    adminToolPreview: 'Vista previa',
+    adminToolUsers: 'Usuarios',
+    adminToolIssues: 'Incidencias',
+    supportIssuesTitle: 'Incidencias recibidas',
+    supportIssuesSubtitle: 'Revisa mensajes enviados desde el formulario interno de la app.',
+    supportIssuesRefresh: 'Recargar incidencias',
+    supportIssuesLoading: 'Cargando incidencias...',
+    supportIssuesEmpty: 'No hay incidencias.',
+    supportIssuesSetupMissing:
+      'La bandeja de incidencias esta preparada, pero falta aplicar la migracion de Supabase para crear la tabla.',
+    supportIssueStatusOpen: 'Abierta',
+    supportIssueStatusInProgress: 'En curso',
+    supportIssueStatusResolved: 'Resuelta',
+    supportIssueStatusClosed: 'Cerrada',
+    supportIssueType: 'Tipo',
+    supportIssueModule: 'Módulo',
+    supportIssueSender: 'Remitente',
+    supportIssueDate: 'Fecha',
+    supportIssueUrl: 'URL',
+    supportIssueStatusSaved: 'Estado de incidencia actualizado.',
     previewTitle: 'Vista previa de acceso',
     previewSubtitle: 'Comprueba qué vería cada perfil sin salir de tu cuenta de administrador.',
     previewLabel: 'Perfil simulado',
@@ -431,6 +455,28 @@ const copy = {
     adminEmpty: 'No profiles found.',
     adminRoleSaved: 'Roles updated successfully.',
     adminRoleHint: 'You can assign multiple roles to the same user.',
+    adminToolsTitle: 'Administration tools',
+    adminToolsSubtitle: 'Open only the block you want to review to keep the panel tidy.',
+    adminToolPreview: 'Preview',
+    adminToolUsers: 'Users',
+    adminToolIssues: 'Issues',
+    supportIssuesTitle: 'Received issues',
+    supportIssuesSubtitle: 'Review messages sent from the internal app form.',
+    supportIssuesRefresh: 'Reload issues',
+    supportIssuesLoading: 'Loading issues...',
+    supportIssuesEmpty: 'No issues.',
+    supportIssuesSetupMissing:
+      'The issue inbox is ready, but the Supabase migration still needs to be applied to create the table.',
+    supportIssueStatusOpen: 'Open',
+    supportIssueStatusInProgress: 'In progress',
+    supportIssueStatusResolved: 'Resolved',
+    supportIssueStatusClosed: 'Closed',
+    supportIssueType: 'Type',
+    supportIssueModule: 'Module',
+    supportIssueSender: 'Sender',
+    supportIssueDate: 'Date',
+    supportIssueUrl: 'URL',
+    supportIssueStatusSaved: 'Issue status updated.',
     previewTitle: 'Access preview',
     previewSubtitle: 'Check what each profile would see without leaving your administrator account.',
     previewLabel: 'Simulated profile',
@@ -547,6 +593,7 @@ const centerTypeOptions = [
 
 const accountTypeOptions: AccountType[] = ['free', 'premium', 'company', 'partner'];
 const partnerCategoryOptions: PartnerCategory[] = ['scientific', 'training', 'strategic', 'commercial'];
+const supportIssueStatusOptions: SupportIssue['status'][] = ['open', 'in_progress', 'resolved', 'closed'];
 const defaultPlanId: MembershipPlanId = 'individual_monthly';
 const findPlanDefinition = (planId?: MembershipPlanId | null) => planDefinitions.find((plan) => plan.id === planId) ?? planDefinitions[0];
 
@@ -631,6 +678,11 @@ const getDisplayErrorMessage = (error: unknown, t: (typeof copy)['es'] | (typeof
   const message = getErrorMessage(error, t.genericError);
   if (message === 'DISCOUNT_CODE_ALREADY_USED') return t.codeAlreadyUsed;
   return message;
+};
+
+const isMissingSupportIssuesTableError = (error: unknown) => {
+  const message = getErrorMessage(error, '').toLowerCase();
+  return message.includes('support_issues') && (message.includes('schema cache') || message.includes('does not exist'));
 };
 
 const getReportFieldLabel = (field: ReportVisibilityField, t: (typeof copy)['es'] | (typeof copy)['en']) => {
@@ -731,6 +783,19 @@ const getProfileSearchHaystack = (profile: UserProfile, t: (typeof copy)['es'] |
   );
 
 const getProfileDisplayName = (profile: UserProfile) => profile.fullName?.trim() || profile.email?.trim() || profile.id;
+
+const getSupportIssueStatusLabel = (status: SupportIssue['status'], t: (typeof copy)['es'] | (typeof copy)['en']) => {
+  switch (status) {
+    case 'in_progress':
+      return t.supportIssueStatusInProgress;
+    case 'resolved':
+      return t.supportIssueStatusResolved;
+    case 'closed':
+      return t.supportIssueStatusClosed;
+    default:
+      return t.supportIssueStatusOpen;
+  }
+};
 
 const GoogleMark = () => (
   <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
@@ -839,6 +904,10 @@ export default function AuthAccessPanel({
   const [adminLoading, setAdminLoading] = useState(false);
   const [isAdminDirectoryOpen, setIsAdminDirectoryOpen] = useState(false);
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [activeAdminTool, setActiveAdminTool] = useState<AdminTool>('preview');
+  const [supportIssues, setSupportIssues] = useState<SupportIssue[]>([]);
+  const [supportIssuesLoading, setSupportIssuesLoading] = useState(false);
+  const [supportIssuesSetupMissing, setSupportIssuesSetupMissing] = useState(false);
   const [profileFullName, setProfileFullName] = useState('');
   const [profileNationalId, setProfileNationalId] = useState('');
   const [profileLicenseNumber, setProfileLicenseNumber] = useState('');
@@ -898,6 +967,7 @@ export default function AuthAccessPanel({
       .sort((left, right) => getProfileDisplayName(left).localeCompare(getProfileDisplayName(right), locale))
       .filter((profile) => !query || getProfileSearchHaystack(profile, t).includes(query));
   }, [adminProfiles, adminSearchQuery, lang, t]);
+  const openSupportIssuesCount = supportIssues.filter((issue) => issue.status !== 'resolved' && issue.status !== 'closed').length;
 
   useEffect(() => {
     const profile = account?.profile;
@@ -945,6 +1015,9 @@ export default function AuthAccessPanel({
     if (!isAdmin) {
       setIsAdminDirectoryOpen(false);
       setAdminSearchQuery('');
+      setActiveAdminTool('preview');
+      setSupportIssues([]);
+      setSupportIssuesSetupMissing(false);
     }
   }, [isAdmin]);
 
@@ -981,6 +1054,38 @@ export default function AuthAccessPanel({
       ignore = true;
     };
   }, [isAdmin, service, t.genericError]);
+
+  useEffect(() => {
+    if (!service || !isAdmin || activeAdminTool !== 'issues') return;
+
+    let ignore = false;
+
+    const loadSupportIssues = async () => {
+      setSupportIssuesLoading(true);
+
+      try {
+        setSupportIssuesSetupMissing(false);
+        const issues = await service.listSupportIssues();
+        if (!ignore) setSupportIssues(issues);
+      } catch (error) {
+        if (ignore) return;
+        if (isMissingSupportIssuesTableError(error)) {
+          setSupportIssues([]);
+          setSupportIssuesSetupMissing(true);
+          return;
+        }
+        setError(getDisplayErrorMessage(error, t));
+      } finally {
+        if (!ignore) setSupportIssuesLoading(false);
+      }
+    };
+
+    void loadSupportIssues();
+
+    return () => {
+      ignore = true;
+    };
+  }, [activeAdminTool, isAdmin, service, t.genericError]);
 
   const handleApplyDiscount = async () => {
     if (!service) return;
@@ -1152,6 +1257,8 @@ export default function AuthAccessPanel({
       });
       await onRefreshAccount();
       setMessage(t.profileSaved);
+      setIsOpen(false);
+      onClose?.();
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
@@ -1194,6 +1301,43 @@ export default function AuthAccessPanel({
       setError(getDisplayErrorMessage(error, t));
     } finally {
       setAdminLoading(false);
+    }
+  };
+
+  const handleReloadSupportIssues = async () => {
+    if (!service || !isAdmin) return;
+    resetFeedback();
+    setSupportIssuesLoading(true);
+
+    try {
+      setSupportIssuesSetupMissing(false);
+      const issues = await service.listSupportIssues();
+      setSupportIssues(issues);
+    } catch (error) {
+      if (isMissingSupportIssuesTableError(error)) {
+        setSupportIssues([]);
+        setSupportIssuesSetupMissing(true);
+        return;
+      }
+      setError(getDisplayErrorMessage(error, t));
+    } finally {
+      setSupportIssuesLoading(false);
+    }
+  };
+
+  const handleSupportIssueStatusChange = async (issueId: string, status: SupportIssue['status']) => {
+    if (!service || !isAdmin) return;
+    resetFeedback();
+    setIsBusy(true);
+
+    try {
+      const updated = await service.updateSupportIssueStatus(issueId, status);
+      setSupportIssues((current) => current.map((issue) => (issue.id === updated.id ? updated : issue)));
+      setMessage(t.supportIssueStatusSaved);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
+    } finally {
+      setIsBusy(false);
     }
   };
 
@@ -1644,180 +1788,285 @@ export default function AuthAccessPanel({
     <section className="admin-role-panel">
       <div className="auth-panel-heading admin-role-heading">
         <div>
-          <span className="section-kicker">{t.previewTitle}</span>
-          <strong>{t.previewSubtitle}</strong>
+          <span className="section-kicker">{t.adminToolsTitle}</span>
+          <strong>{t.adminToolsSubtitle}</strong>
         </div>
       </div>
 
-      <div className="admin-preview-panel">
-        <label>
-          {t.previewLabel}
-          <select value={accessPreviewMode} onChange={(event) => onChangeAccessPreviewMode?.(event.target.value as AccessPreviewMode)}>
-            {previewOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="admin-tool-grid" role="tablist" aria-label={t.adminToolsTitle}>
+        {[
+          { id: 'preview' as const, label: t.adminToolPreview, count: previewOptions.length },
+          { id: 'users' as const, label: t.adminToolUsers, count: adminProfiles.length },
+          { id: 'issues' as const, label: t.adminToolIssues, count: openSupportIssuesCount },
+        ].map((tool) => (
+          <button
+            key={tool.id}
+            type="button"
+            className={`admin-tool-button ${activeAdminTool === tool.id ? 'is-active' : ''}`}
+            onClick={() => setActiveAdminTool(tool.id)}
+          >
+            <span>{tool.label}</span>
+            <strong>{tool.count}</strong>
+          </button>
+        ))}
       </div>
 
-      <div className="auth-panel-heading admin-role-heading">
-        <div>
-          <span className="section-kicker">{t.adminTitle}</span>
-          <strong>{t.adminSubtitle}</strong>
-          <p>{t.adminRoleHint}</p>
-        </div>
-        <button type="button" className="secondary-button" onClick={handleReloadProfiles} disabled={adminLoading || isBusy}>
-          {t.adminRefresh}
-        </button>
-      </div>
-
-      {adminLoading ? <p className="auth-account-hint">{t.adminLoading}</p> : null}
-      {!adminLoading && adminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
-
-      {!adminLoading && adminProfiles.length > 0 ? (
-        <section className="account-profile-group admin-directory-group">
-          <div className="account-profile-heading">
-            <strong>{t.adminDirectoryTitle}</strong>
-            <p>{t.adminDirectorySubtitle}</p>
+      {activeAdminTool === 'preview' ? (
+        <>
+          <div className="auth-panel-heading admin-role-heading">
+            <div>
+              <span className="section-kicker">{t.previewTitle}</span>
+              <strong>{t.previewSubtitle}</strong>
+            </div>
           </div>
 
-          <div className="admin-directory-toolbar">
+          <div className="admin-preview-panel">
+            <label>
+              {t.previewLabel}
+              <select value={accessPreviewMode} onChange={(event) => onChangeAccessPreviewMode?.(event.target.value as AccessPreviewMode)}>
+                {previewOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </>
+      ) : null}
+
+      {activeAdminTool === 'users' ? (
+        <>
+          <div className="auth-panel-heading admin-role-heading">
+            <div>
+              <span className="section-kicker">{t.adminTitle}</span>
+              <strong>{t.adminSubtitle}</strong>
+              <p>{t.adminRoleHint}</p>
+            </div>
+            <button type="button" className="secondary-button" onClick={handleReloadProfiles} disabled={adminLoading || isBusy}>
+              {t.adminRefresh}
+            </button>
+          </div>
+
+          {adminLoading ? <p className="auth-account-hint">{t.adminLoading}</p> : null}
+          {!adminLoading && adminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
+
+          {!adminLoading && adminProfiles.length > 0 ? (
+            <section className="account-profile-group admin-directory-group">
+              <div className="account-profile-heading">
+                <strong>{t.adminDirectoryTitle}</strong>
+                <p>{t.adminDirectorySubtitle}</p>
+              </div>
+
+              <div className="admin-directory-toolbar">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsAdminDirectoryOpen((current) => !current)}
+                >
+                  {isAdminDirectoryOpen ? t.adminDirectoryClose : t.adminDirectoryOpen}
+                </button>
+                <span className="admin-directory-count">
+                  {t.adminResults}: {filteredAdminProfiles.length} / {adminProfiles.length}
+                </span>
+              </div>
+
+              {isAdminDirectoryOpen ? (
+                <>
+                  <label className="admin-directory-search">
+                    {t.adminSearchLabel}
+                    <input
+                      type="search"
+                      value={adminSearchQuery}
+                      placeholder={t.adminSearchPlaceholder}
+                      onChange={(event) => setAdminSearchQuery(event.target.value)}
+                    />
+                  </label>
+
+                  {filteredAdminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
+
+                  {filteredAdminProfiles.length > 0 ? (
+                    <div className="admin-role-list">
+                      {filteredAdminProfiles.map((profile) => (
+                        <article key={profile.id} className="admin-role-item">
+                          <div className="admin-role-identity">
+                            <strong>{getProfileDisplayName(profile)}</strong>
+                            <p>
+                              {[
+                                profile.email,
+                                profile.workplaceName,
+                                profile.licenseNumber,
+                                profile.centerTaxId,
+                                profile.phoneMobile,
+                              ]
+                                .filter(Boolean)
+                                .join(' · ') || profile.id}
+                            </p>
+                            <div className="admin-role-membership">
+                              <span>
+                                <strong>{t.adminSubscriptionPlan}:</strong>{' '}
+                                {profile.membership ? getPlanLabel(profile.membership.planId, lang) : getAccountTypeLabel(profile.accountType, t)}
+                              </span>
+                              <span>
+                                <strong>{t.adminSubscriptionEnds}:</strong>{' '}
+                                {formatDate(lang, profile.membership?.currentPeriodEnd ?? profile.membership?.trialEndsAt)}
+                              </span>
+                              <span>
+                                <strong>{t.adminDiscountCodeUsed}:</strong> {profile.membership?.discountCode ?? t.adminNoDiscountCode}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="admin-role-controls">
+                            <label>
+                              {t.adminAccountType}
+                              <select
+                                value={adminAccountTypeDraft[profile.id] ?? profile.accountType}
+                                onChange={(event) =>
+                                  setAdminAccountTypeDraft((current) => ({
+                                    ...current,
+                                    [profile.id]: event.target.value as AccountType,
+                                  }))
+                                }
+                              >
+                                {accountTypeOptions.map((accountType) => (
+                                  <option key={`${profile.id}-type-${accountType}`} value={accountType}>
+                                    {getAccountTypeLabel(accountType, t)}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            {(adminAccountTypeDraft[profile.id] ?? profile.accountType) === 'partner' ? (
+                              <label>
+                                {t.adminPartnerCategory}
+                                <select
+                                  value={adminPartnerCategoryDraft[profile.id] ?? profile.partnerCategory ?? ''}
+                                  onChange={(event) =>
+                                    setAdminPartnerCategoryDraft((current) => ({
+                                      ...current,
+                                      [profile.id]: event.target.value as PartnerCategory | '',
+                                    }))
+                                  }
+                                >
+                                  <option value="">--</option>
+                                  {partnerCategoryOptions.map((partnerCategory) => (
+                                    <option key={`${profile.id}-partner-${partnerCategory}`} value={partnerCategory}>
+                                      {getPartnerCategoryLabel(partnerCategory, t)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            ) : null}
+                            <label>
+                              {t.adminRole}
+                              <div className="admin-role-checkboxes">
+                                {roleOptions.map((role) => {
+                                  const checked = (adminRolesDraft[profile.id] ?? profile.roles).includes(role);
+                                  return (
+                                    <label key={`${profile.id}-${role}`} className="checkbox-inline admin-role-check">
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() =>
+                                          setAdminRolesDraft((current) => {
+                                            const currentRoles = current[profile.id] ?? profile.roles;
+                                            const nextRoles = checked
+                                              ? currentRoles.filter((item) => item !== role)
+                                              : [...currentRoles, role];
+                                            return {
+                                              ...current,
+                                              [profile.id]: nextRoles.length > 0 ? nextRoles : ['viewer'],
+                                            };
+                                          })
+                                        }
+                                      />
+                                      <span>{formatUserRole(lang, role)}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </label>
+                            <button type="button" className="secondary-button" onClick={() => handleSaveRole(profile.id)} disabled={isBusy}>
+                              {t.adminSaveRole}
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </section>
+          ) : null}
+        </>
+      ) : null}
+
+      {activeAdminTool === 'issues' ? (
+        <section className="account-profile-group admin-directory-group">
+          <div className="auth-panel-heading admin-role-heading">
+            <div>
+              <span className="section-kicker">{t.supportIssuesTitle}</span>
+              <strong>{t.supportIssuesSubtitle}</strong>
+            </div>
             <button
               type="button"
               className="secondary-button"
-              onClick={() => setIsAdminDirectoryOpen((current) => !current)}
+              onClick={handleReloadSupportIssues}
+              disabled={supportIssuesLoading || isBusy}
             >
-              {isAdminDirectoryOpen ? t.adminDirectoryClose : t.adminDirectoryOpen}
+              {t.supportIssuesRefresh}
             </button>
-            <span className="admin-directory-count">
-              {t.adminResults}: {filteredAdminProfiles.length} / {adminProfiles.length}
-            </span>
           </div>
 
-          {isAdminDirectoryOpen ? (
-            <>
-              <label className="admin-directory-search">
-                {t.adminSearchLabel}
-                <input
-                  type="search"
-                  value={adminSearchQuery}
-                  placeholder={t.adminSearchPlaceholder}
-                  onChange={(event) => setAdminSearchQuery(event.target.value)}
-                />
-              </label>
+          {supportIssuesLoading ? <p className="auth-account-hint">{t.supportIssuesLoading}</p> : null}
+          {!supportIssuesLoading && supportIssuesSetupMissing ? (
+            <p className="auth-account-hint support-issue-setup-hint">{t.supportIssuesSetupMissing}</p>
+          ) : null}
+          {!supportIssuesLoading && supportIssues.length === 0 ? <p className="auth-account-hint">{t.supportIssuesEmpty}</p> : null}
 
-              {filteredAdminProfiles.length === 0 ? <p className="auth-account-hint">{t.adminEmpty}</p> : null}
-
-              {filteredAdminProfiles.length > 0 ? (
-                <div className="admin-role-list">
-                  {filteredAdminProfiles.map((profile) => (
-                    <article key={profile.id} className="admin-role-item">
-                      <div className="admin-role-identity">
-                        <strong>{getProfileDisplayName(profile)}</strong>
-                        <p>
-                          {[
-                            profile.email,
-                            profile.workplaceName,
-                            profile.licenseNumber,
-                            profile.centerTaxId,
-                            profile.phoneMobile,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ') || profile.id}
-                        </p>
-                        <div className="admin-role-membership">
-                          <span>
-                            <strong>{t.adminSubscriptionPlan}:</strong> {profile.membership ? getPlanLabel(profile.membership.planId, lang) : getAccountTypeLabel(profile.accountType, t)}
-                          </span>
-                          <span>
-                            <strong>{t.adminSubscriptionEnds}:</strong>{' '}
-                            {formatDate(lang, profile.membership?.currentPeriodEnd ?? profile.membership?.trialEndsAt)}
-                          </span>
-                          <span>
-                            <strong>{t.adminDiscountCodeUsed}:</strong> {profile.membership?.discountCode ?? t.adminNoDiscountCode}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="admin-role-controls">
-                        <label>
-                          {t.adminAccountType}
-                          <select
-                            value={adminAccountTypeDraft[profile.id] ?? profile.accountType}
-                            onChange={(event) =>
-                              setAdminAccountTypeDraft((current) => ({
-                                ...current,
-                                [profile.id]: event.target.value as AccountType,
-                              }))
-                            }
-                          >
-                            {accountTypeOptions.map((accountType) => (
-                              <option key={`${profile.id}-type-${accountType}`} value={accountType}>
-                                {getAccountTypeLabel(accountType, t)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        {(adminAccountTypeDraft[profile.id] ?? profile.accountType) === 'partner' ? (
-                          <label>
-                            {t.adminPartnerCategory}
-                            <select
-                              value={adminPartnerCategoryDraft[profile.id] ?? profile.partnerCategory ?? ''}
-                              onChange={(event) =>
-                                setAdminPartnerCategoryDraft((current) => ({
-                                  ...current,
-                                  [profile.id]: event.target.value as PartnerCategory | '',
-                                }))
-                              }
-                            >
-                              <option value="">--</option>
-                              {partnerCategoryOptions.map((partnerCategory) => (
-                                <option key={`${profile.id}-partner-${partnerCategory}`} value={partnerCategory}>
-                                  {getPartnerCategoryLabel(partnerCategory, t)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ) : null}
-                        <label>
-                          {t.adminRole}
-                          <div className="admin-role-checkboxes">
-                            {roleOptions.map((role) => {
-                              const checked = (adminRolesDraft[profile.id] ?? profile.roles).includes(role);
-                              return (
-                                <label key={`${profile.id}-${role}`} className="checkbox-inline admin-role-check">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() =>
-                                      setAdminRolesDraft((current) => {
-                                        const currentRoles = current[profile.id] ?? profile.roles;
-                                        const nextRoles = checked
-                                          ? currentRoles.filter((item) => item !== role)
-                                          : [...currentRoles, role];
-                                        return {
-                                          ...current,
-                                          [profile.id]: nextRoles.length > 0 ? nextRoles : ['viewer'],
-                                        };
-                                      })
-                                    }
-                                  />
-                                  <span>{formatUserRole(lang, role)}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </label>
-                        <button type="button" className="secondary-button" onClick={() => handleSaveRole(profile.id)} disabled={isBusy}>
-                          {t.adminSaveRole}
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-            </>
+          {!supportIssuesLoading && supportIssues.length > 0 ? (
+            <div className="support-issue-list">
+              {supportIssues.map((issue) => (
+                <article key={issue.id} className="support-issue-item">
+                  <div className="support-issue-head">
+                    <div>
+                      <span className="section-kicker">{issue.module || t.supportIssueModule}</span>
+                      <strong>{issue.type}</strong>
+                    </div>
+                    <span className={`support-issue-status is-${issue.status}`}>
+                      {getSupportIssueStatusLabel(issue.status, t)}
+                    </span>
+                  </div>
+                  <p>{issue.description}</p>
+                  <div className="support-issue-meta">
+                    <span>
+                      <strong>{t.supportIssueSender}:</strong> {issue.email || '--'}
+                    </span>
+                    <span>
+                      <strong>{t.supportIssueDate}:</strong> {formatDate(lang, issue.createdAt)}
+                    </span>
+                    {issue.pageUrl ? (
+                      <a href={issue.pageUrl} target="_blank" rel="noreferrer">
+                        {t.supportIssueUrl}
+                      </a>
+                    ) : null}
+                  </div>
+                  <label className="support-issue-status-control">
+                    {t.status}
+                    <select
+                      value={issue.status}
+                      onChange={(event) => handleSupportIssueStatusChange(issue.id, event.target.value as SupportIssue['status'])}
+                      disabled={isBusy}
+                    >
+                      {supportIssueStatusOptions.map((status) => (
+                        <option key={`${issue.id}-${status}`} value={status}>
+                          {getSupportIssueStatusLabel(status, t)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </article>
+              ))}
+            </div>
           ) : null}
         </section>
       ) : null}

@@ -147,6 +147,12 @@ export default function ActiveIngredientForm({
             tradeHint: 'Separados por coma',
             species: 'Especies',
             tags: 'Tags clinicas',
+            tagsToggleOpen: 'Mostrar tags',
+            tagsToggleClose: 'Ocultar tags',
+            tagsSearch: 'Buscar tags',
+            tagsSearchPlaceholder: 'Buscar por nombre, sistema o categoria...',
+            tagsSelected: 'seleccionadas',
+            tagsEmpty: 'Sin tags coincidentes.',
             customTags: 'Tags personalizadas',
             customTagsHint: 'Ejemplo: Vomito, Digestivo, UCI, Dermatologia',
             pathologies: 'Indicaciones/patologias',
@@ -199,6 +205,12 @@ export default function ActiveIngredientForm({
             tradeHint: 'Comma-separated',
             species: 'Species',
             tags: 'Clinical tags',
+            tagsToggleOpen: 'Show tags',
+            tagsToggleClose: 'Hide tags',
+            tagsSearch: 'Search tags',
+            tagsSearchPlaceholder: 'Search by name, system, or category...',
+            tagsSelected: 'selected',
+            tagsEmpty: 'No matching tags.',
             customTags: 'Custom tags',
             customTagsHint: 'Example: Vomiting, Digestive, ICU, Dermatology',
             pathologies: 'Indications/pathologies',
@@ -244,6 +256,8 @@ export default function ActiveIngredientForm({
   const [tradeNames, setTradeNames] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<Species[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+  const [tagSearch, setTagSearch] = useState('');
   const [customTags, setCustomTags] = useState('');
   const [pathologies, setPathologies] = useState('');
   const [concentrations, setConcentrations] = useState('');
@@ -279,6 +293,14 @@ export default function ActiveIngredientForm({
     () => normalizeStringList([...tagOptions, ...normalizedSystemOptions], tagOptions),
     [normalizedSystemOptions, tagOptions],
   );
+  const filteredDisplayTagOptions = useMemo(() => {
+    const query = tagSearch.trim().toLowerCase();
+    if (!query) return displayTagOptions;
+    return displayTagOptions.filter((tag) => {
+      const translated = translateMedicalTerm(tag, lang).toLowerCase();
+      return tag.toLowerCase().includes(query) || translated.includes(query);
+    });
+  }, [displayTagOptions, lang, tagSearch]);
 
   const toggleArrayValue = <T,>(current: T[], value: T) =>
     current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
@@ -316,6 +338,8 @@ export default function ActiveIngredientForm({
       setTradeNames('');
       setSelectedSpecies([]);
       setSelectedTags([]);
+      setTagsExpanded(false);
+      setTagSearch('');
       setCustomTags('');
       setPathologies('');
       setConcentrations('');
@@ -544,23 +568,64 @@ export default function ActiveIngredientForm({
         </section>
 
         <section className="entry-form-block">
-          <h4>{text.tags}</h4>
-          <div className="tag-chip-list">
-            {displayTagOptions.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className={selectedTags.includes(tag) ? 'active' : ''}
-                onClick={() => setSelectedTags((current) => toggleArrayValue(current, tag))}
-              >
-                {translateMedicalTerm(tag, lang)}
-              </button>
-            ))}
+          <div className="entry-form-inline-header">
+            <div>
+              <h4>{text.tags}</h4>
+              <p className="entry-form-block-hint">
+                {selectedTags.length} {text.tagsSelected}
+              </p>
+            </div>
+            <button type="button" className="secondary-button" onClick={() => setTagsExpanded((current) => !current)}>
+              {tagsExpanded ? text.tagsToggleClose : text.tagsToggleOpen}
+            </button>
           </div>
-          <label>
-            {text.customTags}
-            <input value={customTags} onChange={(event) => setCustomTags(event.target.value)} placeholder={text.customTagsHint} title={text.customTagsHint} />
+          <label className="tag-search-field">
+            {text.tagsSearch}
+            <input
+              value={tagSearch}
+              onChange={(event) => setTagSearch(event.target.value)}
+              placeholder={text.tagsSearchPlaceholder}
+              title={text.tagsSearchPlaceholder}
+            />
           </label>
+          {selectedTags.length > 0 ? (
+            <div className="tag-chip-list tag-chip-list-selected">
+              {selectedTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="active"
+                  onClick={() => setSelectedTags((current) => current.filter((item) => item !== tag))}
+                >
+                  {translateMedicalTerm(tag, lang)}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {tagsExpanded || tagSearch.trim() ? (
+            filteredDisplayTagOptions.length > 0 ? (
+              <div className="tag-chip-list tag-chip-list-collapsible">
+                {filteredDisplayTagOptions.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={selectedTags.includes(tag) ? 'active' : ''}
+                    onClick={() => setSelectedTags((current) => toggleArrayValue(current, tag))}
+                  >
+                    {translateMedicalTerm(tag, lang)}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="entry-form-block-hint">{text.tagsEmpty}</p>
+            )
+          ) : null}
+          <div className="custom-tags-field">
+            <label>
+              {text.customTags}
+              <input value={customTags} onChange={(event) => setCustomTags(event.target.value)} placeholder={text.customTagsHint} title={text.customTagsHint} />
+            </label>
+          </div>
         </section>
 
         <div className="entry-form-grid-2">

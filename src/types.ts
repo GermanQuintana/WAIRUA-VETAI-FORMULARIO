@@ -347,6 +347,19 @@ export interface AdminDirectoryProfile extends UserProfile {
   membership?: UserMembership | null;
 }
 
+export interface SupportIssue {
+  id: string;
+  userId?: string;
+  email?: string;
+  type: string;
+  module?: string;
+  description: string;
+  pageUrl?: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthAccountSnapshot {
   profile: UserProfile | null;
   membership: UserMembership | null;
