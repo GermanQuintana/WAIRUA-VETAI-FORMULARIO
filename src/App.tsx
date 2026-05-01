@@ -445,6 +445,40 @@ const hasEquivalentMedicalTerm = (left: string, right: string) => {
   return expandMedicalTermAliases(right).some((alias) => leftAliases.has(alias));
 };
 
+const getMedicalOptionKeys = (value: string, lang: Language) =>
+  Array.from(
+    new Set(
+      [
+        value,
+        translateMedicalTerm(value, lang),
+        ...expandMedicalTermAliases(value),
+        ...expandMedicalTermAliases(translateMedicalTerm(value, lang)),
+      ]
+        .map(normalizeFilterText)
+        .filter(Boolean),
+    ),
+  );
+
+const hasEquivalentOption = (left: string, right: string, lang: Language) => {
+  const rightKeys = new Set(getMedicalOptionKeys(right, lang));
+  return getMedicalOptionKeys(left, lang).some((key) => rightKeys.has(key));
+};
+
+const getUniqueMedicalOptions = (values: string[], lang: Language) => {
+  const options: string[] = [];
+
+  values.forEach((value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (options.some((option) => hasEquivalentOption(option, trimmed, lang))) return;
+    options.push(trimmed);
+  });
+
+  return options.sort((left, right) =>
+    translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en'),
+  );
+};
+
 const toggleEquivalentTag = (current: string[], value: string) => {
   const exists = current.some((item) => hasEquivalentMedicalTerm(item, value));
   if (exists) {
@@ -837,12 +871,13 @@ function App() {
   const localIndicationOptions = useMemo(() => getIndicationOptions(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
   const activeIndicationOptions = useMemo(
     () =>
-      Array.from(
-        new Set([
+      getUniqueMedicalOptions(
+        [
           ...localIndicationOptions,
           ...Object.values(activeVetDetails).flatMap((detail) => detail.indicaciones?.map((item) => item.nombre) ?? []),
-        ]),
-      ).sort((left, right) => translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en')),
+        ],
+        lang,
+      ),
     [activeVetDetails, lang, localIndicationOptions],
   );
   const tagOptions = useMemo(() => getTagOptions(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
@@ -1282,19 +1317,17 @@ function App() {
     });
   }, [assistantPathology, assistantSpecies, entriesVisibleToCurrentUser]);
 
-  const rxIndicationOptions = useMemo(() => {
-    const values = new Set<string>();
-
-    liveResults.forEach((medication) => {
-      const detail = liveDetails[medication.nregistro];
-      if (!detail) return;
-      detail.indicaciones?.forEach((item) => {
-        values.add(item.nombre);
-      });
-    });
-
-    return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [liveDetails, liveResults]);
+  const rxIndicationOptions = useMemo(
+    () =>
+      getUniqueMedicalOptions(
+        [
+          ...localIndicationOptions,
+          ...Object.values(liveDetails).flatMap((detail) => detail.indicaciones?.map((item) => item.nombre) ?? []),
+        ],
+        lang,
+      ),
+    [lang, liveDetails, localIndicationOptions],
+  );
 
   const rxSpeciesLabel = useMemo(() => (rxSpecies ? translateMedicalTerm(rxSpecies, 'es') : undefined), [rxSpecies]);
   const hasRxCatalogRequest = isCatalogSearchQuery(rxQuery);
@@ -1309,7 +1342,7 @@ function App() {
       results = results.filter((medication) => {
         const detail = liveDetails[medication.nregistro];
         if (!detail?.indicaciones?.length) return false;
-        return detail.indicaciones.some((item) => item.nombre === rxIndication);
+        return detail.indicaciones.some((item) => hasEquivalentOption(item.nombre, rxIndication, lang));
       });
     }
 
@@ -1343,6 +1376,7 @@ function App() {
   }, [
     liveDetails,
     liveResults,
+    lang,
     rxDoseFilter,
     rxIndication,
     rxOnlyCommercialized,
@@ -1371,6 +1405,16 @@ function App() {
         ? filteredLiveResults
         : filteredLiveResults.slice((livePage - 1) * livePageSize, livePage * livePageSize),
     [filteredLiveResults, livePage, livePageSize],
+  );
+  const liveDetailPrefetchResults = useMemo(() => {
+    const needsFullDetailScan = Boolean(
+      rxIndication || normalizeFilterText(rxPresentationFilter) || rxSortByShortestWithdrawal,
+    );
+    return needsFullDetailScan ? liveResults : visibleLiveResults;
+  }, [liveResults, rxIndication, rxPresentationFilter, rxSortByShortestWithdrawal, visibleLiveResults]);
+  const liveDetailPrefetchIds = useMemo(
+    () => liveDetailPrefetchResults.map((medication) => medication.nregistro).join('|'),
+    [liveDetailPrefetchResults],
   );
 
   const filteredHumanResults = useMemo(() => {
@@ -1686,15 +1730,15 @@ function App() {
   }, [activeTab, hasPremiumAccess, isAuthenticated]);
 
   useEffect(() => {
-    if (activeTab !== 'prescription' || liveResults.length === 0) return;
+    if (activeTab !== 'prescription' || !liveDetailPrefetchIds) return;
 
-    const missing = liveResults.filter((item) => !liveDetails[item.nregistro]).map((item) => item.nregistro);
+    const missing = liveDetailPrefetchIds.split('|').filter((nregistro) => !liveDetails[nregistro]);
     if (missing.length === 0) return;
 
     let ignore = false;
 
     const loadDetails = async () => {
-      const batchSize = 6;
+      const batchSize = 4;
 
       for (let i = 0; i < missing.length; i += batchSize) {
         const batch = missing.slice(i, i + batchSize);
@@ -1714,6 +1758,10 @@ function App() {
           });
           return next;
         });
+
+        if (i + batchSize < missing.length) {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 20));
+        }
       }
     };
 
@@ -1722,7 +1770,7 @@ function App() {
     return () => {
       ignore = true;
     };
-  }, [activeTab, cimavetService, liveDetails, liveResults]);
+  }, [activeTab, cimavetService, liveDetailPrefetchIds]);
 
   useEffect(() => {
     if (activeTab !== 'human') return;
