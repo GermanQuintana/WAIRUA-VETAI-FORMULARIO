@@ -118,6 +118,26 @@ body {
   background-repeat: no-repeat;
 }
 
+.app.dark .search-grid input,
+.app.dark .search-input-with-brand {
+  background-color: #ffffff;
+  border-color: #d1d7bf;
+}
+
+.app.dark .search-grid input,
+.app.dark .search-input-with-brand input {
+  color: #111c1d;
+  -webkit-text-fill-color: #111c1d;
+  caret-color: var(--accent-light);
+}
+
+.app.dark .search-grid input::placeholder,
+.app.dark .search-input-with-brand input::placeholder {
+  color: #596463;
+  -webkit-text-fill-color: #596463;
+  opacity: 1;
+}
+
 .app.dark button:focus-visible,
 .app.dark input:focus-visible,
 .app.dark select:focus-visible {
@@ -6323,8 +6343,38 @@ select {
   }
 
   .product-tabs button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     width: 100%;
-    justify-content: space-between;
+    justify-content: normal;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .product-tabs button span {
+    min-width: 0;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+
+  .product-tabs button small {
+    justify-self: end;
+    max-width: min(36vw, 8.5rem);
+    padding: 0.32rem 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
+    font-size: 0.66rem;
+    line-height: 1;
+    letter-spacing: 0.04em;
   }
 
   .feature-card-footer,
@@ -6373,7 +6423,6 @@ select {
   h4,
   p,
   label,
-  button,
   a {
     overflow-wrap: anywhere;
   }
@@ -6422,6 +6471,22 @@ select {
   .search-grid input,
   .search-grid select {
     height: 3.15rem;
+  }
+
+  .product-tabs {
+    gap: 0.45rem;
+  }
+
+  .product-tabs button {
+    min-height: 3.1rem;
+    padding: 0.62rem 0.7rem;
+    font-size: 0.88rem;
+  }
+
+  .product-tabs button small {
+    max-width: min(34vw, 7rem);
+    padding: 0.28rem 0.42rem;
+    font-size: 0.58rem;
   }
 
   .live-panel-header,
