@@ -1216,9 +1216,17 @@ function App() {
     () => entryCatalog.filter((entry) => getEffectivePublicationStatus(entry) === 'rejected'),
     [entryCatalog],
   );
+  const hasActiveSearchCriteria = Boolean(
+    activeQuery.trim().length > 0 ||
+      activeSpecies ||
+      activeIndication ||
+      activeConcentrationQuery.trim().length > 0 ||
+      activeTags.length > 0,
+  );
+  const effectiveEditorialQueueFilter = hasActiveSearchCriteria ? 'all' : editorialQueueFilter;
   const filteredEntries = useMemo(() => {
     let entries: TherapeuticEntry[];
-    switch (editorialQueueFilter) {
+    switch (effectiveEditorialQueueFilter) {
       case 'draft':
         entries = searchedEntries.filter((entry) => entry.editorialStatus === 'draft');
         break;
@@ -1241,14 +1249,7 @@ function App() {
     return [...entries].sort((left, right) =>
       left.activeIngredient.localeCompare(right.activeIngredient, lang === 'es' ? 'es' : 'en', { sensitivity: 'base' }),
     );
-  }, [editorialQueueFilter, lang, searchedEntries]);
-  const hasActiveSearchCriteria = Boolean(
-    activeQuery.trim().length > 0 ||
-      activeSpecies ||
-      activeIndication ||
-      activeConcentrationQuery.trim().length > 0 ||
-      activeTags.length > 0,
-  );
+  }, [effectiveEditorialQueueFilter, lang, searchedEntries]);
   const shouldShowActiveRecords = true;
   const activeFilteredCount = filteredEntries.length;
   const hasActiveVetCatalogRequest = isCatalogSearchQuery(activeQuery);
@@ -3419,7 +3420,7 @@ function App() {
                     <button
                       key={card.id}
                       type="button"
-                      className={`feature-card editorial-queue-card ${editorialQueueFilter === card.id ? 'is-active' : ''}`}
+                      className={`feature-card editorial-queue-card ${effectiveEditorialQueueFilter === card.id ? 'is-active' : ''}`}
                       onClick={() => setEditorialQueueFilter((current) => (current === card.id ? 'all' : card.id))}
                     >
                       <span className="section-kicker">{card.label}</span>
@@ -3429,7 +3430,7 @@ function App() {
                   ))}
                   <button
                     type="button"
-                    className={`feature-card editorial-queue-card ${editorialQueueFilter === 'all' ? 'is-active' : ''}`}
+                    className={`feature-card editorial-queue-card ${effectiveEditorialQueueFilter === 'all' ? 'is-active' : ''}`}
                     onClick={() => setEditorialQueueFilter('all')}
                   >
                     <span className="section-kicker">{t.editorialQueueAll}</span>
