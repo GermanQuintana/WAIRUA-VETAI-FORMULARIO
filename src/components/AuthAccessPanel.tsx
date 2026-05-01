@@ -226,6 +226,8 @@ const copy = {
     supportIssuesRefresh: 'Recargar incidencias',
     supportIssuesLoading: 'Cargando incidencias...',
     supportIssuesEmpty: 'No hay incidencias.',
+    supportIssuesFilteredEmpty: 'No hay incidencias con estos filtros.',
+    supportIssuesFilters: 'Ver estados',
     supportIssuesSetupMissing:
       'La bandeja de incidencias esta preparada, pero falta aplicar la migracion de Supabase para crear la tabla.',
     supportIssueStatusOpen: 'Abierta',
@@ -465,6 +467,8 @@ const copy = {
     supportIssuesRefresh: 'Reload issues',
     supportIssuesLoading: 'Loading issues...',
     supportIssuesEmpty: 'No issues.',
+    supportIssuesFilteredEmpty: 'No issues with these filters.',
+    supportIssuesFilters: 'Show statuses',
     supportIssuesSetupMissing:
       'The issue inbox is ready, but the Supabase migration still needs to be applied to create the table.',
     supportIssueStatusOpen: 'Open',
@@ -797,6 +801,20 @@ const getSupportIssueStatusLabel = (status: SupportIssue['status'], t: (typeof c
   }
 };
 
+const getMeaningfulSupportIssueUrl = (pageUrl?: string) => {
+  if (!pageUrl) return null;
+
+  try {
+    const url = new URL(pageUrl);
+    const hasPath = url.pathname !== '/';
+    const hasSearch = Boolean(url.search);
+    const hasHash = Boolean(url.hash && url.hash !== '#');
+    return hasPath || hasSearch || hasHash ? url.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
 const GoogleMark = () => (
   <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
     <path
@@ -908,6 +926,7 @@ export default function AuthAccessPanel({
   const [supportIssues, setSupportIssues] = useState<SupportIssue[]>([]);
   const [supportIssuesLoading, setSupportIssuesLoading] = useState(false);
   const [supportIssuesSetupMissing, setSupportIssuesSetupMissing] = useState(false);
+  const [supportIssueStatusFilters, setSupportIssueStatusFilters] = useState<SupportIssue['status'][]>(['open', 'in_progress']);
   const [profileFullName, setProfileFullName] = useState('');
   const [profileNationalId, setProfileNationalId] = useState('');
   const [profileLicenseNumber, setProfileLicenseNumber] = useState('');
@@ -968,6 +987,10 @@ export default function AuthAccessPanel({
       .filter((profile) => !query || getProfileSearchHaystack(profile, t).includes(query));
   }, [adminProfiles, adminSearchQuery, lang, t]);
   const openSupportIssuesCount = supportIssues.filter((issue) => issue.status !== 'resolved' && issue.status !== 'closed').length;
+  const filteredSupportIssues = useMemo(
+    () => supportIssues.filter((issue) => supportIssueStatusFilters.includes(issue.status)),
+    [supportIssueStatusFilters, supportIssues],
+  );
 
   useEffect(() => {
     const profile = account?.profile;
@@ -1056,7 +1079,7 @@ export default function AuthAccessPanel({
   }, [isAdmin, service, t.genericError]);
 
   useEffect(() => {
-    if (!service || !isAdmin || activeAdminTool !== 'issues') return;
+    if (!service || !isAdmin) return;
 
     let ignore = false;
 
@@ -1085,7 +1108,7 @@ export default function AuthAccessPanel({
     return () => {
       ignore = true;
     };
-  }, [activeAdminTool, isAdmin, service, t.genericError]);
+  }, [isAdmin, service, t.genericError]);
 
   const handleApplyDiscount = async () => {
     if (!service) return;
@@ -2024,8 +2047,36 @@ export default function AuthAccessPanel({
           {!supportIssuesLoading && supportIssues.length === 0 ? <p className="auth-account-hint">{t.supportIssuesEmpty}</p> : null}
 
           {!supportIssuesLoading && supportIssues.length > 0 ? (
-            <div className="support-issue-list">
-              {supportIssues.map((issue) => (
+            <>
+              <div className="support-issue-filter-panel">
+                <span>{t.supportIssuesFilters}</span>
+                <div className="support-issue-filter-options">
+                  {supportIssueStatusOptions.map((status) => {
+                    const checked = supportIssueStatusFilters.includes(status);
+                    return (
+                      <label key={`support-filter-${status}`} className="checkbox-inline support-issue-filter-check">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setSupportIssueStatusFilters((current) =>
+                              checked ? current.filter((item) => item !== status) : [...current, status],
+                            )
+                          }
+                        />
+                        <span>{getSupportIssueStatusLabel(status, t)}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {filteredSupportIssues.length === 0 ? <p className="auth-account-hint">{t.supportIssuesFilteredEmpty}</p> : null}
+
+              <div className="support-issue-list">
+                {filteredSupportIssues.map((issue) => {
+                  const displayUrl = getMeaningfulSupportIssueUrl(issue.pageUrl);
+                  return (
                 <article key={issue.id} className="support-issue-item">
                   <div className="support-issue-head">
                     <div>
@@ -2044,8 +2095,8 @@ export default function AuthAccessPanel({
                     <span>
                       <strong>{t.supportIssueDate}:</strong> {formatDate(lang, issue.createdAt)}
                     </span>
-                    {issue.pageUrl ? (
-                      <a href={issue.pageUrl} target="_blank" rel="noreferrer">
+                    {displayUrl ? (
+                      <a href={displayUrl} target="_blank" rel="noreferrer">
                         {t.supportIssueUrl}
                       </a>
                     ) : null}
@@ -2065,8 +2116,10 @@ export default function AuthAccessPanel({
                     </select>
                   </label>
                 </article>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           ) : null}
         </section>
       ) : null}

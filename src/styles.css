@@ -5086,6 +5086,36 @@ body {
   gap: 0.75rem;
 }
 
+.support-issue-filter-panel {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(209, 215, 191, 0.72);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.support-issue-filter-panel > span {
+  font-weight: 800;
+}
+
+.support-issue-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+}
+
+.support-issue-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.support-issue-filter-check input {
+  margin: 0;
+}
+
 .support-issue-item {
   display: grid;
   gap: 0.75rem;
@@ -5808,6 +5838,7 @@ select {
 
 .app.dark .admin-role-item,
 .app.dark .admin-tool-button,
+.app.dark .support-issue-filter-panel,
 .app.dark .support-issue-item {
   background: rgba(18, 33, 38, 0.72);
   border-color: rgba(39, 67, 74, 0.9);
