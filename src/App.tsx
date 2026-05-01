@@ -1542,6 +1542,12 @@ function App() {
   }, [activeQuery, activeSpecies, activeIndication, activeTags, activeConcentrationQuery, activeRecordPageSize, editorialQueueFilter]);
 
   useEffect(() => {
+    if (editorialQueueFilter !== 'all') {
+      setEditorialQueueFilter('all');
+    }
+  }, [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeTags]);
+
+  useEffect(() => {
     setActiveRecordPage((current) => Math.min(current, activeRecordTotalPages));
   }, [activeRecordTotalPages]);
 
