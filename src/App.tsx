@@ -807,7 +807,18 @@ function App() {
           supportTitle: 'Bugs, issues, ideas, or proposals',
         };
 
-  const speciesOptions = useMemo(() => getSpeciesOptions(entryCatalog), [entryCatalog]);
+  const visibilityActualProfileRoles = authAccount?.profile?.roles ?? [authAccount?.profile?.role ?? 'viewer'];
+  const visibilityEffectiveProfileRoles =
+    visibilityActualProfileRoles.includes('admin') && accessPreviewMode !== 'actual'
+      ? accessPreviewRoleMap[accessPreviewMode]
+      : visibilityActualProfileRoles;
+  const canViewUnpublishedEntries = visibilityEffectiveProfileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
+  const entriesVisibleToCurrentUser = useMemo(
+    () => (canViewUnpublishedEntries ? entryCatalog : entryCatalog.filter(isActivePublishedEntry)),
+    [canViewUnpublishedEntries, entryCatalog],
+  );
+
+  const speciesOptions = useMemo(() => getSpeciesOptions(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
   const sortedSpeciesOptions = useMemo(
     () =>
       [...speciesOptions].sort((left, right) =>
@@ -822,8 +833,8 @@ function App() {
       ),
     [lang, speciesOptions],
   );
-  const systemOptions = useMemo(() => getSystemOptions(entryCatalog), [entryCatalog]);
-  const localIndicationOptions = useMemo(() => getIndicationOptions(entryCatalog), [entryCatalog]);
+  const systemOptions = useMemo(() => getSystemOptions(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
+  const localIndicationOptions = useMemo(() => getIndicationOptions(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
   const activeIndicationOptions = useMemo(
     () =>
       Array.from(
@@ -834,7 +845,7 @@ function App() {
       ).sort((left, right) => translateMedicalTerm(left, lang).localeCompare(translateMedicalTerm(right, lang), lang === 'es' ? 'es' : 'en')),
     [activeVetDetails, lang, localIndicationOptions],
   );
-  const tagOptions = useMemo(() => getTagOptions(entryCatalog), [entryCatalog]);
+  const tagOptions = useMemo(() => getTagOptions(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
   const formTagOptions = useMemo(
     () => Array.from(new Set([...tagOptions, ...systemOptions])).sort((a, b) => a.localeCompare(b)),
     [systemOptions, tagOptions],
@@ -850,10 +861,10 @@ function App() {
       ),
     [activeFacetOptions, lang],
   );
-  const doseCalculatorEntries = useMemo(() => buildDoseCalculatorEntries(entryCatalog), [entryCatalog]);
+  const doseCalculatorEntries = useMemo(() => buildDoseCalculatorEntries(entriesVisibleToCurrentUser), [entriesVisibleToCurrentUser]);
   const pathologyOptions = useMemo(
-    () => Array.from(new Set(entryCatalog.flatMap((entry) => entry.pathologies))).sort((a, b) => a.localeCompare(b)),
-    [entryCatalog],
+    () => Array.from(new Set(entriesVisibleToCurrentUser.flatMap((entry) => entry.pathologies))).sort((a, b) => a.localeCompare(b)),
+    [entriesVisibleToCurrentUser],
   );
   const otcManufacturerOptions = useMemo(
     () => Array.from(new Set(otcProducts.map((product) => product.manufacturer))).sort((a, b) => a.localeCompare(b)),
@@ -997,6 +1008,11 @@ function App() {
   const canManageEditorial = effectiveProfileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
   const canReviewEditorial = effectiveProfileRoles.some((role) => ['reviewer', 'admin'].includes(role));
   const canActivateEditorial = effectiveProfileRoles.includes('admin');
+  useEffect(() => {
+    if (!canManageEditorial && editorialQueueFilter !== 'all') {
+      setEditorialQueueFilter('all');
+    }
+  }, [canManageEditorial, editorialQueueFilter]);
   const currentWorkspaceLabel =
     activeTab === 'prescription'
       ? t.prescriptionHub
@@ -1177,14 +1193,14 @@ function App() {
   const searchedEntries = useMemo(
     () =>
       filterTherapeuticEntries(
-        entryCatalog,
+        entriesVisibleToCurrentUser,
         activeQuery,
         activeSpecies,
         activeIndication,
         activeTags,
         activeConcentrationQuery,
       ),
-    [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeTags, entryCatalog],
+    [activeConcentrationQuery, activeIndication, activeQuery, activeSpecies, activeTags, entriesVisibleToCurrentUser],
   );
   const draftEntries = useMemo(() => entryCatalog.filter((entry) => entry.editorialStatus === 'draft'), [entryCatalog]);
   const reviewQueueEntries = useMemo(() => entryCatalog.filter((entry) => entry.editorialStatus === 'under_review'), [entryCatalog]);
@@ -1258,12 +1274,12 @@ function App() {
   );
 
   const assistantMatches = useMemo(() => {
-    return entryCatalog.filter((entry) => {
+    return entriesVisibleToCurrentUser.filter((entry) => {
       const speciesMatch = assistantSpecies ? entry.species.some((value) => value === assistantSpecies) : true;
       const pathologyMatch = assistantPathology ? entry.pathologies.includes(assistantPathology) : true;
       return speciesMatch && pathologyMatch;
     });
-  }, [assistantPathology, assistantSpecies, entryCatalog]);
+  }, [assistantPathology, assistantSpecies, entriesVisibleToCurrentUser]);
 
   const rxIndicationOptions = useMemo(() => {
     const values = new Set<string>();
@@ -2307,7 +2323,12 @@ function App() {
 
           <div className="topbar-actions">
             <div className="topbar-support" title={accessText.supportTitle}>
-              <a href={supportMailto} className="topbar-support-link topbar-support-link-icon" aria-label={accessText.supportTitle}>
+              <button
+                type="button"
+                className="topbar-support-link topbar-support-link-icon"
+                aria-label={lang === 'es' ? 'Abrir formulario de incidencias' : 'Open issue form'}
+                onClick={() => setIsSupportFormOpen(true)}
+              >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="topbar-support-icon" fill="none">
                   <path
                     d="M4.5 7.5h15a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15V9a1.5 1.5 0 0 1 1.5-1.5Z"
@@ -2324,9 +2345,7 @@ function App() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </a>
-              <button type="button" className="topbar-support-link topbar-support-form-button" onClick={() => setIsSupportFormOpen(true)}>
-                {lang === 'es' ? 'Incidencia' : 'Issue'}
+                <span>{lang === 'es' ? 'Incidencia' : 'Issue'}</span>
               </button>
             </div>
             <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
@@ -3369,7 +3388,7 @@ function App() {
 
             {remoteSyncMessage && <p className="form-message form-error">{remoteSyncMessage}</p>}
 
-            {canCreateEditorial ? (
+            {canManageEditorial ? (
               <section className="editorial-queue-board">
                 <div className="module-header editorial-queue-header">
                   <div>
@@ -3579,7 +3598,7 @@ function App() {
 
             {activeToolkitView === 'genetics' && <GeneticsToolkit lang={lang} />}
 
-            {activeToolkitView === 'interactions' && <DrugInteractionChecker lang={lang} entries={entryCatalog} />}
+            {activeToolkitView === 'interactions' && <DrugInteractionChecker lang={lang} entries={entriesVisibleToCurrentUser} />}
 
             {activeToolkitView === 'constants' && (
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.constants} />
@@ -4060,6 +4079,9 @@ function App() {
               />
             </label>
             <div className="support-form-actions">
+              <a href={supportMailto} className="secondary-button">
+                {lang === 'es' ? 'Enviar por email' : 'Send by email'}
+              </a>
               <button type="submit" className="theme-button" disabled={!supportIssueText.trim() || supportIssueSubmitting}>
                 {supportIssueSubmitting ? (lang === 'es' ? 'Enviando...' : 'Sending...') : lang === 'es' ? 'Enviar incidencia' : 'Send issue'}
               </button>
