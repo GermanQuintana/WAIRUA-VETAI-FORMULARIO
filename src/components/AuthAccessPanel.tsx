@@ -27,6 +27,7 @@ interface Props {
   accessPreviewMode?: AccessPreviewMode;
   onChangeAccessPreviewMode?: (mode: AccessPreviewMode) => void;
   onClose?: () => void;
+  supportEmail?: string;
 }
 
 type AuthMode = 'sign_in' | 'sign_up';
@@ -132,6 +133,8 @@ const copy = {
     updatePassword: 'Actualizar contraseña',
     passwordUpdated: 'Contraseña actualizada correctamente.',
     passwordMinLength: 'La contraseña debe tener al menos 6 caracteres.',
+    accessHelp: '¿No puedes entrar?',
+    contactSupport: 'Escríbenos a soporte',
     clinicInviteCode: 'Código de clínica',
     clinicInvitePlaceholder: 'Ej: CLINICA-ABCD12',
     clinicInviteHint: 'Si tu clínica te ha dado un código, úsalo para vincular tu alta a esa cuenta sin contratar un plan individual.',
@@ -382,6 +385,8 @@ const copy = {
     updatePassword: 'Update password',
     passwordUpdated: 'Password updated successfully.',
     passwordMinLength: 'Password must be at least 6 characters.',
+    accessHelp: 'Can’t get in?',
+    contactSupport: 'Contact support',
     clinicInviteCode: 'Clinic code',
     clinicInvitePlaceholder: 'Example: CLINIC-ABCD12',
     clinicInviteHint: 'If your clinic gave you a code, use it to link your sign-up to that account without buying an individual plan.',
@@ -917,6 +922,7 @@ export default function AuthAccessPanel({
   accessPreviewMode = 'actual',
   onChangeAccessPreviewMode,
   onClose,
+  supportEmail = 'gerqd79@gmail.com',
 }: Props) {
   const t = copy[lang];
   const [isOpen, setIsOpen] = useState(layout === 'screen');
@@ -2354,6 +2360,12 @@ export default function AuthAccessPanel({
         <button type="button" className="auth-inline-button" onClick={() => setMode(mode === 'sign_up' ? 'sign_in' : 'sign_up')}>
           {mode === 'sign_up' ? t.signInNow : t.createNow}
         </button>
+      </p>
+      <p className="auth-support-copy">
+        {t.accessHelp}{' '}
+        <a href={`mailto:${supportEmail}`} className="auth-inline-button">
+          {t.contactSupport}
+        </a>
       </p>
     </section>
   );

@@ -1313,8 +1313,32 @@ select:focus-visible {
   .auth-plan-grid,
   .auth-membership-summary,
   .auth-discount-row,
-  .auth-password-update {
+  .auth-password-update,
+  .cookie-consent {
     grid-template-columns: 1fr;
+  }
+
+  .cookie-consent {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: calc(100vw - 1.5rem);
+  }
+
+  .cookie-consent-actions {
+    justify-content: stretch;
+  }
+
+  .cookie-consent-actions button {
+    flex: 1 1 100%;
+  }
+
+  .legal-modal {
+    padding: 0.75rem;
+  }
+
+  .legal-modal-panel {
+    max-height: 84vh;
+    padding: 1rem;
   }
 
   .lang-switch {
@@ -4303,6 +4327,13 @@ select:focus-visible {
   color: var(--muted-light);
 }
 
+.auth-support-copy {
+  margin: -0.25rem 0 0;
+  text-align: center;
+  color: var(--muted-light);
+  font-size: 0.92rem;
+}
+
 .auth-inline-button {
   min-height: auto;
   padding: 0;
@@ -4310,6 +4341,146 @@ select:focus-visible {
   background: transparent;
   color: var(--accent-light);
   font-weight: 800;
+}
+
+.legal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem 0.9rem;
+  width: min(100%, 980px);
+  margin: 1.1rem auto 0;
+  padding: 0.8rem 1rem 1.1rem;
+  color: var(--muted-light);
+  font-size: 0.86rem;
+}
+
+.legal-footer-compact {
+  margin-top: 0.45rem;
+}
+
+.legal-footer a,
+.legal-footer button {
+  min-height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.legal-footer a:hover,
+.legal-footer button:hover {
+  color: var(--accent-light);
+}
+
+.cookie-consent {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 80;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  width: min(760px, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid rgba(14, 91, 96, 0.24);
+  border-radius: 1rem;
+  background: rgba(255, 253, 249, 0.96);
+  box-shadow: 0 18px 60px rgba(25, 39, 42, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.cookie-consent strong {
+  display: block;
+  margin-bottom: 0.22rem;
+}
+
+.cookie-consent p {
+  margin: 0;
+  color: var(--muted-light);
+  font-size: 0.9rem;
+}
+
+.cookie-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.cookie-consent-actions button {
+  min-height: 2.3rem;
+  white-space: nowrap;
+}
+
+.legal-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.legal-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(9, 19, 21, 0.56);
+}
+
+.legal-modal-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1rem;
+  width: min(720px, 100%);
+  max-height: min(78vh, 760px);
+  overflow: auto;
+  padding: 1.35rem;
+  border: 1px solid rgba(14, 91, 96, 0.22);
+  border-radius: 1.1rem;
+  background: #fffdf9;
+  box-shadow: 0 24px 90px rgba(6, 23, 26, 0.34);
+}
+
+.legal-modal-panel header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.legal-modal-panel h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+}
+
+.legal-modal-panel header a {
+  color: var(--accent-light);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.legal-modal-panel ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted-light);
+}
+
+.legal-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.legal-modal-close {
+  justify-self: end;
 }
 
 .auth-account-card-compact {
@@ -4505,6 +4676,32 @@ select:focus-visible {
 
 .app.dark .access-feature-list {
   color: var(--text-dark);
+}
+
+.app.dark .legal-footer,
+.app.dark .auth-support-copy {
+  color: var(--muted-dark);
+}
+
+.app.dark .legal-footer a:hover,
+.app.dark .legal-footer button:hover {
+  color: var(--accent-dark);
+}
+
+.app.dark .cookie-consent,
+.app.dark .legal-modal-panel {
+  border-color: rgba(105, 199, 196, 0.24);
+  background: rgba(21, 32, 36, 0.96);
+  color: var(--text-dark);
+}
+
+.app.dark .cookie-consent p,
+.app.dark .legal-modal-panel ul {
+  color: var(--muted-dark);
+}
+
+.app.dark .legal-modal-panel header a {
+  color: var(--accent-dark);
 }
 
 @media (max-width: 1024px) {

@@ -10,6 +10,7 @@ import DrugInteractionChecker from './components/DrugInteractionChecker';
 import EntryCard from './components/EntryCard';
 import GeneticsToolkit from './components/GeneticsToolkit';
 import InfusionCalculator from './components/InfusionCalculator';
+import LegalCompliance from './components/LegalCompliance';
 import ManagementToolkit from './components/ManagementToolkit';
 import UnitConverter from './components/UnitConverter';
 import {
@@ -2349,7 +2350,9 @@ function App() {
           account={authAccount}
           onRefreshAccount={refreshAuthAccount}
           layout="screen"
+          supportEmail={SUPPORT_EMAIL}
         />
+        <LegalCompliance lang={lang} contactEmail={SUPPORT_EMAIL} compact />
       </div>
     );
   }
@@ -4059,6 +4062,8 @@ function App() {
         <span>WAIRUA Veterinary Precision Medicine</span>
       </section>
 
+      <LegalCompliance lang={lang} contactEmail={SUPPORT_EMAIL} />
+
       {isAccountMenuOpen ? (
         <div className="account-menu-popover" role="dialog" aria-modal="true" aria-label={lang === 'es' ? 'Mi cuenta' : 'My account'}>
           <button
@@ -4076,6 +4081,7 @@ function App() {
               accessPreviewMode={accessPreviewMode}
               onChangeAccessPreviewMode={setAccessPreviewMode}
               onClose={() => setIsAccountMenuOpen(false)}
+              supportEmail={SUPPORT_EMAIL}
             />
           </div>
         </div>
