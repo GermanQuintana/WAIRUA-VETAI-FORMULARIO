@@ -37,6 +37,8 @@ const CLINIC_INVITE_PENDING_STORAGE_KEY = 'wairua.pending-clinic-invite-code';
 const TRIAL_DAYS = 10;
 const ADMIN_EMAILS = new Set(['gerqd79@gmail.com']);
 const DISCOUNT_CODE_ALREADY_USED_ERROR = 'DISCOUNT_CODE_ALREADY_USED';
+const CLINIC_CODE_NOT_FOUND_ERROR = 'CLINIC_CODE_NOT_FOUND';
+const CLINIC_SEAT_LIMIT_REACHED_ERROR = 'CLINIC_SEAT_LIMIT_REACHED';
 
 const isPlaceholder = (value: string) => !value || value.includes('your-project') || value.includes('anon_key');
 
@@ -176,6 +178,17 @@ const isMissingClinicSchemaError = (error: unknown) => {
   const code = 'code' in error && typeof error.code === 'string' ? error.code : '';
   const message = 'message' in error && typeof error.message === 'string' ? error.message : '';
   return code === '42P01' || code === 'PGRST202' || code === 'PGRST205' || message.includes('clinic_accounts');
+};
+
+const isClinicLinkingError = (error: unknown) => {
+  const message =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : '';
+
+  return message.includes(CLINIC_CODE_NOT_FOUND_ERROR) || message.includes(CLINIC_SEAT_LIMIT_REACHED_ERROR);
 };
 
 const mapProfileRow = (row: Record<string, unknown>): UserProfile => ({
@@ -1141,7 +1154,9 @@ export class SupabaseAccessService {
   private async syncClinicAccessForUser(inviteCode?: string) {
     const session = await this.getCurrentSession();
     if (!session?.user) return null;
-    const normalized = inviteCode?.trim().toUpperCase() || this.readPendingClinicInviteCode();
+    const normalizedInviteCode = inviteCode?.trim().toUpperCase();
+    const pendingInviteCode = this.readPendingClinicInviteCode();
+    const normalized = normalizedInviteCode || pendingInviteCode;
     try {
       if (normalized) {
         const clinic = await this.joinClinicWithCode(normalized);
@@ -1155,6 +1170,10 @@ export class SupabaseAccessService {
       return row ? mapClinicAccessRow(row as Record<string, unknown>, 'member') : null;
     } catch (error) {
       if (isMissingClinicSchemaError(error)) return null;
+      if (!normalizedInviteCode && pendingInviteCode && isClinicLinkingError(error)) {
+        this.clearPendingClinicInviteCode();
+        return null;
+      }
       throw error;
     }
   }
@@ -1285,6 +1304,18 @@ export class SupabaseAccessService {
     }
 
     return data.session;
+  }
+
+  async sendPasswordResetEmail(email: string, redirectTo: string) {
+    const { error } = await this.client.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) throw error;
+  }
+
+  async updatePassword(password: string) {
+    const { error } = await this.client.auth.updateUser({ password });
+    if (error) throw error;
   }
 
   async signOut() {

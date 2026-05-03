@@ -1312,7 +1312,8 @@ select:focus-visible {
   .auth-mode-switch,
   .auth-plan-grid,
   .auth-membership-summary,
-  .auth-discount-row {
+  .auth-discount-row,
+  .auth-password-update {
     grid-template-columns: 1fr;
   }
 
@@ -4276,6 +4277,24 @@ select:focus-visible {
   color: var(--accent-light);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.auth-password-reset-button {
+  justify-self: center;
+}
+
+.auth-password-update {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.auth-password-update label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+  min-width: 0;
 }
 
 .auth-switch-copy {

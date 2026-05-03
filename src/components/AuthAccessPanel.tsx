@@ -125,6 +125,13 @@ const copy = {
     createAccount: 'Crear cuenta y activar prueba',
     createLinkedAccount: 'Crear cuenta vinculada',
     accessAccount: 'Entrar en la cuenta',
+    forgotPassword: 'He olvidado mi contraseña',
+    passwordResetSent: 'Te hemos enviado un email para crear una contraseña nueva. Revisa también spam o promociones.',
+    passwordResetNeedsEmail: 'Escribe tu email y pulsa de nuevo para enviarte la recuperación.',
+    newPassword: 'Nueva contraseña',
+    updatePassword: 'Actualizar contraseña',
+    passwordUpdated: 'Contraseña actualizada correctamente.',
+    passwordMinLength: 'La contraseña debe tener al menos 6 caracteres.',
     clinicInviteCode: 'Código de clínica',
     clinicInvitePlaceholder: 'Ej: CLINICA-ABCD12',
     clinicInviteHint: 'Si tu clínica te ha dado un código, úsalo para vincular tu alta a esa cuenta sin contratar un plan individual.',
@@ -132,6 +139,8 @@ const copy = {
     emailConfirmation:
       'Cuenta creada. Si Supabase exige confirmación de email, revisa tu correo y después inicia sesión.',
     genericError: 'No se pudo completar la operación.',
+    clinicCodeNotFound: 'El código de clínica no existe o ya no está activo. Revisa el código o pide a la clínica que autorice tu email.',
+    clinicSeatLimitReached: 'La clínica ya no tiene plazas libres. Pide al administrador que amplíe o libere una plaza.',
     account: 'Cuenta',
     selectedPlan: 'Plan elegido',
     accountType: 'Cuenta',
@@ -366,6 +375,13 @@ const copy = {
     createAccount: 'Create account and start trial',
     createLinkedAccount: 'Create linked account',
     accessAccount: 'Access account',
+    forgotPassword: 'I forgot my password',
+    passwordResetSent: 'We sent you an email to create a new password. Check spam or promotions too.',
+    passwordResetNeedsEmail: 'Enter your email and press again to send the recovery email.',
+    newPassword: 'New password',
+    updatePassword: 'Update password',
+    passwordUpdated: 'Password updated successfully.',
+    passwordMinLength: 'Password must be at least 6 characters.',
     clinicInviteCode: 'Clinic code',
     clinicInvitePlaceholder: 'Example: CLINIC-ABCD12',
     clinicInviteHint: 'If your clinic gave you a code, use it to link your sign-up to that account without buying an individual plan.',
@@ -373,6 +389,8 @@ const copy = {
     emailConfirmation:
       'Account created. If Supabase requires email confirmation, check your inbox and then sign in.',
     genericError: 'The operation could not be completed.',
+    clinicCodeNotFound: 'The clinic code does not exist or is no longer active. Check the code or ask the clinic to authorize your email.',
+    clinicSeatLimitReached: 'The clinic has no seats left. Ask the administrator to add or free up a seat.',
     account: 'Account',
     selectedPlan: 'Selected plan',
     accountType: 'Account',
@@ -681,6 +699,8 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 const getDisplayErrorMessage = (error: unknown, t: (typeof copy)['es'] | (typeof copy)['en']) => {
   const message = getErrorMessage(error, t.genericError);
   if (message === 'DISCOUNT_CODE_ALREADY_USED') return t.codeAlreadyUsed;
+  if (message.includes('CLINIC_CODE_NOT_FOUND')) return t.clinicCodeNotFound;
+  if (message.includes('CLINIC_SEAT_LIMIT_REACHED')) return t.clinicSeatLimitReached;
   return message;
 };
 
@@ -904,6 +924,7 @@ export default function AuthAccessPanel({
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<MembershipPlanId>(defaultPlanId);
   const [selectedSeatCount, setSelectedSeatCount] = useState(1);
@@ -1180,6 +1201,48 @@ export default function AuthAccessPanel({
       setShowPassword(false);
       setClinicInviteCode('');
       setIsOpen(false);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!service) return;
+    resetFeedback();
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setError(t.passwordResetNeedsEmail);
+      return;
+    }
+
+    setIsBusy(true);
+
+    try {
+      await service.sendPasswordResetEmail(normalizedEmail, getAppReturnUrl());
+      setMessage(t.passwordResetSent);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!service) return;
+    resetFeedback();
+    if (newPassword.length < 6) {
+      setError(t.passwordMinLength);
+      return;
+    }
+
+    setIsBusy(true);
+
+    try {
+      await service.updatePassword(newPassword);
+      setNewPassword('');
+      setMessage(t.passwordUpdated);
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
@@ -1549,6 +1612,22 @@ export default function AuthAccessPanel({
       <p className="auth-account-hint">{t.managePlanHint}</p>
       <p className="auth-account-hint">{t.accessKeyHint}</p>
       <p className="auth-account-hint">{t.billingManagedByStripe}</p>
+
+      <div className="auth-password-update">
+        <label>
+          {t.newPassword}
+          <input
+            type="password"
+            value={newPassword}
+            minLength={6}
+            autoComplete="new-password"
+            onChange={(event) => setNewPassword(event.target.value)}
+          />
+        </label>
+        <button type="button" className="secondary-button" onClick={handleUpdatePassword} disabled={isBusy || !newPassword}>
+          {t.updatePassword}
+        </button>
+      </div>
 
       {membership?.stripeCustomerId ? (
         <div className="auth-price-note">
@@ -2260,6 +2339,12 @@ export default function AuthAccessPanel({
           {mode === 'sign_up' ? (clinicInviteCode.trim() ? t.createLinkedAccount : t.createAccount) : t.accessAccount}
         </button>
       </form>
+
+      {mode === 'sign_in' ? (
+        <button type="button" className="auth-inline-button auth-password-reset-button" onClick={handlePasswordReset} disabled={isBusy}>
+          {t.forgotPassword}
+        </button>
+      ) : null}
 
       {message ? <p className="auth-feedback auth-feedback-success">{message}</p> : null}
       {error ? <p className="auth-feedback auth-feedback-error">{error}</p> : null}
