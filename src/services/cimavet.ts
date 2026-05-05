@@ -616,7 +616,8 @@ export class CimavetService {
 }
 
 export const buildCimavetRecordUrl = (baseUrl: string, nregistro: string) => {
-  const url = buildCimavetEndpointUrl(baseUrl, 'medicamento');
+  const parsedBaseUrl = new URL(baseUrl);
+  const url = new URL('/cimavet/publico/detalle.html', parsedBaseUrl.origin);
   url.searchParams.set('nregistro', nregistro);
   return url.toString();
 };

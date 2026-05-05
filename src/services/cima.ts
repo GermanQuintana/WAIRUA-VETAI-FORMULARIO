@@ -362,7 +362,8 @@ export class CimaService {
 }
 
 export const buildCimaRecordUrl = (baseUrl: string, nregistro: string) => {
-  const url = buildCimaEndpointUrl(baseUrl, 'medicamento');
+  const parsedBaseUrl = new URL(baseUrl);
+  const url = new URL('/cima/publico/detalle.html', parsedBaseUrl.origin);
   url.searchParams.set('nregistro', nregistro);
   return url.toString();
 };

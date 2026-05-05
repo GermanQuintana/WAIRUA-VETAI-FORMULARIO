@@ -4417,6 +4417,36 @@ select:focus-visible {
   white-space: nowrap;
 }
 
+@media (max-width: 700px) {
+  .cookie-consent {
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: 0.75rem;
+    grid-template-columns: 1fr;
+    max-height: calc(100dvh - 1.5rem - env(safe-area-inset-bottom));
+    width: auto;
+    overflow-y: auto;
+  }
+
+  .cookie-consent > div {
+    min-width: 0;
+  }
+
+  .cookie-consent p {
+    overflow-wrap: anywhere;
+  }
+
+  .cookie-consent-actions {
+    justify-content: stretch;
+  }
+
+  .cookie-consent-actions button {
+    flex: 1 1 100%;
+    min-width: 0;
+    white-space: normal;
+  }
+}
+
 .legal-modal {
   position: fixed;
   inset: 0;
