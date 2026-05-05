@@ -5,7 +5,7 @@ interface Props {
   lang: Language;
 }
 
-type UnitGroupKey = 'mass' | 'volume' | 'concentration';
+type UnitGroupKey = 'mass' | 'volume' | 'concentration' | 'electrolyte';
 
 interface UnitDefinition {
   id: string;
@@ -61,6 +61,16 @@ const UNIT_GROUPS: Record<
     examples: {
       es: 'Ejemplos: 5% a mg/mL, g/mL a mcg/mL, mg/L a mg/mL.',
       en: 'Examples: 5% to mg/mL, g/mL to mcg/mL, mg/L to mg/mL.',
+    },
+  },
+  electrolyte: {
+    units: [
+      { id: 'mEq/L', label: 'mEq/L', factorToBase: 1 },
+      { id: 'mmol/L', label: 'mmol/L', factorToBase: 1 },
+    ],
+    examples: {
+      es: 'Ejemplos: mEq/L a mmol/L para iones monovalentes como sodio, potasio o cloro.',
+      en: 'Examples: mEq/L to mmol/L for monovalent ions such as sodium, potassium, or chloride.',
     },
   },
 };
@@ -119,6 +129,7 @@ export default function UnitConverter({ lang }: Props) {
                 <option value="mass">{t.unitGroupMass}</option>
                 <option value="volume">{t.unitGroupVolume}</option>
                 <option value="concentration">{t.unitGroupConcentration}</option>
+                <option value="electrolyte">{t.unitGroupElectrolyte}</option>
               </select>
             </label>
 

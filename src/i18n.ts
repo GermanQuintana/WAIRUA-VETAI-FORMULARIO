@@ -207,7 +207,7 @@ export const labels = {
     unitConverterKicker: 'Conversor clinico',
     unitConverterTitle: 'Conversor de unidades',
     unitConverterText:
-      'Convierte magnitudes de masa, volumen y concentracion utiles en medicacion, preparaciones y perfusiones.',
+      'Convierte magnitudes de masa, volumen, concentracion y electrolitos utiles en medicacion, preparaciones y perfusiones.',
     unitConverterFormulaTitle: 'Conversiones compatibles',
     unitConverterGroup: 'Familia',
     unitConverterValue: 'Valor',
@@ -215,10 +215,11 @@ export const labels = {
     unitConverterTo: 'Unidad destino',
     unitConverterResult: 'Resultado',
     unitConverterHint:
-      'Para porcentajes se usa % p/v: 1% = 10 mg/mL. Solo se convierten unidades de la misma familia.',
+      'Para porcentajes se usa % p/v: 1% = 10 mg/mL. mEq/L y mmol/L se tratan como equivalentes para iones monovalentes.',
     unitGroupMass: 'Masa',
     unitGroupVolume: 'Volumen',
     unitGroupConcentration: 'Concentracion',
+    unitGroupElectrolyte: 'Electrolitos',
     bodySurfaceKicker: 'Superficie corporal',
     bodySurfaceTitle: 'Superficie corporal',
     bodySurfaceText:
@@ -450,7 +451,7 @@ export const labels = {
     unitConverterKicker: 'Clinical converter',
     unitConverterTitle: 'Unit converter',
     unitConverterText:
-      'Convert mass, volume, and concentration units that are commonly used for medication, compounding, and infusion work.',
+      'Convert mass, volume, concentration, and electrolyte units that are commonly used for medication, compounding, and infusion work.',
     unitConverterFormulaTitle: 'Compatible conversions',
     unitConverterGroup: 'Group',
     unitConverterValue: 'Value',
@@ -458,10 +459,11 @@ export const labels = {
     unitConverterTo: 'To unit',
     unitConverterResult: 'Result',
     unitConverterHint:
-      'Percent values use % w/v: 1% = 10 mg/mL. Only same-family units are converted.',
+      'Percent values use % w/v: 1% = 10 mg/mL. mEq/L and mmol/L are treated as equivalent for monovalent ions.',
     unitGroupMass: 'Mass',
     unitGroupVolume: 'Volume',
     unitGroupConcentration: 'Concentration',
+    unitGroupElectrolyte: 'Electrolytes',
     bodySurfaceKicker: 'Body surface area',
     bodySurfaceTitle: 'Body surface area',
     bodySurfaceText:
