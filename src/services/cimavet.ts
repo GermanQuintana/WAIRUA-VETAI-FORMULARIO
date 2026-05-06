@@ -154,13 +154,12 @@ const matchesIngredientFamily = (value: string, query: string) => {
   const familyValue = normalizeIngredientFamily(value);
   const familyQuery = normalizeIngredientFamily(query);
 
-  if (!normalizedQuery) return true;
+  if (!normalizedQuery || !normalizedValue) return false;
 
   return (
     normalizedValue.includes(normalizedQuery) ||
     normalizedQuery.includes(normalizedValue) ||
-    familyValue.includes(familyQuery) ||
-    familyQuery.includes(familyValue)
+    (!!familyValue && !!familyQuery && (familyValue.includes(familyQuery) || familyQuery.includes(familyValue)))
   );
 };
 
@@ -182,6 +181,14 @@ const getCimavetMedicationSearchFields = (medication: CimavetMedicationSummary, 
     ...(includeActiveIngredient ? [medication.pactivos ?? ''] : []),
   ].map(normalizeSearchText);
 
+const isNumericSearchToken = (value: string) => /^\d+$/.test(value);
+
+const fieldMatchesCimavetSearchToken = (field: string, token: string) => {
+  if (!field) return false;
+  if (isNumericSearchToken(token)) return getSearchTokens(field).some((fieldToken) => fieldToken === token);
+  return field.includes(token) || matchesIngredientFamily(field, token);
+};
+
 const matchesCimavetMedicationQuery = (
   medication: CimavetMedicationSummary,
   query: string,
@@ -194,10 +201,10 @@ const matchesCimavetMedicationQuery = (
   if (!normalizedQuery) return true;
   if (fields.some((field) => field.includes(normalizedQuery))) return true;
   if (tokens.length <= 1) {
-    return fields.some((field) => field.includes(tokens[0] ?? normalizedQuery));
+    return fields.some((field) => fieldMatchesCimavetSearchToken(field, tokens[0] ?? normalizedQuery));
   }
 
-  return tokens.every((token) => fields.some((field) => field.includes(token) || matchesIngredientFamily(field, token)));
+  return tokens.every((token) => fields.some((field) => fieldMatchesCimavetSearchToken(field, token)));
 };
 
 const scoreCimavetMedication = (medication: CimavetMedicationSummary, query: string) => {
