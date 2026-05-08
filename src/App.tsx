@@ -398,12 +398,14 @@ type PresentationCodeItem = { cn?: string; nombre: string; comerc?: boolean };
 const getPresentationCodeItems = (presentations?: PresentationCodeItem[] | null) => {
   const seen = new Set<string>();
 
-  return (presentations ?? []).filter((item) => {
-    const key = `${item.cn ?? ''}::${item.nombre}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return (presentations ?? [])
+    .filter((item) => {
+      const key = `${item.cn ?? ''}::${item.nombre}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => Number(right.comerc === true) - Number(left.comerc === true));
 };
 
 const formatNationalCodeSummary = (presentations?: PresentationCodeItem[] | null) => {
@@ -2706,7 +2708,7 @@ function App() {
                               <section className="live-indications">
                                   <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                   <ul>
-                                    {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                    {presentationCodeItems.map((item, index) => (
                                     <li key={`${medication.nregistro}-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
                                   ))}
                                 </ul>
@@ -3231,7 +3233,7 @@ function App() {
                                     <section className="live-indications">
                                       <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                       <ul>
-                                        {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                        {presentationCodeItems.map((item, index) => (
                                           <li key={`${medication.nregistro}-active-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
                                         ))}
                                       </ul>
@@ -3391,7 +3393,7 @@ function App() {
                                     <section className="live-indications">
                                       <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                       <ul>
-                                        {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                        {presentationCodeItems.map((item, index) => (
                                           <li key={`${medication.nregistro}-active-human-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
                                         ))}
                                       </ul>
@@ -3993,7 +3995,7 @@ function App() {
                               <section className="live-indications">
                                 <h5>{t.presentation}</h5>
                                 <ul>
-                                  {detail.presentaciones.slice(0, 4).map((presentation) => (
+                                  {detail.presentaciones.map((presentation) => (
                                     <li key={`${medication.nregistro}-${presentation.cn}`}>{presentation.nombre}</li>
                                   ))}
                                 </ul>
@@ -4004,7 +4006,7 @@ function App() {
                               <section className="live-indications">
                                 <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                 <ul>
-                                  {presentationCodeItems.slice(0, 4).map((item, index) => (
+                                  {presentationCodeItems.map((item, index) => (
                                     <li key={`${medication.nregistro}-human-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
                                   ))}
                                 </ul>
