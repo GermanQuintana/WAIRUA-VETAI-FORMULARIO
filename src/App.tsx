@@ -98,7 +98,7 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'assistant',
   'management',
 ]);
-const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'constants', 'converter', 'surface', 'management']);
+const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'constants', 'converter', 'surface', 'management', 'fluid']);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
   premium_viewer: ['viewer'],

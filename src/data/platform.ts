@@ -292,9 +292,9 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Calcula mantenimiento, deficit, perdidas, fluidos por problema y consideraciones de anestesia por especie.',
       en: 'Calculates maintenance, deficit, losses, problem-based fluids, and anesthesia considerations by species.',
     },
-    status: { es: 'Premium', en: 'Premium' },
-    statusTone: 'premium',
-    accessTier: 'premium',
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
     toolkitView: 'fluid',
   },
   {
