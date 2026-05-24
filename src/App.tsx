@@ -13,6 +13,7 @@ import InfusionCalculator from './components/InfusionCalculator';
 import LegalCompliance from './components/LegalCompliance';
 import ManagementToolkit from './components/ManagementToolkit';
 import UnitConverter from './components/UnitConverter';
+import VitalConstantsToolkit from './components/VitalConstantsToolkit';
 import {
   LocalizedCollectionCard,
   otcSubmissionFields,
@@ -96,7 +97,7 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'assistant',
   'management',
 ]);
-const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'converter', 'surface', 'management']);
+const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'constants', 'converter', 'surface', 'management']);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
   premium_viewer: ['viewer'],
@@ -3660,9 +3661,7 @@ function App() {
 
             {activeToolkitView === 'interactions' && <DrugInteractionChecker lang={lang} entries={entriesVisibleToCurrentUser} />}
 
-            {activeToolkitView === 'constants' && (
-              <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.constants} />
-            )}
+            {activeToolkitView === 'constants' && <VitalConstantsToolkit lang={lang} />}
 
             {activeToolkitView === 'ranges' && (
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.ranges} />

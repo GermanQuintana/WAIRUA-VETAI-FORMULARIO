@@ -2965,6 +2965,248 @@ select:focus-visible {
   background: rgba(255, 255, 255, 0.7);
 }
 
+.vital-constants-toolkit {
+  gap: 1.15rem;
+}
+
+.vital-constants-note strong {
+  color: #247a4a;
+}
+
+.vital-species-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 0.65rem;
+}
+
+.vital-species-button {
+  min-height: 76px;
+  display: grid;
+  gap: 0.25rem;
+  align-content: center;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.9rem;
+  border: 1px solid #bfd7c2;
+  background: #f5fbf3;
+  color: #173f2b;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.vital-species-button span {
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.vital-species-button small {
+  color: #4d7259;
+  font-weight: 700;
+}
+
+.vital-species-button:hover,
+.vital-species-button.is-active {
+  transform: translateY(-2px);
+  border-color: #42a568;
+  background: linear-gradient(135deg, #e6f8e8 0%, #f7fff5 100%);
+  box-shadow: 0 14px 30px rgba(39, 117, 75, 0.16);
+}
+
+.vital-species-button.is-active {
+  outline: 2px solid rgba(57, 151, 89, 0.22);
+}
+
+.vital-species-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  border: 1px solid #d6e1cf;
+  background:
+    radial-gradient(circle at top right, rgba(111, 168, 92, 0.18), transparent 34%),
+    linear-gradient(135deg, #fffdf7 0%, #f5fbf4 100%);
+}
+
+.vital-species-panel.tone-equine {
+  background:
+    radial-gradient(circle at top right, rgba(149, 116, 70, 0.18), transparent 34%),
+    linear-gradient(135deg, #fffdf7 0%, #fbf7ef 100%);
+}
+
+.vital-species-panel.tone-ruminant {
+  background:
+    radial-gradient(circle at top right, rgba(66, 146, 105, 0.2), transparent 34%),
+    linear-gradient(135deg, #fbfff8 0%, #eef9f1 100%);
+}
+
+.vital-species-panel.tone-bovine {
+  background:
+    radial-gradient(circle at top right, rgba(55, 128, 88, 0.22), transparent 34%),
+    linear-gradient(135deg, #f8fff8 0%, #eef8ec 100%);
+}
+
+.vital-species-panel.tone-porcine {
+  background:
+    radial-gradient(circle at top right, rgba(175, 104, 111, 0.17), transparent 34%),
+    linear-gradient(135deg, #fffaf8 0%, #fbf0f0 100%);
+}
+
+.vital-species-panel.tone-exotic {
+  background:
+    radial-gradient(circle at top right, rgba(94, 146, 158, 0.18), transparent 34%),
+    linear-gradient(135deg, #fbfffb 0%, #eff8f8 100%);
+}
+
+.vital-species-panel.tone-reptile {
+  background:
+    radial-gradient(circle at top right, rgba(87, 139, 72, 0.2), transparent 34%),
+    linear-gradient(135deg, #fffff6 0%, #f3f9e9 100%);
+}
+
+.vital-species-panel.tone-avian {
+  background:
+    radial-gradient(circle at top right, rgba(72, 126, 166, 0.18), transparent 34%),
+    linear-gradient(135deg, #fbfdff 0%, #eef5fb 100%);
+}
+
+.vital-species-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(77, 107, 72, 0.18);
+}
+
+.vital-species-title span,
+.vital-species-title strong {
+  color: var(--muted-light);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vital-species-title h4 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 0.95;
+}
+
+.vital-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.vital-metric {
+  min-height: 156px;
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 0.95rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(90, 124, 80, 0.16);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.vital-metric span {
+  color: #436244;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vital-metric strong {
+  font-size: clamp(1.45rem, 3vw, 2.15rem);
+  line-height: 1;
+}
+
+.vital-metric small {
+  color: var(--muted-light);
+  font-weight: 800;
+}
+
+.vital-metric p {
+  margin: 0.25rem 0 0;
+  color: var(--muted-light);
+  font-size: 0.9rem;
+}
+
+.vital-detail-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 0.85rem;
+}
+
+.vital-detail-block {
+  padding: 0.95rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(90, 124, 80, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.vital-detail-block h5 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.vital-fact-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.vital-fact-row {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.42fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(82, 113, 78, 0.14);
+}
+
+.vital-fact-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.vital-fact-row span {
+  color: var(--muted-light);
+  font-weight: 800;
+}
+
+.vital-note-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted-light);
+}
+
+.vital-note-list li + li {
+  margin-top: 0.55rem;
+}
+
+.vital-source-note {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.vital-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.vital-source-links a {
+  color: var(--accent-light);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .management-subtabs {
   margin-top: 0.35rem;
 }
@@ -3366,6 +3608,45 @@ select:focus-visible {
 
 .app.dark .toolkit-source-note a {
   color: var(--accent-dark);
+}
+
+.app.dark .vital-constants-note strong,
+.app.dark .vital-source-links a {
+  color: var(--accent-dark);
+}
+
+.app.dark .vital-species-button {
+  background: #15231b;
+  border-color: #2f4b38;
+  color: var(--text-dark);
+}
+
+.app.dark .vital-species-button small,
+.app.dark .vital-species-title span,
+.app.dark .vital-species-title strong,
+.app.dark .vital-metric small,
+.app.dark .vital-metric p,
+.app.dark .vital-fact-row span,
+.app.dark .vital-note-list {
+  color: var(--muted-dark);
+}
+
+.app.dark .vital-species-button:hover,
+.app.dark .vital-species-button.is-active {
+  background: #193224;
+  border-color: #4c9c66;
+  box-shadow: none;
+}
+
+.app.dark .vital-species-panel,
+.app.dark .vital-detail-block,
+.app.dark .vital-metric {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .vital-metric span {
+  color: #9ed0a8;
 }
 
 .app.dark .search-input-brand-mark {
@@ -3867,9 +4148,24 @@ select:focus-visible {
 
   .toolkit-utility-header,
   .toolkit-utility-grid,
-  .toolkit-reference-header {
+  .toolkit-reference-header,
+  .vital-species-title {
     flex-direction: column;
     grid-template-columns: 1fr;
+  }
+
+  .vital-metric-grid,
+  .vital-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vital-species-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vital-fact-row {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
   }
 
   .toolkit-utility-note {
@@ -6798,6 +7094,16 @@ select {
   .coming-soon-species-chip {
     width: 100%;
     justify-content: center;
+  }
+
+  .vital-species-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .vital-species-button,
+  .vital-metric,
+  .vital-detail-block {
+    border-radius: 0.8rem;
   }
 
   .live-card-links a,

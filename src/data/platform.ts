@@ -186,9 +186,9 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Referencia por especie para temperatura, FC, FR, PANI/PAM, TRC, mucosas, diuresis y parametros de triage rapido.',
       en: 'Species reference for temperature, HR, RR, NIBP/MAP, CRT, mucous membranes, urine output, and rapid triage parameters.',
     },
-    status: { es: 'Pronto', en: 'Soon' },
-    statusTone: 'soon',
-    accessTier: 'premium',
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
     toolkitView: 'constants',
   },
   {
