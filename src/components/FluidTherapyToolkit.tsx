@@ -3,6 +3,7 @@ import { Language } from '../i18n';
 
 type FluidSpeciesKey = 'dog' | 'cat' | 'rabbit' | 'horse' | 'cow';
 type FluidProblemKey = 'dehydration' | 'shock' | 'diarrhea' | 'anesthesia' | 'pediatric';
+type PotassiumAmpUnit = 'meqMl' | 'mgMlKcl' | 'mgMlK';
 
 interface FluidSpeciesProfile {
   key: FluidSpeciesKey;
@@ -12,8 +13,6 @@ interface FluidSpeciesProfile {
   anesthesiaMlKgHour: string;
   shockBolusMlKg: string;
   deficitHours: string;
-  defaultWeight: number;
-  defaultOngoingLossMlKgDay: number;
   route: { es: string; en: string };
   pediatricLabel: { es: string; en: string };
   pediatricMultiplier: number;
@@ -42,8 +41,6 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     anesthesiaMlKgHour: '5 mL/kg/h',
     shockBolusMlKg: '15-20 mL/kg IV, reevaluar en 15-30 min',
     deficitHours: '12-24 h',
-    defaultWeight: 20,
-    defaultOngoingLossMlKgDay: 10,
     route: { es: 'IV si perfusion alterada; oral/SC si deficit leve y estable.', en: 'IV if perfusion is altered; oral/SC if mild and stable.' },
     pediatricLabel: { es: 'Cachorro', en: 'Puppy' },
     pediatricMultiplier: 3,
@@ -60,8 +57,6 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     anesthesiaMlKgHour: '3-5 mL/kg/h',
     shockBolusMlKg: '5-10 mL/kg IV, reevaluar en 15-30 min',
     deficitHours: '12-24 h',
-    defaultWeight: 4,
-    defaultOngoingLossMlKgDay: 8,
     route: { es: 'IV si shock; SC util en pacientes estables seleccionados.', en: 'IV for shock; SC can help selected stable patients.' },
     pediatricLabel: { es: 'Gatito', en: 'Kitten' },
     pediatricMultiplier: 2.5,
@@ -78,8 +73,6 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     anesthesiaMlKgHour: '5-10 mL/kg/h',
     shockBolusMlKg: '10-20 mL/kg IV/IO tibio, reevaluar',
     deficitHours: '12-24 h',
-    defaultWeight: 2,
-    defaultOngoingLossMlKgDay: 15,
     route: { es: 'SC si leve; IV/IO si ileo, shock, hipotermia o anorexia marcada.', en: 'SC if mild; IV/IO for ileus, shock, hypothermia, or marked anorexia.' },
     pediatricLabel: { es: 'Gazapo', en: 'Kit' },
     pediatricMultiplier: 2,
@@ -96,8 +89,6 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     anesthesiaMlKgHour: '5-10 mL/kg/h segun procedimiento',
     shockBolusMlKg: '20 mL/kg IV o 20-35 L/1-2 h en adulto si deficit grave',
     deficitHours: '50% en 1-2 h si shock; resto en 24 h',
-    defaultWeight: 500,
-    defaultOngoingLossMlKgDay: 20,
     route: { es: 'Enteral si estable; IV si shock, >8% deshidratado o reflujo gastrico positivo.', en: 'Enteral if stable; IV for shock, >8% dehydration, or positive gastric reflux.' },
     pediatricLabel: { es: 'Potro', en: 'Foal' },
     pediatricMultiplier: 2,
@@ -114,8 +105,6 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     anesthesiaMlKgHour: '5-10 mL/kg/h si anestesia/quirurgico',
     shockBolusMlKg: '10-20 mL/kg IV, reevaluar perfusion',
     deficitHours: '12-24 h; mas rapido si hipovolemia',
-    defaultWeight: 600,
-    defaultOngoingLossMlKgDay: 20,
     route: { es: 'Oral si bebe y perfunde; IV si decubito, shock, acidosis o diarrea severa.', en: 'Oral if drinking and perfused; IV for recumbency, shock, acidosis, or severe diarrhea.' },
     pediatricLabel: { es: 'Ternero', en: 'Calf' },
     pediatricMultiplier: 1.5,
@@ -171,13 +160,89 @@ const dehydrationGuide = [
   { range: '10%+', es: 'Depresion, pulso debil, extremidades frias, shock posible.', en: 'Depression, weak pulse, cool limbs, shock possible.' },
 ];
 
+const potassiumSupplementationGuide = [
+  {
+    serum: '<2.0',
+    add: '60-80 mEq/L',
+    note: {
+      es: 'Hipopotasemia severa: ECG, bomba y control estrecho; no superar 0.5 mEq/kg/h salvo UCI.',
+      en: 'Severe hypokalemia: ECG, pump, and close control; do not exceed 0.5 mEq/kg/h except ICU.',
+    },
+  },
+  {
+    serum: '2.1-2.5',
+    add: '60 mEq/L',
+    note: { es: 'Revisar cada 4-6 h si el paciente esta inestable.', en: 'Recheck every 4-6 h if unstable.' },
+  },
+  {
+    serum: '2.6-3.0',
+    add: '40 mEq/L',
+    note: { es: 'Frecuente en anorexia, diarrea o poliuria.', en: 'Common with anorexia, diarrhea, or polyuria.' },
+  },
+  {
+    serum: '3.1-3.5',
+    add: '20-40 mEq/L',
+    note: { es: 'Elegir el extremo alto si hay perdidas digestivas activas.', en: 'Use the upper end with active GI losses.' },
+  },
+  {
+    serum: '3.6-5.0',
+    add: '0-20 mEq/L',
+    note: { es: 'Mantenimiento bajo solo si hay perdidas continuas y diuresis.', en: 'Low maintenance only with ongoing losses and urine output.' },
+  },
+];
+
+const potassiumPathologyGuide = [
+  {
+    problem: { es: 'Diarrea con K desconocido', en: 'Diarrhea with unknown K' },
+    action: { es: '10-20 mEq/L si hay diuresis y no sospechas hiperK.', en: '10-20 mEq/L if urinating and hyperK is not suspected.' },
+  },
+  {
+    problem: { es: 'Anorexia/ileos prolongados', en: 'Prolonged anorexia/ileus' },
+    action: { es: '20 mEq/L y repetir ionograma cuando sea posible.', en: '20 mEq/L and repeat electrolytes when possible.' },
+  },
+  {
+    problem: { es: 'Obstruccion urinaria, Addison, AKI', en: 'Urinary obstruction, Addison, AKI' },
+    action: { es: 'No suplementar hasta medir K y confirmar diuresis.', en: 'Do not supplement until K is measured and urine output confirmed.' },
+  },
+];
+
+const cowMineralGuide = [
+  {
+    title: { es: 'Calcio', en: 'Calcium' },
+    body: {
+      es: 'Hipocalcemia/fiebre de la leche: calcio borogluconato IV lento segun producto, monitorizando corazon. Muchos protocolos adultos usan 400-500 mL.',
+      en: 'Hypocalcemia/milk fever: slow IV calcium borogluconate by product label, monitoring the heart. Many adult protocols use 400-500 mL.',
+    },
+  },
+  {
+    title: { es: 'Magnesio', en: 'Magnesium' },
+    body: {
+      es: 'Tetania de los pastos o hipomagnesemia: combinar calcio + magnesio. Merck cita 400 mL Ca borogluconato 40% + 50 mL MgSO4 25% IV lento.',
+      en: 'Grass tetany or hypomagnesemia: combine calcium + magnesium. Merck cites 400 mL 40% Ca borogluconate + 50 mL 25% MgSO4 slow IV.',
+    },
+  },
+  {
+    title: { es: 'Seguridad', en: 'Safety' },
+    body: {
+      es: 'No mezclar calcio/magnesio en cualquier bolsa sin revisar compatibilidad del producto. Auscultar y detener si hay arritmia.',
+      en: 'Do not mix calcium/magnesium in any bag without checking product compatibility. Auscultate and stop if arrhythmia appears.',
+    },
+  },
+];
+
 const references = [
   { label: 'AAHA fluid therapy 2024', url: 'https://www.aaha.org/resources/2024-aaha-fluid-therapy-guidelines-for-dogs-and-cats/section-3-fluids-for-replacement-and-maintenance/' },
   { label: 'AAHA anesthesia fluids', url: 'https://www.aaha.org/resources/2024-aaha-fluid-therapy-guidelines-for-dogs-and-cats/section-4-fluid-therapy-and-anesthesia/' },
   { label: 'Merck equine emergency fluids', url: 'https://www.merckvetmanual.com/emergency-medicine-and-critical-care/emergency-medicine-in-horses/emergency-procedures-in-horses' },
   { label: 'Merck colic fluid needs', url: 'https://www.merckvetmanual.com/digestive-system/colic-in-horses/overview-of-colic-in-horses' },
+  { label: 'Merck potassium supplementation', url: 'https://www.merckvetmanual.com/therapeutics/fluid-therapy/the-fluid-resuscitation-plan-in-animals' },
+  { label: 'MSD potassium table', url: 'https://www.msdvetmanual.com/multimedia/table/guideline-for-potassium-supplementation-in-dogs-and-cats' },
+  { label: 'Merck cattle Mg/Ca', url: 'https://www.merckvetmanual.com/metabolic-disorders/disorders-of-magnesium-metabolism/hypomagnesemic-tetany-in-cattle-and-sheep' },
   { label: 'Calf diarrhea IV fluids', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7126998/' },
 ];
+
+const KCL_MG_PER_MEQ = 74.55;
+const POTASSIUM_MG_PER_MEQ = 39.1;
 
 const getCopy = (lang: Language) => ({
   kicker: lang === 'es' ? 'Fluidoterapia' : 'Fluid therapy',
@@ -194,6 +259,7 @@ const getCopy = (lang: Language) => ({
   pediatric: lang === 'es' ? 'Paciente joven' : 'Young patient',
   problem: lang === 'es' ? 'Problema principal' : 'Main problem',
   maintenance: lang === 'es' ? 'Mantenimiento' : 'Maintenance',
+  maintenanceRate: lang === 'es' ? 'Base mantenimiento' : 'Maintenance base',
   deficit: lang === 'es' ? 'Deficit' : 'Deficit',
   losses: lang === 'es' ? 'Perdidas' : 'Losses',
   total: lang === 'es' ? 'Total 24 h' : 'Total 24 h',
@@ -203,6 +269,14 @@ const getCopy = (lang: Language) => ({
   route: lang === 'es' ? 'Ruta' : 'Route',
   dehydrationGuide: lang === 'es' ? 'Como estimar la deshidratacion' : 'How to estimate dehydration',
   fluidChoice: lang === 'es' ? 'Fluido y suplementos' : 'Fluid and supplements',
+  potassium: lang === 'es' ? 'Potasio y electrolitos' : 'Potassium and electrolytes',
+  kConverter: lang === 'es' ? 'Conversor de ampolla KCl' : 'KCl ampoule converter',
+  serumK: lang === 'es' ? 'K analitico' : 'Serum K',
+  targetBag: lang === 'es' ? 'K objetivo en bolsa' : 'Target K in bag',
+  bagVolume: lang === 'es' ? 'Volumen de bolsa' : 'Bag volume',
+  ampConcentration: lang === 'es' ? 'Concentracion ampolla' : 'Ampoule concentration',
+  ampUnit: lang === 'es' ? 'Unidad ampolla' : 'Ampoule unit',
+  calculated: lang === 'es' ? 'Calculado' : 'Calculated',
   sources: lang === 'es' ? 'Referencias' : 'References',
   note:
     lang === 'es'
@@ -216,10 +290,15 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
   const [problemKey, setProblemKey] = useState<FluidProblemKey>('dehydration');
   const activeSpecies = speciesProfiles.find((item) => item.key === speciesKey) ?? speciesProfiles[0];
   const activeProblem = problems.find((item) => item.key === problemKey) ?? problems[0];
-  const [weight, setWeight] = useState(String(activeSpecies.defaultWeight));
-  const [dehydration, setDehydration] = useState('6');
-  const [ongoingLoss, setOngoingLoss] = useState(String(activeSpecies.defaultOngoingLossMlKgDay));
+  const [weight, setWeight] = useState('');
+  const [dehydration, setDehydration] = useState('');
+  const [ongoingLoss, setOngoingLoss] = useState('');
   const [isPediatric, setIsPediatric] = useState(false);
+  const [serumPotassium, setSerumPotassium] = useState('');
+  const [targetPotassium, setTargetPotassium] = useState('');
+  const [bagVolume, setBagVolume] = useState('');
+  const [ampConcentration, setAmpConcentration] = useState('');
+  const [ampUnit, setAmpUnit] = useState<PotassiumAmpUnit>('meqMl');
 
   const parsedWeight = Number.parseFloat(weight);
   const parsedDehydration = Number.parseFloat(dehydration);
@@ -227,6 +306,11 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
   const validWeight = Number.isFinite(parsedWeight) && parsedWeight > 0 ? parsedWeight : 0;
   const safeDehydration = Number.isFinite(parsedDehydration) && parsedDehydration > 0 ? Math.min(parsedDehydration, 15) : 0;
   const safeOngoingLoss = Number.isFinite(parsedOngoingLoss) && parsedOngoingLoss > 0 ? parsedOngoingLoss : 0;
+  const hasWeight = validWeight > 0;
+  const parsedSerumPotassium = Number.parseFloat(serumPotassium);
+  const parsedTargetPotassium = Number.parseFloat(targetPotassium);
+  const parsedBagVolume = Number.parseFloat(bagVolume);
+  const parsedAmpConcentration = Number.parseFloat(ampConcentration);
 
   const calculations = useMemo(() => {
     const maintenanceMultiplier = isPediatric ? activeSpecies.pediatricMultiplier : 1;
@@ -241,15 +325,47 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
       ongoingMlDay,
       totalMlDay,
       hourlyMl: totalMlDay / 24,
+      maintenanceMlKgHour: (activeSpecies.maintenanceMlKgDay * maintenanceMultiplier) / 24,
     };
   }, [activeSpecies, isPediatric, safeDehydration, safeOngoingLoss, validWeight]);
 
   const handleSpeciesChange = (nextSpecies: FluidSpeciesProfile) => {
     setSpeciesKey(nextSpecies.key);
-    setWeight(String(nextSpecies.defaultWeight));
-    setOngoingLoss(String(nextSpecies.defaultOngoingLossMlKgDay));
+    setWeight('');
+    setDehydration('');
+    setOngoingLoss('');
     setIsPediatric(false);
   };
+
+  const selectedPotassiumGuide = potassiumSupplementationGuide.find((item) => {
+    if (!Number.isFinite(parsedSerumPotassium)) return false;
+    if (item.serum === '<2.0') return parsedSerumPotassium < 2;
+    if (item.serum === '2.1-2.5') return parsedSerumPotassium >= 2.1 && parsedSerumPotassium <= 2.5;
+    if (item.serum === '2.6-3.0') return parsedSerumPotassium >= 2.6 && parsedSerumPotassium <= 3;
+    if (item.serum === '3.1-3.5') return parsedSerumPotassium >= 3.1 && parsedSerumPotassium <= 3.5;
+    return parsedSerumPotassium >= 3.6 && parsedSerumPotassium <= 5;
+  });
+
+  const ampMeqPerMl =
+    Number.isFinite(parsedAmpConcentration) && parsedAmpConcentration > 0
+      ? ampUnit === 'meqMl'
+        ? parsedAmpConcentration
+        : ampUnit === 'mgMlKcl'
+          ? parsedAmpConcentration / KCL_MG_PER_MEQ
+          : parsedAmpConcentration / POTASSIUM_MG_PER_MEQ
+      : 0;
+  const targetMeq =
+    Number.isFinite(parsedTargetPotassium) && parsedTargetPotassium > 0 && Number.isFinite(parsedBagVolume) && parsedBagVolume > 0
+      ? parsedTargetPotassium * (parsedBagVolume / 1000)
+      : 0;
+  const ampMlToAdd = ampMeqPerMl > 0 && targetMeq > 0 ? targetMeq / ampMeqPerMl : 0;
+  const deliveredKMeqKgHour =
+    hasWeight && Number.isFinite(parsedTargetPotassium) && parsedTargetPotassium > 0 && calculations.hourlyMl > 0
+      ? (parsedTargetPotassium * (calculations.hourlyMl / 1000)) / validWeight
+      : 0;
+
+  const formatNumber = (value: number, decimals = 0, suffix = '') =>
+    Number.isFinite(value) && value > 0 ? `${roundValue(value, decimals)}${suffix}` : '-';
 
   return (
     <section className="toolkit-utility fluid-toolkit">
@@ -291,7 +407,14 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
           <div className="toolkit-utility-form fluid-form">
             <label>
               {copy.weight} (kg)
-              <input type="number" min="0" step="0.1" value={weight} onChange={(event) => setWeight(event.target.value)} />
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={weight}
+                placeholder="kg"
+                onChange={(event) => setWeight(event.target.value)}
+              />
             </label>
             <label>
               {copy.dehydration} (%)
@@ -301,6 +424,7 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
                 max="15"
                 step="0.5"
                 value={dehydration}
+                placeholder="%"
                 onChange={(event) => setDehydration(event.target.value)}
               />
             </label>
@@ -311,6 +435,7 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
                 min="0"
                 step="1"
                 value={ongoingLoss}
+                placeholder="mL/kg/d"
                 onChange={(event) => setOngoingLoss(event.target.value)}
               />
             </label>
@@ -337,23 +462,28 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
         <section className="toolkit-utility-card result-card fluid-result-panel">
           <div className="fluid-result-grid">
             <article>
+              <span>{copy.maintenanceRate}</span>
+              <strong>{roundValue(calculations.maintenanceMlKgHour, 1)}</strong>
+              <small>mL/kg/h</small>
+            </article>
+            <article>
               <span>{copy.maintenance}</span>
-              <strong>{roundValue(calculations.maintenanceMlDay, 0)}</strong>
+              <strong>{formatNumber(calculations.maintenanceMlDay)}</strong>
               <small>mL/24 h</small>
             </article>
             <article>
               <span>{copy.deficit}</span>
-              <strong>{roundValue(calculations.deficitMl / 1000, 2)}</strong>
+              <strong>{formatNumber(calculations.deficitMl / 1000, 2)}</strong>
               <small>L</small>
             </article>
             <article>
               <span>{copy.losses}</span>
-              <strong>{roundValue(calculations.ongoingMlDay, 0)}</strong>
+              <strong>{formatNumber(calculations.ongoingMlDay)}</strong>
               <small>mL/24 h</small>
             </article>
             <article className="fluid-result-total">
               <span>{copy.total}</span>
-              <strong>{roundValue(calculations.totalMlDay / 1000, 2)}</strong>
+              <strong>{formatNumber(calculations.totalMlDay / 1000, 2)}</strong>
               <small>L</small>
             </article>
           </div>
@@ -361,7 +491,7 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
           <div className="fluid-rate-strip">
             <div>
               <span>{copy.hourly}</span>
-              <strong>{roundValue(calculations.hourlyMl, 0)} mL/h</strong>
+              <strong>{formatNumber(calculations.hourlyMl, 0, ' mL/h')}</strong>
             </div>
             <div>
               <span>{copy.bolus}</span>
@@ -418,6 +548,141 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
             ))}
           </ul>
         </article>
+      </section>
+
+      <section className="fluid-electrolyte-section">
+        <div className="fluid-electrolyte-header">
+          <div>
+            <p className="section-kicker">{copy.potassium}</p>
+            <h4>{copy.kConverter}</h4>
+          </div>
+          <p>
+            {lang === 'es'
+              ? 'KCl: 1 mEq equivale a 74.55 mg de KCl o 39.1 mg de potasio. No superar 0.5 mEq/kg/h salvo UCI.'
+              : 'KCl: 1 mEq equals 74.55 mg of KCl or 39.1 mg of potassium. Do not exceed 0.5 mEq/kg/h except ICU.'}
+          </p>
+        </div>
+
+        <div className="fluid-electrolyte-layout">
+          <article className="fluid-decision-card">
+            <h4>{lang === 'es' ? 'Tabla orientativa KCl' : 'KCl guidance table'}</h4>
+            <div className="fluid-k-table">
+              {potassiumSupplementationGuide.map((item) => (
+                <div key={item.serum} className={selectedPotassiumGuide?.serum === item.serum ? 'is-highlighted' : ''}>
+                  <strong>{item.serum} mEq/L</strong>
+                  <span>{item.add}</span>
+                  <p>{item.note[lang]}</p>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="fluid-decision-card fluid-k-converter">
+            <div className="toolkit-utility-form fluid-form">
+              <label>
+                {copy.serumK} (mEq/L)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={serumPotassium}
+                  placeholder="mEq/L"
+                  onChange={(event) => setSerumPotassium(event.target.value)}
+                />
+              </label>
+              <label>
+                {copy.targetBag} (mEq/L)
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={targetPotassium}
+                  placeholder="mEq/L"
+                  onChange={(event) => setTargetPotassium(event.target.value)}
+                />
+              </label>
+              <label>
+                {copy.bagVolume} (mL)
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={bagVolume}
+                  placeholder="mL"
+                  onChange={(event) => setBagVolume(event.target.value)}
+                />
+              </label>
+              <label>
+                {copy.ampConcentration}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={ampConcentration}
+                  placeholder={ampUnit === 'meqMl' ? 'mEq/mL' : 'mg/mL'}
+                  onChange={(event) => setAmpConcentration(event.target.value)}
+                />
+              </label>
+              <label>
+                {copy.ampUnit}
+                <select value={ampUnit} onChange={(event) => setAmpUnit(event.target.value as PotassiumAmpUnit)}>
+                  <option value="meqMl">mEq/mL</option>
+                  <option value="mgMlKcl">mg/mL KCl</option>
+                  <option value="mgMlK">mg/mL K+</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="fluid-converter-results">
+              <div>
+                <span>{lang === 'es' ? 'Equivalencia ampolla' : 'Ampoule equivalent'}</span>
+                <strong>{formatNumber(ampMeqPerMl, 2, ' mEq/mL')}</strong>
+              </div>
+              <div>
+                <span>{lang === 'es' ? 'K total a anadir' : 'Total K to add'}</span>
+                <strong>{formatNumber(targetMeq, 1, ' mEq')}</strong>
+              </div>
+              <div>
+                <span>{lang === 'es' ? 'Volumen de ampolla' : 'Ampoule volume'}</span>
+                <strong>{formatNumber(ampMlToAdd, 2, ' mL')}</strong>
+              </div>
+              <div>
+                <span>{lang === 'es' ? 'Ritmo K estimado' : 'Estimated K rate'}</span>
+                <strong>{formatNumber(deliveredKMeqKgHour, 3, ' mEq/kg/h')}</strong>
+              </div>
+            </div>
+
+            {selectedPotassiumGuide ? (
+              <p className="fluid-k-recommendation">
+                {lang === 'es' ? 'Segun K analitico: ' : 'By serum K: '}
+                <strong>{selectedPotassiumGuide.add}</strong>
+              </p>
+            ) : null}
+          </article>
+
+          <article className="fluid-decision-card">
+            <h4>{lang === 'es' ? 'Si no hay ionograma' : 'If electrolytes are unavailable'}</h4>
+            <div className="fluid-scale-list">
+              {potassiumPathologyGuide.map((item) => (
+                <div key={item.problem.es}>
+                  <strong>{item.problem[lang]}</strong>
+                  <span>{item.action[lang]}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+
+        {activeSpecies.key === 'cow' ? (
+          <section className="fluid-cow-minerals">
+            {cowMineralGuide.map((item) => (
+              <article key={item.title.es}>
+                <strong>{item.title[lang]}</strong>
+                <p>{item.body[lang]}</p>
+              </article>
+            ))}
+          </section>
+        ) : null}
       </section>
 
       <article className="toolkit-source-note fluid-source-note">

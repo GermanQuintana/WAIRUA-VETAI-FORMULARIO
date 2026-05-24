@@ -3410,6 +3410,123 @@ select:focus-visible {
   gap: 0.45rem;
 }
 
+.fluid-electrolyte-section {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid #cfdee2;
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top left, rgba(77, 158, 177, 0.12), transparent 35%),
+    linear-gradient(135deg, #fffdf8 0%, #f6fbfc 100%);
+}
+
+.fluid-electrolyte-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+}
+
+.fluid-electrolyte-header h4,
+.fluid-electrolyte-header p {
+  margin: 0;
+}
+
+.fluid-electrolyte-header p {
+  max-width: 620px;
+  color: var(--muted-light);
+}
+
+.fluid-electrolyte-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 1.1fr 0.85fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.fluid-k-table {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.fluid-k-table div {
+  display: grid;
+  grid-template-columns: minmax(78px, 0.55fr) minmax(78px, 0.5fr) minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.55rem;
+  border: 1px solid rgba(75, 121, 134, 0.14);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.fluid-k-table div.is-highlighted {
+  border-color: rgba(52, 133, 156, 0.42);
+  background: rgba(232, 248, 250, 0.9);
+}
+
+.fluid-k-table strong,
+.fluid-k-table span {
+  font-weight: 900;
+}
+
+.fluid-k-table p {
+  margin: 0;
+  color: var(--muted-light);
+}
+
+.fluid-converter-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.fluid-converter-results div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(75, 121, 134, 0.16);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.fluid-converter-results span {
+  color: #4f6c75;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fluid-converter-results strong {
+  font-size: 1.05rem;
+}
+
+.fluid-k-recommendation {
+  margin: 0.75rem 0 0;
+  color: var(--muted-light);
+}
+
+.fluid-cow-minerals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.fluid-cow-minerals article {
+  padding: 0.85rem;
+  border: 1px solid rgba(75, 121, 134, 0.16);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.fluid-cow-minerals p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-light);
+}
+
 .management-subtabs {
   margin-top: 0.35rem;
 }
@@ -3869,7 +3986,11 @@ select:focus-visible {
 .app.dark .fluid-result-grid small,
 .app.dark .fluid-scale-list span,
 .app.dark .fluid-problem-card dd,
-.app.dark .fluid-note-list {
+.app.dark .fluid-note-list,
+.app.dark .fluid-electrolyte-header p,
+.app.dark .fluid-k-table p,
+.app.dark .fluid-k-recommendation,
+.app.dark .fluid-cow-minerals p {
   color: var(--muted-dark);
 }
 
@@ -3883,9 +4004,13 @@ select:focus-visible {
 .app.dark .fluid-input-panel,
 .app.dark .fluid-result-panel,
 .app.dark .fluid-decision-card,
+.app.dark .fluid-electrolyte-section,
 .app.dark .fluid-toggle,
 .app.dark .fluid-result-grid article,
-.app.dark .fluid-rate-strip > div {
+.app.dark .fluid-rate-strip > div,
+.app.dark .fluid-k-table div,
+.app.dark .fluid-converter-results div,
+.app.dark .fluid-cow-minerals article {
   background: #182329;
   border-color: var(--border-dark);
 }
@@ -3898,6 +4023,11 @@ select:focus-visible {
 .app.dark .fluid-result-total {
   background: #19303a !important;
   border-color: #386a76 !important;
+}
+
+.app.dark .fluid-k-table div.is-highlighted {
+  background: #19303a;
+  border-color: #386a76;
 }
 
 .app.dark .search-input-brand-mark {
@@ -4408,14 +4538,22 @@ select:focus-visible {
   .vital-metric-grid,
   .vital-detail-grid,
   .fluid-layout,
-  .fluid-decision-grid {
+  .fluid-decision-grid,
+  .fluid-electrolyte-layout,
+  .fluid-cow-minerals {
     grid-template-columns: 1fr;
   }
 
   .vital-species-toolbar,
   .fluid-species-row,
-  .fluid-result-grid {
+  .fluid-result-grid,
+  .fluid-converter-results {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fluid-electrolyte-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .vital-fact-row {
@@ -7356,7 +7494,9 @@ select {
   }
 
   .fluid-species-row,
-  .fluid-result-grid {
+  .fluid-result-grid,
+  .fluid-converter-results,
+  .fluid-k-table div {
     grid-template-columns: 1fr;
   }
 
@@ -7364,7 +7504,8 @@ select {
   .vital-metric,
   .vital-detail-block,
   .fluid-species-chip,
-  .fluid-decision-card {
+  .fluid-decision-card,
+  .fluid-electrolyte-section {
     border-radius: 0.8rem;
   }
 
