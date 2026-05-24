@@ -97,11 +97,10 @@ Deno.serve(async (req) => {
           .from('discount_code_redemptions')
           .select('id')
           .eq('user_id', user.id)
-          .eq('discount_code_id', discount.id)
-          .maybeSingle();
+          .limit(1);
 
         if (redemptionError) throw redemptionError;
-        if (existingRedemption) {
+        if (existingRedemption?.length) {
           return json({ error: 'DISCOUNT_CODE_ALREADY_USED' }, { status: 409, headers: corsHeaders });
         }
 

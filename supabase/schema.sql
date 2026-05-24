@@ -235,6 +235,7 @@ alter table if exists public.user_memberships
 create index if not exists user_memberships_status_idx on public.user_memberships (status);
 create index if not exists discount_codes_active_idx on public.discount_codes (active, code);
 create index if not exists discount_code_redemptions_user_idx on public.discount_code_redemptions (user_id, created_at desc);
+create unique index if not exists discount_code_redemptions_user_once_idx on public.discount_code_redemptions (user_id);
 create unique index if not exists user_memberships_stripe_customer_id_idx on public.user_memberships (stripe_customer_id) where stripe_customer_id is not null;
 create unique index if not exists user_memberships_stripe_subscription_id_idx on public.user_memberships (stripe_subscription_id) where stripe_subscription_id is not null;
 
@@ -490,6 +491,42 @@ values (
   true
 )
 on conflict (code) do nothing;
+
+insert into public.discount_codes (
+  code,
+  label,
+  description,
+  partner_name,
+  applies_to,
+  discount_mode,
+  override_price_cents,
+  discount_months,
+  grant_days,
+  active
+)
+values (
+  '24MAYO',
+  '24 Mayo - acceso premium 15 dias',
+  'Codigo de acceso completo durante 15 dias sin coste. Despues mantiene solo la parte gratuita salvo que active suscripcion.',
+  'Campaña 24 Mayo',
+  'both',
+  'override_price',
+  0,
+  1,
+  15,
+  true
+)
+on conflict (code) do update
+set label = excluded.label,
+    description = excluded.description,
+    partner_name = excluded.partner_name,
+    applies_to = excluded.applies_to,
+    discount_mode = excluded.discount_mode,
+    override_price_cents = excluded.override_price_cents,
+    discount_months = excluded.discount_months,
+    grant_days = excluded.grant_days,
+    active = true,
+    updated_at = now();
 
 insert into public.discount_codes (
   code,
