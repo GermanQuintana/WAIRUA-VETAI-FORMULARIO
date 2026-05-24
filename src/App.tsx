@@ -8,6 +8,7 @@ import ComingSoonToolkit from './components/ComingSoonToolkit';
 import DoseCalculator from './components/DoseCalculator';
 import DrugInteractionChecker from './components/DrugInteractionChecker';
 import EntryCard from './components/EntryCard';
+import FluidTherapyToolkit from './components/FluidTherapyToolkit';
 import GeneticsToolkit from './components/GeneticsToolkit';
 import InfusionCalculator from './components/InfusionCalculator';
 import LegalCompliance from './components/LegalCompliance';
@@ -3667,9 +3668,7 @@ function App() {
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.ranges} />
             )}
 
-            {activeToolkitView === 'fluid' && (
-              <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.fluid} />
-            )}
+            {activeToolkitView === 'fluid' && <FluidTherapyToolkit lang={lang} />}
 
             {activeToolkitView === 'emergency' && (
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.emergency} />
