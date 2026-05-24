@@ -3466,6 +3466,15 @@ select:focus-visible {
   background: rgba(232, 248, 250, 0.9);
 }
 
+.fluid-k-table .fluid-k-table-header {
+  background: rgba(49, 93, 107, 0.08);
+}
+
+.fluid-k-table .fluid-k-table-header p {
+  color: #315d6b;
+  font-weight: 900;
+}
+
 .fluid-k-table strong,
 .fluid-k-table span {
   font-weight: 900;
@@ -3524,6 +3533,75 @@ select:focus-visible {
 
 .fluid-cow-minerals p {
   margin: 0.35rem 0 0;
+  color: var(--muted-light);
+}
+
+.fluid-special-fluids {
+  border: 1px solid #cfdee2;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #fffdf8 0%, #f6fbfc 100%);
+  overflow: hidden;
+}
+
+.fluid-special-fluids summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  cursor: pointer;
+  font-weight: 900;
+  list-style: none;
+}
+
+.fluid-special-fluids summary::-webkit-details-marker {
+  display: none;
+}
+
+.fluid-special-fluids summary span {
+  color: #315d6b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.82rem;
+}
+
+.fluid-special-fluids summary strong::after {
+  content: "+";
+  margin-left: 0.5rem;
+  color: #4a9db3;
+}
+
+.fluid-special-fluids[open] summary strong::after {
+  content: "-";
+}
+
+.fluid-special-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding: 0 1rem 1rem;
+}
+
+.fluid-special-grid article {
+  padding: 0.85rem;
+  border: 1px solid rgba(75, 121, 134, 0.16);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.fluid-special-grid h4,
+.fluid-special-grid p {
+  margin: 0;
+}
+
+.fluid-special-grid strong {
+  display: block;
+  margin: 0.45rem 0;
+  color: #315d6b;
+}
+
+.fluid-special-grid p,
+.fluid-special-grid small {
   color: var(--muted-light);
 }
 
@@ -3972,7 +4050,10 @@ select:focus-visible {
 .app.dark .fluid-summary-note strong,
 .app.dark .fluid-scale-list strong,
 .app.dark .fluid-problem-card dt,
-.app.dark .fluid-source-note a {
+.app.dark .fluid-source-note a,
+.app.dark .fluid-special-fluids summary span,
+.app.dark .fluid-special-grid strong,
+.app.dark .fluid-k-table .fluid-k-table-header p {
   color: var(--accent-dark);
 }
 
@@ -3990,7 +4071,9 @@ select:focus-visible {
 .app.dark .fluid-electrolyte-header p,
 .app.dark .fluid-k-table p,
 .app.dark .fluid-k-recommendation,
-.app.dark .fluid-cow-minerals p {
+.app.dark .fluid-cow-minerals p,
+.app.dark .fluid-special-grid p,
+.app.dark .fluid-special-grid small {
   color: var(--muted-dark);
 }
 
@@ -4010,7 +4093,9 @@ select:focus-visible {
 .app.dark .fluid-rate-strip > div,
 .app.dark .fluid-k-table div,
 .app.dark .fluid-converter-results div,
-.app.dark .fluid-cow-minerals article {
+.app.dark .fluid-cow-minerals article,
+.app.dark .fluid-special-fluids,
+.app.dark .fluid-special-grid article {
   background: #182329;
   border-color: var(--border-dark);
 }
@@ -4028,6 +4113,10 @@ select:focus-visible {
 .app.dark .fluid-k-table div.is-highlighted {
   background: #19303a;
   border-color: #386a76;
+}
+
+.app.dark .fluid-k-table .fluid-k-table-header {
+  background: #162b33;
 }
 
 .app.dark .search-input-brand-mark {
@@ -4540,7 +4629,8 @@ select:focus-visible {
   .fluid-layout,
   .fluid-decision-grid,
   .fluid-electrolyte-layout,
-  .fluid-cow-minerals {
+  .fluid-cow-minerals,
+  .fluid-special-grid {
     grid-template-columns: 1fr;
   }
 
@@ -5917,6 +6007,23 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.admin-copy-emails-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.admin-copy-emails-button svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: 0 0 auto;
 }
 
 .admin-directory-count {
@@ -7505,7 +7612,8 @@ select {
   .vital-detail-block,
   .fluid-species-chip,
   .fluid-decision-card,
-  .fluid-electrolyte-section {
+  .fluid-electrolyte-section,
+  .fluid-special-fluids {
     border-radius: 0.8rem;
   }
 

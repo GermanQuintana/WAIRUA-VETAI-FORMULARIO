@@ -333,6 +333,9 @@ const copy = {
     adminDirectorySubtitle: 'Despliega la lista solo cuando la necesites. Puedes buscar por cualquier dato de la ficha.',
     adminDirectoryOpen: 'Mostrar usuarios',
     adminDirectoryClose: 'Ocultar usuarios',
+    adminCopyEmails: 'Copiar mails',
+    adminEmailsCopied: 'Mails copiados separados por comas.',
+    adminNoEmailsToCopy: 'No hay mails para copiar.',
     adminSearchLabel: 'Buscar usuario',
     adminSearchPlaceholder: 'Nombre, email, centro, colegiado, CIF, redes...',
     adminResults: 'Resultados',
@@ -585,6 +588,9 @@ const copy = {
     adminDirectorySubtitle: 'Only expand the list when you need it. You can search by any profile field.',
     adminDirectoryOpen: 'Show users',
     adminDirectoryClose: 'Hide users',
+    adminCopyEmails: 'Copy emails',
+    adminEmailsCopied: 'Emails copied as a comma-separated list.',
+    adminNoEmailsToCopy: 'There are no emails to copy.',
     adminSearchLabel: 'Search user',
     adminSearchPlaceholder: 'Name, email, center, license, tax ID, socials...',
     adminResults: 'Results',
@@ -1013,6 +1019,13 @@ export default function AuthAccessPanel({
       .sort((left, right) => getProfileDisplayName(left).localeCompare(getProfileDisplayName(right), locale))
       .filter((profile) => !query || getProfileSearchHaystack(profile, t).includes(query));
   }, [adminProfiles, adminSearchQuery, lang, t]);
+  const adminEmailList = useMemo(
+    () =>
+      Array.from(new Set(adminProfiles.map((profile) => profile.email?.trim()).filter((email): email is string => Boolean(email))))
+        .sort((left, right) => left.localeCompare(right, lang === 'es' ? 'es-ES' : 'en-US'))
+        .join(', '),
+    [adminProfiles, lang],
+  );
   const openSupportIssuesCount = supportIssues.filter((issue) => issue.status !== 'resolved' && issue.status !== 'closed').length;
   const filteredSupportIssues = useMemo(
     () => supportIssues.filter((issue) => supportIssueStatusFilters.includes(issue.status)),
@@ -1393,6 +1406,34 @@ export default function AuthAccessPanel({
       setError(getDisplayErrorMessage(error, t));
     } finally {
       setAdminLoading(false);
+    }
+  };
+
+  const handleCopyAdminEmails = async () => {
+    resetFeedback();
+
+    if (!adminEmailList) {
+      setError(t.adminNoEmailsToCopy);
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(adminEmailList);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = adminEmailList;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setMessage(t.adminEmailsCopied);
+    } catch (error) {
+      setError(getDisplayErrorMessage(error, t));
     }
   };
 
@@ -1973,6 +2014,20 @@ export default function AuthAccessPanel({
                   onClick={() => setIsAdminDirectoryOpen((current) => !current)}
                 >
                   {isAdminDirectoryOpen ? t.adminDirectoryClose : t.adminDirectoryOpen}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button admin-copy-emails-button"
+                  onClick={handleCopyAdminEmails}
+                  disabled={!adminEmailList}
+                  title={t.adminCopyEmails}
+                  aria-label={t.adminCopyEmails}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                    <rect x="9" y="9" width="10" height="10" rx="2" />
+                    <path d="M5 15V7a2 2 0 0 1 2-2h8" />
+                  </svg>
+                  <span>{t.adminCopyEmails}</span>
                 </button>
                 <span className="admin-directory-count">
                   {t.adminResults}: {filteredAdminProfiles.length} / {adminProfiles.length}

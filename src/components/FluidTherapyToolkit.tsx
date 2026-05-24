@@ -11,6 +11,7 @@ interface FluidSpeciesProfile {
   group: { es: string; en: string };
   maintenanceMlKgDay: number;
   anesthesiaMlKgHour: string;
+  anesthesiaRateRange: [number, number];
   shockBolusMlKg: string;
   deficitHours: string;
   route: { es: string; en: string };
@@ -27,6 +28,14 @@ interface FluidProblem {
   watch: { es: string; en: string };
 }
 
+interface SpecialFluidItem {
+  key: string;
+  title: { es: string; en: string };
+  dose: string;
+  use: { es: string; en: string };
+  caution: { es: string; en: string };
+}
+
 const roundValue = (value: number, decimals = 1) => {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
@@ -39,6 +48,7 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     group: { es: 'Pequenos animales', en: 'Companion animal' },
     maintenanceMlKgDay: 60,
     anesthesiaMlKgHour: '5 mL/kg/h',
+    anesthesiaRateRange: [5, 5],
     shockBolusMlKg: '15-20 mL/kg IV, reevaluar en 15-30 min',
     deficitHours: '12-24 h',
     route: { es: 'IV si perfusion alterada; oral/SC si deficit leve y estable.', en: 'IV if perfusion is altered; oral/SC if mild and stable.' },
@@ -55,6 +65,7 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     group: { es: 'Pequenos animales', en: 'Companion animal' },
     maintenanceMlKgDay: 40,
     anesthesiaMlKgHour: '3-5 mL/kg/h',
+    anesthesiaRateRange: [3, 5],
     shockBolusMlKg: '5-10 mL/kg IV, reevaluar en 15-30 min',
     deficitHours: '12-24 h',
     route: { es: 'IV si shock; SC util en pacientes estables seleccionados.', en: 'IV for shock; SC can help selected stable patients.' },
@@ -71,6 +82,7 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     group: { es: 'Exoticos', en: 'Exotics' },
     maintenanceMlKgDay: 100,
     anesthesiaMlKgHour: '5-10 mL/kg/h',
+    anesthesiaRateRange: [5, 10],
     shockBolusMlKg: '10-20 mL/kg IV/IO tibio, reevaluar',
     deficitHours: '12-24 h',
     route: { es: 'SC si leve; IV/IO si ileo, shock, hipotermia o anorexia marcada.', en: 'SC if mild; IV/IO for ileus, shock, hypothermia, or marked anorexia.' },
@@ -87,6 +99,7 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     group: { es: 'Equidos', en: 'Equine' },
     maintenanceMlKgDay: 50,
     anesthesiaMlKgHour: '5-10 mL/kg/h segun procedimiento',
+    anesthesiaRateRange: [5, 10],
     shockBolusMlKg: '20 mL/kg IV o 20-35 L/1-2 h en adulto si deficit grave',
     deficitHours: '50% en 1-2 h si shock; resto en 24 h',
     route: { es: 'Enteral si estable; IV si shock, >8% deshidratado o reflujo gastrico positivo.', en: 'Enteral if stable; IV for shock, >8% dehydration, or positive gastric reflux.' },
@@ -103,6 +116,7 @@ const speciesProfiles: FluidSpeciesProfile[] = [
     group: { es: 'Bovino', en: 'Cattle' },
     maintenanceMlKgDay: 50,
     anesthesiaMlKgHour: '5-10 mL/kg/h si anestesia/quirurgico',
+    anesthesiaRateRange: [5, 10],
     shockBolusMlKg: '10-20 mL/kg IV, reevaluar perfusion',
     deficitHours: '12-24 h; mas rapido si hipovolemia',
     route: { es: 'Oral si bebe y perfunde; IV si decubito, shock, acidosis o diarrea severa.', en: 'Oral if drinking and perfused; IV for recumbency, shock, acidosis, or severe diarrhea.' },
@@ -230,6 +244,72 @@ const cowMineralGuide = [
   },
 ];
 
+const generalSpecialFluids: SpecialFluidItem[] = [
+  {
+    key: 'hypertonic',
+    title: { es: 'Salino hipertonico 7.2-7.5%', en: '7.2-7.5% hypertonic saline' },
+    dose: '3-5 mL/kg IV en 10-15 min',
+    use: {
+      es: 'Rescate de hipovolemia/shock con poco volumen. Siempre seguir con cristaloide isotónico.',
+      en: 'Low-volume rescue for hypovolemia/shock. Always follow with isotonic crystalloid.',
+    },
+    caution: {
+      es: 'Evitar si hipernatremia, deshidratacion libre severa o sin acceso a agua/fluido posterior.',
+      en: 'Avoid with hypernatremia, severe free-water dehydration, or no access to follow-up water/fluid.',
+    },
+  },
+  {
+    key: 'mannitol',
+    title: { es: 'Manitol 20%', en: '20% mannitol' },
+    dose: '0.25-1 g/kg IV lento',
+    use: {
+      es: 'Edema cerebral, hipertension intracraneal, glaucoma agudo o diuresis osmotica seleccionada.',
+      en: 'Cerebral edema, intracranial hypertension, acute glaucoma, or selected osmotic diuresis.',
+    },
+    caution: {
+      es: 'No usar sin perfusion/diuresis adecuadas. Vigilar osmolaridad, sodio y sobrecarga.',
+      en: 'Do not use without adequate perfusion/urine output. Monitor osmolality, sodium, and overload.',
+    },
+  },
+  {
+    key: 'colloid',
+    title: { es: 'Coloides / dextrano', en: 'Colloids / dextran' },
+    dose: 'Usar dosis bajas tituladas',
+    use: {
+      es: 'Hipoproteinemia o soporte oncótico muy seleccionado cuando cristaloides no bastan.',
+      en: 'Very selected oncotic support or hypoproteinemia when crystalloids are insufficient.',
+    },
+    caution: {
+      es: 'Riesgo renal/coagulacion/anafilaxia. Revisar disponibilidad, indicacion y alternativa con plasma.',
+      en: 'Renal/coagulation/anaphylaxis risk. Review availability, indication, and plasma alternatives.',
+    },
+  },
+];
+
+const specialFluidBySpecies: Record<FluidSpeciesKey, SpecialFluidItem[]> = {
+  dog: generalSpecialFluids,
+  cat: [
+    { ...generalSpecialFluids[0], dose: '2-4 mL/kg IV en 10-15 min' },
+    { ...generalSpecialFluids[1], dose: '0.25-0.5 g/kg IV lento' },
+    { ...generalSpecialFluids[2], dose: 'Muy seleccionado; evitar uso rutinario' },
+  ],
+  rabbit: [
+    { ...generalSpecialFluids[0], dose: 'Solo UCI/exoticos; bolos pequenos titulados' },
+    { ...generalSpecialFluids[1], dose: 'Exoticos: individualizar y monitorizar diuresis' },
+    { ...generalSpecialFluids[2], dose: 'No rutinario; priorizar cristaloide tibio + soporte' },
+  ],
+  horse: [
+    { ...generalSpecialFluids[0], dose: '4 mL/kg IV; adulto 2 L aprox.' },
+    { ...generalSpecialFluids[1], dose: '0.25-1 g/kg IV lento' },
+    { ...generalSpecialFluids[2], dose: 'Plasma/coloide si hipoproteinemia marcada; monitorizar' },
+  ],
+  cow: [
+    { ...generalSpecialFluids[0], dose: '4-5 mL/kg IV; seguir con agua oral/isotonico' },
+    { ...generalSpecialFluids[1], dose: 'Uso excepcional; priorizar causa y perfusion' },
+    { ...generalSpecialFluids[2], dose: 'Plasma/coloide rara vez; valorar coste y objetivo' },
+  ],
+};
+
 const references = [
   { label: 'AAHA fluid therapy 2024', url: 'https://www.aaha.org/resources/2024-aaha-fluid-therapy-guidelines-for-dogs-and-cats/section-3-fluids-for-replacement-and-maintenance/' },
   { label: 'AAHA anesthesia fluids', url: 'https://www.aaha.org/resources/2024-aaha-fluid-therapy-guidelines-for-dogs-and-cats/section-4-fluid-therapy-and-anesthesia/' },
@@ -266,6 +346,7 @@ const getCopy = (lang: Language) => ({
   hourly: lang === 'es' ? 'Ritmo medio' : 'Average rate',
   bolus: lang === 'es' ? 'Bolus shock' : 'Shock bolus',
   anesthesia: lang === 'es' ? 'Anestesia' : 'Anesthesia',
+  anesthesiaCalculated: lang === 'es' ? 'Anestesia calculada' : 'Calculated anesthesia',
   route: lang === 'es' ? 'Ruta' : 'Route',
   dehydrationGuide: lang === 'es' ? 'Como estimar la deshidratacion' : 'How to estimate dehydration',
   fluidChoice: lang === 'es' ? 'Fluido y suplementos' : 'Fluid and supplements',
@@ -277,6 +358,7 @@ const getCopy = (lang: Language) => ({
   ampConcentration: lang === 'es' ? 'Concentracion ampolla' : 'Ampoule concentration',
   ampUnit: lang === 'es' ? 'Unidad ampolla' : 'Ampoule unit',
   calculated: lang === 'es' ? 'Calculado' : 'Calculated',
+  specialFluids: lang === 'es' ? 'Fluidos especiales' : 'Special fluids',
   sources: lang === 'es' ? 'Referencias' : 'References',
   note:
     lang === 'es'
@@ -290,6 +372,7 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
   const [problemKey, setProblemKey] = useState<FluidProblemKey>('dehydration');
   const activeSpecies = speciesProfiles.find((item) => item.key === speciesKey) ?? speciesProfiles[0];
   const activeProblem = problems.find((item) => item.key === problemKey) ?? problems[0];
+  const activeSpecialFluids = specialFluidBySpecies[activeSpecies.key];
   const [weight, setWeight] = useState('');
   const [dehydration, setDehydration] = useState('');
   const [ongoingLoss, setOngoingLoss] = useState('');
@@ -363,6 +446,14 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
     hasWeight && Number.isFinite(parsedTargetPotassium) && parsedTargetPotassium > 0 && calculations.hourlyMl > 0
       ? (parsedTargetPotassium * (calculations.hourlyMl / 1000)) / validWeight
       : 0;
+  const anesthesiaMinMlHour = hasWeight ? activeSpecies.anesthesiaRateRange[0] * validWeight : 0;
+  const anesthesiaMaxMlHour = hasWeight ? activeSpecies.anesthesiaRateRange[1] * validWeight : 0;
+  const anesthesiaCalculated =
+    anesthesiaMinMlHour > 0
+      ? anesthesiaMinMlHour === anesthesiaMaxMlHour
+        ? `${roundValue(anesthesiaMinMlHour, 0)} mL/h`
+        : `${roundValue(anesthesiaMinMlHour, 0)}-${roundValue(anesthesiaMaxMlHour, 0)} mL/h`
+      : '-';
 
   const formatNumber = (value: number, decimals = 0, suffix = '') =>
     Number.isFinite(value) && value > 0 ? `${roundValue(value, decimals)}${suffix}` : '-';
@@ -501,6 +592,10 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
               <span>{copy.anesthesia}</span>
               <strong>{activeSpecies.anesthesiaMlKgHour}</strong>
             </div>
+            <div>
+              <span>{copy.anesthesiaCalculated}</span>
+              <strong>{anesthesiaCalculated}</strong>
+            </div>
           </div>
         </section>
       </div>
@@ -567,6 +662,11 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
           <article className="fluid-decision-card">
             <h4>{lang === 'es' ? 'Tabla orientativa KCl' : 'KCl guidance table'}</h4>
             <div className="fluid-k-table">
+              <div className="fluid-k-table-header">
+                <strong>{lang === 'es' ? 'K analitico' : 'Serum K'}</strong>
+                <span>{lang === 'es' ? 'Anadir por litro' : 'Add per liter'}</span>
+                <p>{lang === 'es' ? 'Notas de uso' : 'Use notes'}</p>
+              </div>
               {potassiumSupplementationGuide.map((item) => (
                 <div key={item.serum} className={selectedPotassiumGuide?.serum === item.serum ? 'is-highlighted' : ''}>
                   <strong>{item.serum} mEq/L</strong>
@@ -684,6 +784,23 @@ export default function FluidTherapyToolkit({ lang }: { lang: Language }) {
           </section>
         ) : null}
       </section>
+
+      <details className="fluid-special-fluids">
+        <summary>
+          <span>{copy.specialFluids}</span>
+          <strong>{activeSpecies.name[lang]}</strong>
+        </summary>
+        <div className="fluid-special-grid">
+          {activeSpecialFluids.map((item) => (
+            <article key={item.key}>
+              <h4>{item.title[lang]}</h4>
+              <strong>{item.dose}</strong>
+              <p>{item.use[lang]}</p>
+              <small>{item.caution[lang]}</small>
+            </article>
+          ))}
+        </div>
+      </details>
 
       <article className="toolkit-source-note fluid-source-note">
         <strong>{copy.sources}</strong>
