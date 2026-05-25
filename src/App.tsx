@@ -587,31 +587,7 @@ const getEntryConcentrationFilterText = (entry: TherapeuticEntry) =>
     .filter(Boolean)
     .join(' ');
 
-const getCimavetDetailFilterText = (medication: CimavetMedicationSummary, detail?: CimavetMedicationDetail | null) =>
-  [
-    medication.pactivos ?? '',
-    detail?.principiosActivos
-      ?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim())
-      .join(' '),
-    detail?.presentaciones?.map((item) => item.nombre).join(' '),
-    detail?.indicaciones?.map((item) => `${item.especie?.nombre ?? ''} ${item.nombre}`.trim()).join(' '),
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-const getCimaDetailFilterText = (medication: CimaMedicationSummary, detail?: CimaMedicationDetail | null) =>
-  [
-    medication.pactivos ?? '',
-    medication.dosis ?? '',
-    medication.formaFarmaceuticaSimplificada?.nombre ?? '',
-    medication.formaFarmaceutica?.nombre ?? '',
-    detail?.principiosActivos
-      ?.map((item) => `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim())
-      .join(' '),
-    detail?.presentaciones?.map((item) => item.nombre).join(' '),
-  ]
-    .filter(Boolean)
-    .join(' ');
+const getMedicationNameFilterText = (medication: Pick<CimavetMedicationSummary | CimaMedicationSummary, 'nombre'>) => medication.nombre;
 
 const filterTherapeuticEntries = (
   entries: TherapeuticEntry[],
@@ -1511,7 +1487,7 @@ function App() {
           ? detail?.indicaciones?.some((item) => matchesStructuredFilter(`${item.especie?.nombre ?? ''} ${item.nombre}`.trim(), activeIndication))
           : true;
         const concentrationMatch = activeConcentrationQuery
-          ? matchesStructuredFilter(getCimavetDetailFilterText(medication, detail), activeConcentrationQuery)
+          ? matchesStructuredFilter(getMedicationNameFilterText(medication), activeConcentrationQuery)
           : true;
         return indicationMatch && concentrationMatch;
       }),
@@ -1542,10 +1518,9 @@ function App() {
     () =>
       activeHumanResults.filter((medication) => {
         if (!activeConcentrationQuery) return true;
-        const detail = activeHumanDetails[medication.nregistro];
-        return matchesStructuredFilter(getCimaDetailFilterText(medication, detail), activeConcentrationQuery);
+        return matchesStructuredFilter(getMedicationNameFilterText(medication), activeConcentrationQuery);
       }),
-    [activeConcentrationQuery, activeHumanDetails, activeHumanResults],
+    [activeConcentrationQuery, activeHumanResults],
   );
 
   const activeHumanTotalPages = useMemo(() => {
