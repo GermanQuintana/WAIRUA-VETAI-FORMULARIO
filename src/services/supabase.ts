@@ -1400,24 +1400,25 @@ export class SupabaseAccessService {
     }
     const existing = await this.getMembershipByUserId(user.id);
     const now = new Date();
-    const trialStartedAt = existing?.trialStartedAt ?? now.toISOString();
-    const trialEndsAt = existing?.trialEndsAt ?? new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const grantedAccessEndsAt = selection.grantDays
+      ? new Date(now.getTime() + selection.grantDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const trialStartedAt = grantedAccessEndsAt ? now.toISOString() : existing?.trialStartedAt ?? now.toISOString();
+    const trialEndsAt = grantedAccessEndsAt ?? existing?.trialEndsAt ?? new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const status = grantedAccessEndsAt && existing?.status !== 'active' ? 'trialing' : existing?.status ?? 'trialing';
     const payload = {
       user_id: user.id,
       signup_method: signupMethod ?? existing?.signupMethod ?? getAuthProvider(user),
       plan_id: selection.planId,
       billing_cycle: selection.billingCycle,
       seat_count: selection.seatCount ?? 1,
-      status: existing?.status ?? 'trialing',
+      status,
       list_price_cents: selection.listPriceCents,
       final_price_cents: selection.finalPriceCents,
       currency: 'EUR',
       trial_days: selection.grantDays ?? existing?.trialDays ?? TRIAL_DAYS,
       trial_started_at: trialStartedAt,
-      trial_ends_at:
-        selection.grantDays && !existing?.trialEndsAt
-          ? new Date(now.getTime() + selection.grantDays * 24 * 60 * 60 * 1000).toISOString()
-          : trialEndsAt,
+      trial_ends_at: trialEndsAt,
       discount_code_id: selection.discountCodeId ?? null,
       discount_code: selection.discountCode ?? null,
       discount_months: selection.discountMonths ?? null,
