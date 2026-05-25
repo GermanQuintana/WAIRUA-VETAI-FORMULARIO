@@ -33,6 +33,11 @@ interface CimavetClinicalItem {
   especie?: CimavetSpeciesItem;
 }
 
+interface CimavetDocument {
+  tipo: number;
+  url: string;
+}
+
 interface CimavetWithdrawalTissueItem {
   id?: number;
   nombre: string;
@@ -67,6 +72,7 @@ export interface CimavetMedicationSummary {
 }
 
 export interface CimavetMedicationDetail extends CimavetMedicationSummary {
+  docs?: CimavetDocument[];
   especies?: CimavetSpeciesItem[];
   principiosActivos?: CimavetPrincipioActivo[];
   presentaciones?: CimavetPresentationItem[];

@@ -348,6 +348,11 @@ const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | un
   return doc?.urlHtml ?? doc?.url ?? null;
 };
 
+const getCimavetDocumentUrl = (medication: Pick<CimavetMedicationDetail, 'docs'> | undefined | null, type: number) => {
+  const doc = medication?.docs?.find((item) => item.tipo === type);
+  return doc?.url ?? null;
+};
+
 const normalizeFilterText = (value: string) =>
   value
     .normalize('NFD')
@@ -444,6 +449,26 @@ const renderPresentationCodeLine = (item: PresentationCodeItem, lang: Language) 
     </span>
   );
 };
+
+const renderPresentationCodeDetails = (
+  medicationId: string,
+  items: PresentationCodeItem[],
+  lang: Language,
+  keyPrefix: string,
+) =>
+  items.length > 0 ? (
+    <details className="live-indications live-collapsible">
+      <summary>
+        <span>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</span>
+        <strong>{items.length}</strong>
+      </summary>
+      <ul>
+        {items.map((item, index) => (
+          <li key={`${medicationId}-${keyPrefix}-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
+        ))}
+      </ul>
+    </details>
+  ) : null;
 
 const hasEquivalentMedicalTerm = (left: string, right: string) => {
   const leftAliases = new Set(expandMedicalTermAliases(left));
@@ -2610,6 +2635,8 @@ function App() {
                       const formLabel = medication.forma?.nombre ?? medication.formasFarmaceuticas?.[0]?.nombre ?? '-';
                       const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
                       const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
+                      const technicalSheetUrl = getCimavetDocumentUrl(detail, 1);
+                      const leafletUrl = getCimavetDocumentUrl(detail, 2);
                       const routeLabel =
                         medication.administracion?.nombre ?? medication.viasAdministracion?.[0]?.nombre ?? '-';
 
@@ -2681,16 +2708,7 @@ function App() {
                               </section>
                             ) : null}
 
-                            {presentationCodeItems.length > 0 ? (
-                              <section className="live-indications">
-                                  <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
-                                  <ul>
-                                    {presentationCodeItems.map((item, index) => (
-                                    <li key={`${medication.nregistro}-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
-                                  ))}
-                                </ul>
-                              </section>
-                            ) : null}
+                            {renderPresentationCodeDetails(medication.nregistro, presentationCodeItems, lang, 'rx')}
 
                             <footer className="live-card-footer">
                               <div className="live-card-identifiers">
@@ -2698,13 +2716,25 @@ function App() {
                                   {t.registration}: {medication.nregistro}
                                 </span>
                               </div>
-                              <a
-                                href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {t.openRecord}
-                              </a>
+                              <div className="live-card-links">
+                                {technicalSheetUrl ? (
+                                  <a href={technicalSheetUrl} target="_blank" rel="noreferrer">
+                                    {t.technicalSheet}
+                                  </a>
+                                ) : null}
+                                {leafletUrl ? (
+                                  <a href={leafletUrl} target="_blank" rel="noreferrer">
+                                    {t.leaflet}
+                                  </a>
+                                ) : null}
+                                <a
+                                  href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {t.openRecord}
+                                </a>
+                              </div>
                             </footer>
                           </article>
                         </li>
@@ -3156,6 +3186,8 @@ function App() {
                             const detail = activeVetDetails[medication.nregistro];
                             const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
                             const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
+                            const technicalSheetUrl = getCimavetDocumentUrl(detail, 1);
+                            const leafletUrl = getCimavetDocumentUrl(detail, 2);
 
                             return (
                               <li key={`active-vet-${medication.nregistro}`}>
@@ -3206,16 +3238,7 @@ function App() {
                                     </section>
                                   ) : null}
 
-                                  {presentationCodeItems.length > 0 ? (
-                                    <section className="live-indications">
-                                      <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
-                                      <ul>
-                                        {presentationCodeItems.map((item, index) => (
-                                          <li key={`${medication.nregistro}-active-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
-                                        ))}
-                                      </ul>
-                                    </section>
-                                  ) : null}
+                                  {renderPresentationCodeDetails(medication.nregistro, presentationCodeItems, lang, 'active-vet')}
 
                                   <footer className="live-card-footer">
                                     <div className="live-card-identifiers">
@@ -3223,13 +3246,25 @@ function App() {
                                         {t.registration}: {medication.nregistro}
                                       </span>
                                     </div>
-                                    <a
-                                      href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                    >
-                                      {t.openRecord}
-                                    </a>
+                                    <div className="live-card-links">
+                                      {technicalSheetUrl ? (
+                                        <a href={technicalSheetUrl} target="_blank" rel="noreferrer">
+                                          {t.technicalSheet}
+                                        </a>
+                                      ) : null}
+                                      {leafletUrl ? (
+                                        <a href={leafletUrl} target="_blank" rel="noreferrer">
+                                          {t.leaflet}
+                                        </a>
+                                      ) : null}
+                                      <a
+                                        href={buildCimavetRecordUrl(CIMAVET_BASE_URL, medication.nregistro)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {t.openRecord}
+                                      </a>
+                                    </div>
                                   </footer>
                                 </article>
                               </li>
