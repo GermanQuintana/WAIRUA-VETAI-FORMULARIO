@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
@@ -450,25 +450,41 @@ const renderPresentationCodeLine = (item: PresentationCodeItem, lang: Language) 
   );
 };
 
-const renderPresentationCodeDetails = (
-  medicationId: string,
-  items: PresentationCodeItem[],
-  lang: Language,
-  keyPrefix: string,
-) =>
+const renderLiveCollapsibleSection = <T,>({
+  medicationId,
+  keyPrefix,
+  title,
+  items,
+  renderItem,
+}: {
+  medicationId: string;
+  keyPrefix: string;
+  title: string;
+  items: T[];
+  renderItem: (item: T, index: number) => ReactNode;
+}) =>
   items.length > 0 ? (
     <details className="live-indications live-collapsible">
       <summary>
-        <span>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</span>
+        <span>{title}</span>
         <strong>{items.length}</strong>
       </summary>
       <ul>
         {items.map((item, index) => (
-          <li key={`${medicationId}-${keyPrefix}-presentation-cn-${index}`}>{renderPresentationCodeLine(item, lang)}</li>
+          <li key={`${medicationId}-${keyPrefix}-${index}`}>{renderItem(item, index)}</li>
         ))}
       </ul>
     </details>
   ) : null;
+
+const renderPresentationCodeDetails = (medicationId: string, items: PresentationCodeItem[], lang: Language, keyPrefix: string) =>
+  renderLiveCollapsibleSection({
+    medicationId,
+    keyPrefix,
+    title: lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code',
+    items,
+    renderItem: (item) => renderPresentationCodeLine(item, lang),
+  });
 
 const hasEquivalentMedicalTerm = (left: string, right: string) => {
   const leftAliases = new Set(expandMedicalTermAliases(left));
@@ -2683,30 +2699,26 @@ function App() {
                               </p>
                             </div>
 
-                            {withdrawalItems.length > 0 ? (
-                              <section className="live-indications">
-                                <h5>{t.withdrawalTimes}</h5>
-                                <ul>
-                                  {withdrawalItems.slice(0, 6).map((item, index) => (
-                                    <li key={`${medication.nregistro}-withdrawal-${index}`}>{formatWithdrawalTimeItem(item)}</li>
-                                  ))}
-                                </ul>
-                              </section>
-                            ) : null}
+                            {renderLiveCollapsibleSection({
+                              medicationId: medication.nregistro,
+                              keyPrefix: 'indication',
+                              title: t.indications,
+                              items: detail?.indicaciones ?? [],
+                              renderItem: (indication) => (
+                                <>
+                                  {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
+                                  {indication.nombre}
+                                </>
+                              ),
+                            })}
 
-                            {detail?.indicaciones?.length ? (
-                              <section className="live-indications">
-                                <h5>{t.indications}</h5>
-                                <ul>
-                                  {detail.indicaciones.slice(0, 4).map((indication, index) => (
-                                    <li key={`${medication.nregistro}-indication-${index}`}>
-                                      {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
-                                      {indication.nombre}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </section>
-                            ) : null}
+                            {renderLiveCollapsibleSection({
+                              medicationId: medication.nregistro,
+                              keyPrefix: 'withdrawal',
+                              title: t.withdrawalTimes,
+                              items: withdrawalItems,
+                              renderItem: (item) => formatWithdrawalTimeItem(item),
+                            })}
 
                             {renderPresentationCodeDetails(medication.nregistro, presentationCodeItems, lang, 'rx')}
 
@@ -2732,7 +2744,7 @@ function App() {
                                   target="_blank"
                                   rel="noreferrer"
                                 >
-                                  {t.openRecord}
+                                  {lang === 'es' ? 'Ficha CIMAVET' : 'CIMAVET record'}
                                 </a>
                               </div>
                             </footer>
@@ -3184,6 +3196,7 @@ function App() {
                         <ul className="live-results-list">
                           {activeVetResultsForDetails.map((medication) => {
                             const detail = activeVetDetails[medication.nregistro];
+                            const withdrawalItems = getCimavetWithdrawalTimeItems(detail);
                             const nationalCodeLabel = formatNationalCodeSummary(detail?.presentaciones);
                             const presentationCodeItems = getPresentationCodeItems(detail?.presentaciones);
                             const technicalSheetUrl = getCimavetDocumentUrl(detail, 1);
@@ -3224,19 +3237,26 @@ function App() {
                                     </p>
                                   </div>
 
-                                  {detail?.indicaciones?.length ? (
-                                    <section className="live-indications">
-                                      <h5>{t.indications}</h5>
-                                      <ul>
-                                        {detail.indicaciones!.slice(0, 4).map((indication, index) => (
-                                          <li key={`${medication.nregistro}-active-indication-${index}`}>
-                                            {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
-                                            {indication.nombre}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </section>
-                                  ) : null}
+                                  {renderLiveCollapsibleSection({
+                                    medicationId: medication.nregistro,
+                                    keyPrefix: 'active-indication',
+                                    title: t.indications,
+                                    items: detail?.indicaciones ?? [],
+                                    renderItem: (indication) => (
+                                      <>
+                                        {indication.especie?.nombre ? `${indication.especie.nombre}: ` : ''}
+                                        {indication.nombre}
+                                      </>
+                                    ),
+                                  })}
+
+                                  {renderLiveCollapsibleSection({
+                                    medicationId: medication.nregistro,
+                                    keyPrefix: 'active-withdrawal',
+                                    title: t.withdrawalTimes,
+                                    items: withdrawalItems,
+                                    renderItem: (item) => formatWithdrawalTimeItem(item),
+                                  })}
 
                                   {renderPresentationCodeDetails(medication.nregistro, presentationCodeItems, lang, 'active-vet')}
 
@@ -3262,7 +3282,7 @@ function App() {
                                         target="_blank"
                                         rel="noreferrer"
                                       >
-                                        {t.openRecord}
+                                        {lang === 'es' ? 'Ficha CIMAVET' : 'CIMAVET record'}
                                       </a>
                                     </div>
                                   </footer>
