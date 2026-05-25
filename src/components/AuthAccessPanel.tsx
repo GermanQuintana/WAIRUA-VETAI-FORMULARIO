@@ -1164,7 +1164,17 @@ export default function AuthAccessPanel({
       }
 
       setAppliedDiscount(discount);
-      setMessage(isDiscountApplicable(selectedPlanDefinition, discount) ? t.codeApplied : t.codeMonthlyOnly);
+      if (!isDiscountApplicable(selectedPlanDefinition, discount)) {
+        setMessage(t.codeMonthlyOnly);
+        return;
+      }
+
+      if (account?.profile) {
+        await service.saveMembershipSelection(buildMembershipSelection(selectedPlanId, discount, selectedSeatCount));
+        await onRefreshAccount();
+      }
+
+      setMessage(t.codeApplied);
     } catch (error) {
       setError(getDisplayErrorMessage(error, t));
     } finally {
