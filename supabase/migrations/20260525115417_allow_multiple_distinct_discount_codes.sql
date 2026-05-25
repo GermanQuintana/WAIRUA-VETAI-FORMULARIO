@@ -1,0 +1,1 @@
+drop index if exists public.discount_code_redemptions_user_once_idx;

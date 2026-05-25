@@ -1023,11 +1023,12 @@ export class SupabaseAccessService {
     return data ? mapMembershipRow(data as Record<string, unknown>) : null;
   }
 
-  private async hasDiscountCodeRedemption(userId: string) {
+  private async hasDiscountCodeRedemption(userId: string, discountCodeId: string) {
     const { data, error } = await this.client
       .from('discount_code_redemptions')
       .select('id')
       .eq('user_id', userId)
+      .eq('discount_code_id', discountCodeId)
       .limit(1);
 
     if (error) throw error;
@@ -1036,7 +1037,7 @@ export class SupabaseAccessService {
 
   private async assertDiscountCodeAvailableForUser(userId: string, discountCodeId?: string | null) {
     if (!discountCodeId) return;
-    const alreadyRedeemed = await this.hasDiscountCodeRedemption(userId);
+    const alreadyRedeemed = await this.hasDiscountCodeRedemption(userId, discountCodeId);
     if (alreadyRedeemed) throw new Error(DISCOUNT_CODE_ALREADY_USED_ERROR);
   }
 
