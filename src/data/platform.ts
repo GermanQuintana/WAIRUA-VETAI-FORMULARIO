@@ -22,6 +22,7 @@ export interface LocalizedCollectionCard {
     | 'constants'
     | 'ranges'
     | 'fluid'
+    | 'anesthesia'
     | 'emergency'
     | 'converter'
     | 'surface'
@@ -280,8 +281,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
       es: 'Linea con calculadoras energeticas y de nutrientes, base de datos de dietas terapeuticas y constructor de dieta casera para perro y gato.',
       en: 'Lane with energy and nutrient calculators, a therapeutic-diet database, and a homemade-diet builder for dogs and cats.',
     },
-    status: { es: 'Pronto', en: 'Soon' },
-    statusTone: 'soon',
+    status: { es: 'Premium', en: 'Premium' },
+    statusTone: 'premium',
     accessTier: 'premium',
     toolkitView: 'nutrition',
   },
@@ -325,11 +326,13 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     id: 'anesthesia',
     title: { es: 'Protocolos anestesicos', en: 'Anesthetic protocols' },
     description: {
-      es: 'Constructor de protocolos con premedicacion, induccion, mantenimiento, rescate y monitorizacion.',
-      en: 'Protocol builder with premedication, induction, maintenance, rescue, and monitoring.',
+      es: 'Hoja de quirofano por paciente con farmacos, concentraciones del centro, dosis editables y salida imprimible.',
+      en: 'Per-patient theatre sheet with drugs, clinic concentrations, editable doses, and printable output.',
     },
-    status: { es: 'Pronto', en: 'Soon' },
-    statusTone: 'soon',
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
+    toolkitView: 'anesthesia',
   },
   {
     id: 'recover',

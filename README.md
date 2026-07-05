@@ -40,6 +40,7 @@ Notas rapidas:
 - `VITE_APP_BASE_PATH=/` es el valor correcto para Vercel. Solo cambia si publicas en un subdirectorio.
 - Si faltan `VITE_SUPABASE_URL` o `VITE_SUPABASE_ANON_KEY`, la app se publica en modo demo sin login real.
 - `VITE_CIMA_BASE_URL` y `VITE_CIMAVET_BASE_URL` tienen fallback por defecto, pero conviene fijarlos tambien en Vercel para que el build quede explicito.
+- La busqueda USDA del toolkit de nutricion usa una Edge Function de Supabase. Configura la clave como secreto de Supabase, nunca como `VITE_`: `supabase secrets set USDA_FDC_API_KEY=tu_clave`.
 
 ## Despliegue MVP en Vercel
 
@@ -85,6 +86,13 @@ Notas rapidas:
 - Endpoint de detalle: `GET /medicamento?nregistro=`.
 - Busqueda actual implementada: combinacion de consulta por nombre comercial y principio activo usando la API oficial de CIMA.
 - Enlaces disponibles en UI: ficha tecnica y prospecto cuando CIMA los expone en `docs`.
+
+## Estado de integracion con USDA FoodData Central
+
+- Edge Function: `supabase/functions/usda-food-search`.
+- Uso actual: busqueda de alimentos simples para el constructor de dieta casera en nutricion clinica.
+- La clave se lee en servidor desde `USDA_FDC_API_KEY`; no debe publicarse en el frontend ni en el repositorio.
+- Los resultados se anaden a la racion en la sesion actual para revision editorial antes de incorporarlos al catalogo estable.
 
 ## Open source
 

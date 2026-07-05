@@ -2,8 +2,10 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
+import AnesthesiaToolkit from './components/AnesthesiaToolkit';
 import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
+import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
 import ComingSoonToolkit from './components/ComingSoonToolkit';
 import DoseCalculator from './components/DoseCalculator';
 import DrugInteractionChecker from './components/DrugInteractionChecker';
@@ -41,6 +43,7 @@ import {
   createCimaServiceFromEnv,
   resolveCimaBaseUrl,
 } from './services/cima';
+import { createClinicalNutritionService } from './services/clinicalNutrition';
 import {
   buildCimavetRecordUrl,
   getCimavetMaxWithdrawalDays,
@@ -70,6 +73,7 @@ const toolkitViews = [
   'constants',
   'ranges',
   'fluid',
+  'anesthesia',
   'emergency',
   'converter',
   'surface',
@@ -92,13 +96,15 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'constants',
   'ranges',
   'fluid',
+  'anesthesia',
   'emergency',
   'converter',
   'surface',
   'assistant',
+  'nutrition',
   'management',
 ]);
-const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'constants', 'converter', 'surface', 'management', 'fluid']);
+const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'constants', 'converter', 'surface', 'management', 'fluid', 'anesthesia']);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
   premium_viewer: ['viewer'],
@@ -790,6 +796,7 @@ function App() {
 
   const cimaService = useMemo(() => createCimaServiceFromEnv(), []);
   const cimavetService = useMemo(() => createCimavetServiceFromEnv(), []);
+  const clinicalNutritionService = useMemo(() => createClinicalNutritionService(), []);
   const supabaseAccessService = useMemo(() => createSupabaseAccessService(), []);
   const supabaseEditorialService = useMemo(() => createSupabaseEditorialService(), []);
   const t = labels[lang];
@@ -1060,6 +1067,7 @@ function App() {
     isActualAdmin && accessPreviewMode !== 'actual'
       ? accessPreviewMode !== 'free_viewer'
       : actualHasPremiumAccess;
+  const hasToolkitAccess = hasPremiumAccess || (isActualAdmin && accessPreviewMode === 'actual');
   const accessStatusMessage = hasPremiumAccess ? accessText.premiumBadge : lang === 'es' ? 'Gratuita' : 'Free';
   const canCreateEditorial = effectiveProfileRoles.some((role) => ['contributor', 'editor', 'reviewer', 'admin'].includes(role));
   const canManageEditorial = effectiveProfileRoles.some((role) => ['editor', 'reviewer', 'admin'].includes(role));
@@ -2049,13 +2057,13 @@ function App() {
           const isSoonToolkitCard = Boolean(card.toolkitView && card.statusTone === 'soon');
           const canPreviewSoonToolkitCard = Boolean(isSoonToolkitCard && canActivateEditorial);
           const isOpenableToolkitCard = card.toolkitView
-            ? canAccessToolkitView(card.toolkitView, hasPremiumAccess) || canPreviewSoonToolkitCard
+            ? canAccessToolkitView(card.toolkitView, hasToolkitAccess) || canPreviewSoonToolkitCard
             : false;
           const isLockedToolkitCard = Boolean(
             isToolkitCard &&
               card.toolkitView &&
               availableToolkitViewSet.has(card.toolkitView) &&
-              !canAccessToolkitView(card.toolkitView, hasPremiumAccess) &&
+              !canAccessToolkitView(card.toolkitView, hasToolkitAccess) &&
               !canPreviewSoonToolkitCard,
           );
 
@@ -3700,6 +3708,8 @@ function App() {
 
             {activeToolkitView === 'fluid' && <FluidTherapyToolkit lang={lang} />}
 
+            {activeToolkitView === 'anesthesia' && <AnesthesiaToolkit lang={lang} />}
+
             {activeToolkitView === 'emergency' && (
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.emergency} />
             )}
@@ -3707,6 +3717,8 @@ function App() {
             {activeToolkitView === 'converter' && <UnitConverter lang={lang} />}
 
             {activeToolkitView === 'surface' && <BodySurfaceAreaCalculator lang={lang} />}
+
+            {activeToolkitView === 'nutrition' && <ClinicalNutritionToolkit lang={lang} service={clinicalNutritionService} />}
 
             {activeToolkitView === 'assistant' && (
               <section className="embedded-section">

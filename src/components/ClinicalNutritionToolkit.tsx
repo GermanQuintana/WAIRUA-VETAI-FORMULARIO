@@ -108,6 +108,14 @@ const texts = {
     targetComparison: 'Comparacion con objetivos',
     foodDatabase: 'Base de alimentos',
     foodSearch: 'Buscar alimento...',
+    usdaSearch: 'Buscar en USDA',
+    usdaSearchTitle: 'Importar ingrediente USDA',
+    usdaSearchHelp:
+      'Busca alimentos simples en FoodData Central y anadelos a la racion actual como ingrediente revisable.',
+    usdaUnavailable: 'Activa Supabase y configura USDA_FDC_API_KEY en las Edge Functions para usar esta busqueda.',
+    usdaNoResults: 'No hay resultados USDA para esa busqueda.',
+    usdaLoadError: 'No se pudo consultar USDA FoodData Central.',
+    addToRation: 'Usar',
     noFoods: 'No hay alimentos para esta especie.',
     nutrient: 'Nutriente',
     target: 'Objetivo',
@@ -190,6 +198,14 @@ const texts = {
     targetComparison: 'Target comparison',
     foodDatabase: 'Food database',
     foodSearch: 'Search food...',
+    usdaSearch: 'Search USDA',
+    usdaSearchTitle: 'Import USDA ingredient',
+    usdaSearchHelp:
+      'Search simple foods in FoodData Central and add them to the current ration as a reviewable ingredient.',
+    usdaUnavailable: 'Enable Supabase and configure USDA_FDC_API_KEY in Edge Functions to use this search.',
+    usdaNoResults: 'No USDA results for that search.',
+    usdaLoadError: 'Could not query USDA FoodData Central.',
+    addToRation: 'Use',
     noFoods: 'No foods available for this species.',
     nutrient: 'Nutrient',
     target: 'Target',
@@ -341,6 +357,11 @@ export default function ClinicalNutritionToolkit({ lang, service }: Props) {
   const [dietFormat, setDietFormat] = useState<'all' | 'dry' | 'wet' | 'mixed'>('all');
   const [selectedDietId, setSelectedDietId] = useState(localDietCatalog[0]?.id ?? '');
   const [foodQuery, setFoodQuery] = useState('');
+  const [usdaQuery, setUsdaQuery] = useState('');
+  const [usdaResults, setUsdaResults] = useState<FoodIngredientRecord[]>([]);
+  const [usdaLoading, setUsdaLoading] = useState(false);
+  const [usdaError, setUsdaError] = useState('');
+  const [usdaHasSearched, setUsdaHasSearched] = useState(false);
   const [rationRows, setRationRows] = useState<RationRow[]>([
     { id: buildRowId(), foodId: 'food-chicken-breast-cooked', grams: '120' },
     { id: buildRowId(), foodId: 'food-rice-cooked', grams: '80' },
@@ -594,6 +615,27 @@ export default function ClinicalNutritionToolkit({ lang, service }: Props) {
   ];
 
   const macroBalance = numericTargets.proteinPercent + numericTargets.fatPercent + numericTargets.carbohydratePercent;
+
+  const searchUsdaFoods = async () => {
+    if (!service || !usdaQuery.trim()) return;
+
+    setUsdaLoading(true);
+    setUsdaError('');
+    setUsdaHasSearched(true);
+    try {
+      const results = await service.searchUsdaFoods({ query: usdaQuery, species });
+      setUsdaResults(results);
+    } catch (_error) {
+      setUsdaError(copy.usdaLoadError);
+    } finally {
+      setUsdaLoading(false);
+    }
+  };
+
+  const addUsdaFoodToRation = (food: FoodIngredientRecord) => {
+    setFoods((current) => mergeById(current, [food]));
+    setRationRows((current) => [...current, { id: buildRowId(), foodId: food.id, grams: '50' }]);
+  };
 
   return (
     <section className="toolkit-utility nutrition-toolkit">
@@ -1285,6 +1327,86 @@ export default function ClinicalNutritionToolkit({ lang, service }: Props) {
             </div>
 
             {compatibleFoods.length === 0 && <p>{copy.noFoods}</p>}
+          </section>
+
+          <section className="toolkit-reference-table nutrition-usda-panel">
+            <div className="toolkit-reference-header">
+              <div>
+                <p className="section-kicker">USDA FoodData Central</p>
+                <h4>{copy.usdaSearchTitle}</h4>
+                <p>{copy.usdaSearchHelp}</p>
+              </div>
+              <span>{usdaResults.length}</span>
+            </div>
+
+            <div className="toolkit-utility-form nutrition-food-search">
+              <label>
+                {copy.usdaSearch}
+                <input
+                  type="text"
+                  value={usdaQuery}
+                  onChange={(event) => {
+                    setUsdaQuery(event.target.value);
+                    setUsdaHasSearched(false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      void searchUsdaFoods();
+                    }
+                  }}
+                  placeholder={lang === 'es' ? 'pollo cocido, arroz, huevo...' : 'cooked chicken, rice, egg...'}
+                  disabled={!service}
+                />
+              </label>
+              <button type="button" className="primary-button" onClick={() => void searchUsdaFoods()} disabled={!service || usdaLoading}>
+                {usdaLoading ? (lang === 'es' ? 'Buscando...' : 'Searching...') : copy.usdaSearch}
+              </button>
+            </div>
+
+            {!service && <p className="toolkit-source-note">{copy.usdaUnavailable}</p>}
+            {usdaError && <p className="form-error">{usdaError}</p>}
+
+            {usdaResults.length > 0 && (
+              <div className="toolkit-table-shell">
+                <table className="toolkit-table">
+                  <thead>
+                    <tr>
+                      <th>{copy.ingredient}</th>
+                      <th>{copy.summary}</th>
+                      <th>kcal/100 g</th>
+                      <th>{copy.protein}</th>
+                      <th>{copy.fat}</th>
+                      <th>{copy.carbohydrate}</th>
+                      <th>{copy.fiber}</th>
+                      <th>{copy.addIngredient}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usdaResults.map((food) => (
+                      <tr key={food.id}>
+                        <td>{food.foodName}</td>
+                        <td>
+                          {food.category} · {food.preparation}
+                        </td>
+                        <td>{formatNumber(food.nutrientsPer100g.energyKcal, 0)}</td>
+                        <td>{formatNumber(food.nutrientsPer100g.proteinG)}</td>
+                        <td>{formatNumber(food.nutrientsPer100g.fatG)}</td>
+                        <td>{formatNumber(food.nutrientsPer100g.carbohydrateG)}</td>
+                        <td>{formatNumber(food.nutrientsPer100g.fiberG)}</td>
+                        <td>
+                          <button type="button" className="secondary-button compact-button" onClick={() => addUsdaFoodToRation(food)}>
+                            {copy.addToRation}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {service && usdaHasSearched && !usdaLoading && !usdaError && usdaResults.length === 0 && <p>{copy.usdaNoResults}</p>}
           </section>
         </>
       )}
