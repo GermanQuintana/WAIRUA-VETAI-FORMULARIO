@@ -130,6 +130,10 @@ security definer
 set search_path = public
 as $$
 begin
+  if coalesce(current_setting('request.jwt.claim.role', true), '') = 'service_role' then
+    return new;
+  end if;
+
   if auth.uid() = new.id then
     new.role := old.role;
     new.roles := old.roles;
