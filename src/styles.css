@@ -2944,6 +2944,263 @@ select:focus-visible {
   color: var(--text-dark);
 }
 
+.anesthesia-toolkit {
+  display: grid;
+  gap: 1rem;
+}
+
+.anesthesia-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.anesthesia-header > div:first-child {
+  min-width: 0;
+}
+
+.anesthesia-header h3,
+.anesthesia-panel-heading h4,
+.anesthesia-sheet-head h3 {
+  margin: 0.2rem 0 0.35rem;
+}
+
+.anesthesia-header p,
+.anesthesia-panel-heading p,
+.anesthesia-disclaimer,
+.anesthesia-table td span,
+.anesthesia-patient-summary dt {
+  color: var(--muted-light);
+}
+
+.anesthesia-action-panel,
+.anesthesia-panel,
+.anesthesia-print-sheet {
+  border: 1px solid #d9dfcc;
+  background: linear-gradient(135deg, #fffdf7 0%, #f7fbf4 100%);
+  border-radius: 1rem;
+}
+
+.anesthesia-action-panel {
+  min-width: 250px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.anesthesia-action-panel strong {
+  display: block;
+  font-size: 1.15rem;
+}
+
+.anesthesia-config {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 1rem;
+}
+
+.anesthesia-panel,
+.anesthesia-print-sheet {
+  padding: 1rem;
+}
+
+.anesthesia-profile-panel {
+  grid-column: 1 / -1;
+}
+
+.anesthesia-patient-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.anesthesia-patient-grid label,
+.anesthesia-profile-grid label,
+.anesthesia-dose-cell,
+.anesthesia-concentration-cell {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.anesthesia-chip-field {
+  grid-column: span 2;
+}
+
+.anesthesia-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.anesthesia-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.85fr) minmax(220px, 1fr) minmax(300px, 1.4fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.anesthesia-profile-actions {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.anesthesia-profile-actions button {
+  min-height: 2.6rem;
+}
+
+.anesthesia-checkbox,
+.anesthesia-stock-toggle {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  font-weight: 700;
+}
+
+.anesthesia-checkbox input,
+.anesthesia-stock-toggle input {
+  width: auto;
+  min-height: auto;
+}
+
+.anesthesia-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.anesthesia-patient-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(86px, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  min-width: min(100%, 620px);
+}
+
+.anesthesia-patient-summary div {
+  padding: 0.65rem;
+  border-radius: 0.8rem;
+  border: 1px solid #dbe3cf;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.anesthesia-patient-summary dt {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.anesthesia-patient-summary dd {
+  margin: 0.2rem 0 0;
+  font-weight: 800;
+}
+
+.anesthesia-table-shell {
+  overflow-x: auto;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3cf;
+  background: #fff;
+}
+
+.anesthesia-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.anesthesia-table th,
+.anesthesia-table td {
+  padding: 0.7rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #edf1e5;
+}
+
+.anesthesia-table th {
+  background: #eef5e7;
+  color: #26362f;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.anesthesia-table td:first-child {
+  width: 128px;
+}
+
+.anesthesia-table td:nth-child(2) {
+  min-width: 180px;
+}
+
+.anesthesia-table td strong,
+.anesthesia-table td span,
+.anesthesia-table td em {
+  display: block;
+}
+
+.anesthesia-table td em {
+  margin-top: 0.25rem;
+  color: #a9492f;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.anesthesia-row-disabled {
+  opacity: 0.48;
+}
+
+.anesthesia-dose-cell input,
+.anesthesia-concentration-cell input,
+.anesthesia-concentration-cell select {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.55rem;
+}
+
+.anesthesia-print-value,
+.anesthesia-print-only {
+  display: none;
+}
+
+.anesthesia-disclaimer {
+  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.app.dark .anesthesia-header p,
+.app.dark .anesthesia-panel-heading p,
+.app.dark .anesthesia-disclaimer,
+.app.dark .anesthesia-table td span,
+.app.dark .anesthesia-patient-summary dt {
+  color: var(--muted-dark);
+}
+
+.app.dark .anesthesia-action-panel,
+.app.dark .anesthesia-panel,
+.app.dark .anesthesia-print-sheet,
+.app.dark .anesthesia-patient-summary div,
+.app.dark .anesthesia-table-shell {
+  background: #182329;
+  border-color: var(--border-dark);
+}
+
+.app.dark .anesthesia-table th {
+  background: #213239;
+  color: var(--text-dark);
+}
+
+.app.dark .anesthesia-table td {
+  border-bottom-color: var(--border-dark);
+}
+
 .toolkit-utility {
   display: grid;
   gap: 1rem;
@@ -4378,10 +4635,44 @@ select:focus-visible {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.nutrition-usda-panel .nutrition-food-search {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.nutrition-usda-panel .toolkit-reference-header p {
+  margin: 0.25rem 0 0;
+  max-width: 62ch;
+  color: var(--muted-light);
+}
+
+.primary-button {
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+  color: #fff;
+  font-weight: 800;
+}
+
+.compact-button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.65rem;
+  white-space: nowrap;
+}
+
 .app.dark .nutrition-diet-card,
 .app.dark .nutrition-chip-row span {
   background: #182329;
   border-color: var(--border-dark);
+}
+
+.app.dark .nutrition-usda-panel .toolkit-reference-header p {
+  color: var(--muted-dark);
+}
+
+.app.dark .primary-button {
+  background: #4ca5b4;
+  border-color: #4ca5b4;
+  color: #061014;
 }
 
 .app.dark .nutrition-diet-card span,
@@ -4736,7 +5027,8 @@ select:focus-visible {
   .nutrition-micro-grid,
   .nutrition-target-grid,
   .nutrition-micronutrient-form,
-  .nutrition-ration-row {
+  .nutrition-ration-row,
+  .nutrition-usda-panel .nutrition-food-search {
     grid-template-columns: 1fr;
   }
 
@@ -7694,5 +7986,263 @@ select {
   .live-card-footer a {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 980px) {
+  .anesthesia-header,
+  .anesthesia-config,
+  .anesthesia-sheet-head {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .anesthesia-action-panel {
+    min-width: 0;
+  }
+
+  .anesthesia-patient-grid,
+  .anesthesia-patient-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .anesthesia-chip-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .anesthesia-patient-grid,
+  .anesthesia-patient-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .anesthesia-toolbar {
+    display: grid;
+    justify-items: stretch;
+  }
+
+  .anesthesia-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .anesthesia-profile-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 7mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    min-height: 0;
+    overflow: visible !important;
+  }
+
+  .app {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    color: #111 !important;
+    overflow: visible !important;
+  }
+
+  .app-backdrop,
+  .app-topbar,
+  .product-tabs,
+  .app-signature,
+  .legal-footer,
+  .cookie-consent,
+  .legal-modal,
+  .module-header,
+  .anesthesia-screen-only {
+    display: none !important;
+  }
+
+  .workspace-main,
+  .panel,
+  .module-panel,
+  .anesthesia-toolkit {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .anesthesia-print-sheet {
+    position: static;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    color: #111;
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+
+  .anesthesia-print-only,
+  .anesthesia-print-value {
+    display: block;
+  }
+
+  .anesthesia-sheet-head {
+    display: grid;
+    grid-template-columns: 1.15fr 2.85fr;
+    gap: 5mm;
+    align-items: start;
+    margin-bottom: 5mm;
+  }
+
+  .anesthesia-sheet-head h3 {
+    margin: 1mm 0 0;
+    font-size: 15pt;
+    line-height: 1.05;
+  }
+
+  .anesthesia-sheet-head .section-kicker {
+    margin: 0;
+    font-size: 8pt;
+    letter-spacing: 0.08em;
+  }
+
+  .anesthesia-patient-summary {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2mm;
+    min-width: 0;
+  }
+
+  .anesthesia-patient-summary div {
+    padding: 2mm 2.5mm;
+    background: #fff;
+    border-color: #999;
+    border-radius: 3mm;
+    break-inside: avoid;
+  }
+
+  .anesthesia-patient-summary dt {
+    font-size: 6.8pt;
+    line-height: 1.05;
+  }
+
+  .anesthesia-patient-summary dd {
+    margin-top: 1mm;
+    font-size: 9pt;
+    line-height: 1.08;
+  }
+
+  .anesthesia-table-shell {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .anesthesia-table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 7.1pt;
+    line-height: 1.15;
+    page-break-inside: auto;
+  }
+
+  .anesthesia-table th,
+  .anesthesia-table td {
+    padding: 2.4px 3.2px;
+    border: 1px solid #bcbcbc;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  .anesthesia-table th {
+    background: #e9ece6 !important;
+    color: #111;
+    font-size: 6.8pt;
+    line-height: 1.1;
+  }
+
+  .anesthesia-table thead {
+    display: table-header-group;
+  }
+
+  .anesthesia-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .anesthesia-table th:first-child,
+  .anesthesia-table td:first-child {
+    display: none;
+  }
+
+  .anesthesia-table th:nth-child(2),
+  .anesthesia-table td:nth-child(2) {
+    width: 17%;
+  }
+
+  .anesthesia-table th:nth-child(3),
+  .anesthesia-table td:nth-child(3) {
+    width: 7%;
+  }
+
+  .anesthesia-table th:nth-child(4),
+  .anesthesia-table td:nth-child(4) {
+    width: 12%;
+  }
+
+  .anesthesia-table th:nth-child(5),
+  .anesthesia-table td:nth-child(5) {
+    width: 13%;
+  }
+
+  .anesthesia-table th:nth-child(6),
+  .anesthesia-table td:nth-child(6),
+  .anesthesia-table th:nth-child(7),
+  .anesthesia-table td:nth-child(7),
+  .anesthesia-table th:nth-child(8),
+  .anesthesia-table td:nth-child(8) {
+    width: 8%;
+  }
+
+  .anesthesia-table th:nth-child(9),
+  .anesthesia-table td:nth-child(9) {
+    width: 27%;
+  }
+
+  .anesthesia-dose-cell {
+    gap: 1mm;
+  }
+
+  .anesthesia-dose-cell strong,
+  .anesthesia-table td > strong {
+    font-size: 7.4pt;
+    line-height: 1.12;
+  }
+
+  .anesthesia-dose-cell span,
+  .anesthesia-table td span {
+    line-height: 1.12;
+  }
+
+  .anesthesia-row-disabled {
+    display: none;
+  }
+
+  .anesthesia-disclaimer {
+    margin-top: 3mm;
+    color: #333;
+    font-size: 6.8pt;
+    line-height: 1.2;
   }
 }

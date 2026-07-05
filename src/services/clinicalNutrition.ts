@@ -162,6 +162,15 @@ export class ClinicalNutritionService {
     if (error) throw error;
     return ((data ?? []) as Array<Record<string, unknown>>).map(mapFoodIngredient);
   }
+
+  async searchUsdaFoods({ query, species }: { query: string; species: Species }) {
+    const { data, error } = await this.client.functions.invoke('usda-food-search', {
+      body: { query, species },
+    });
+
+    if (error) throw error;
+    return ((data?.foods ?? []) as FoodIngredientRecord[]).filter((food) => food.id && food.foodName);
+  }
 }
 
 export const createClinicalNutritionService = () => {
