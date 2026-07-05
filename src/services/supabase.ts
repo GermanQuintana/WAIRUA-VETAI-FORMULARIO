@@ -896,21 +896,26 @@ export class SupabaseAccessService {
     },
   ) {
     const normalizedRoles = normalizeRoles(payload.roles);
-    const { data, error } = await this.client
-      .from('profiles')
-      .update({
-        role: getEffectiveRole(normalizedRoles),
-        roles: normalizedRoles,
-        account_type: payload.accountType,
-        partner_category: payload.accountType === 'partner' ? payload.partnerCategory ?? null : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
-      .select('*')
-      .single();
+    const session = (await this.client.auth.getSession()).data.session;
+    if (!session?.access_token) {
+      throw new Error('You need to be signed in to update user access.');
+    }
 
-    if (error) throw error;
-    return mapProfileRow(data as Record<string, unknown>);
+    const { data, error } = await this.client.functions.invoke<{ profile?: Record<string, unknown> }>('admin-update-user-access', {
+      body: {
+        userId,
+        roles: normalizedRoles,
+        accountType: payload.accountType,
+        partnerCategory: payload.accountType === 'partner' ? payload.partnerCategory ?? null : null,
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (error) throw new Error(await getFunctionErrorMessage(error, 'Admin access update failed.'));
+    if (!data?.profile) throw new Error('Admin access update did not return a profile.');
+    return mapProfileRow(data.profile);
   }
 
   async updateCurrentProfile(
