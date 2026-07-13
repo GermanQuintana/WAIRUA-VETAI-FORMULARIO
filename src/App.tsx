@@ -15,6 +15,8 @@ import GeneticsToolkit from './components/GeneticsToolkit';
 import InfusionCalculator from './components/InfusionCalculator';
 import LegalCompliance from './components/LegalCompliance';
 import ManagementToolkit from './components/ManagementToolkit';
+import PublicLanding from './components/PublicLanding';
+import ThemeIcon from './components/ThemeIcon';
 import UnitConverter from './components/UnitConverter';
 import VitalConstantsToolkit from './components/VitalConstantsToolkit';
 import {
@@ -23,7 +25,6 @@ import {
   otcWorkflowCards,
   toolkitModules,
 } from './data/platform';
-import wairuaLogo from './assets/wairua-logo.jpg';
 import { otcProducts } from './data/otcProducts';
 import { therapeuticEntries } from './data/entries';
 import { labels, Language } from './i18n';
@@ -712,6 +713,7 @@ function App() {
   const [lang, setLang] = useState<Language>('es');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState<ProductTab>('prescription');
+  const [showAuthScreen, setShowAuthScreen] = useState(false);
   const [activeKnowledgeView, setActiveKnowledgeView] = useState<ActiveView>('records');
   const [activeToolkitView, setActiveToolkitView] = useState<ToolkitView>('overview');
   const [isLiveExpanded, setIsLiveExpanded] = useState(true);
@@ -2334,8 +2336,13 @@ function App() {
 
   const renderAppearanceControls = () => (
     <>
-      <button className="theme-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-        {theme === 'light' ? t.dark : t.light}
+      <button
+        className="theme-button appearance-icon-button"
+        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        aria-label={theme === 'light' ? t.dark : t.light}
+        title={theme === 'light' ? t.dark : t.light}
+      >
+        <ThemeIcon theme={theme} />
       </button>
       <div className="lang-switch" role="group" aria-label={t.language}>
         <button onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
@@ -2369,9 +2376,26 @@ function App() {
   }
 
   if (!isAuthenticated) {
+    if (!showAuthScreen) {
+      return (
+        <PublicLanding
+          lang={lang}
+          theme={theme}
+          onChangeLanguage={setLang}
+          onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          onEnter={() => setShowAuthScreen(true)}
+        />
+      );
+    }
+
     return (
       <div className={`app auth-app-shell ${theme}`}>
-        <div className="auth-utility-bar">{renderAppearanceControls()}</div>
+        <div className="auth-utility-bar">
+          <button type="button" className="secondary-button public-back-button" onClick={() => setShowAuthScreen(false)}>
+            ← {lang === 'es' ? 'Volver a la presentación' : 'Back to introduction'}
+          </button>
+          {renderAppearanceControls()}
+        </div>
         <AuthAccessPanel
           lang={lang}
           service={supabaseAccessService}
@@ -2393,12 +2417,14 @@ function App() {
         <div className="app-backdrop-grid" />
       </div>
 
+      <div className="clinical-layout">
+        <aside className="clinical-sidebar">
       <header className="app-topbar">
         <div className="topbar-brand">
-          <img src={wairuaLogo} alt="WAIRUA" className="brand-logo brand-logo-topbar" />
+          <img src="/favicon-wairua-128.png" alt="" className="brand-logo brand-logo-topbar" />
           <div className="topbar-brand-copy">
-            <strong>{currentWorkspaceLabel}</strong>
-            <span>{lang === 'es' ? 'Aplicación clínica' : 'Clinical application'}</span>
+            <strong>WAIRUA VetAI</strong>
+            <span>{lang === 'es' ? 'Medicina veterinaria de precisión' : 'Veterinary precision medicine'}</span>
           </div>
         </div>
 
@@ -2434,8 +2460,14 @@ function App() {
                 <span>{lang === 'es' ? 'Incidencia' : 'Issue'}</span>
               </button>
             </div>
-            <button type="button" className="topbar-icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-              {theme === 'light' ? t.dark : t.light}
+            <button
+              type="button"
+              className="topbar-icon-button"
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              aria-label={theme === 'light' ? t.dark : t.light}
+              title={theme === 'light' ? t.dark : t.light}
+            >
+              <ThemeIcon theme={theme} />
             </button>
             <div className="lang-switch topbar-lang-switch" role="group" aria-label={t.language}>
               <button type="button" onClick={() => setLang('es')} className={lang === 'es' ? 'active' : ''}>
@@ -2455,11 +2487,11 @@ function App() {
 
       <nav className="tabs product-tabs" aria-label="Product selector">
         {[
-          { key: 'prescription' as const, label: t.prescriptionHub },
-          { key: 'human' as const, label: t.humanHub },
-          { key: 'active' as const, label: t.activeHub },
-          { key: 'otc' as const, label: t.otcHub },
-          { key: 'toolkit' as const, label: t.toolkitHub },
+          { key: 'prescription' as const, label: t.prescriptionHub, glyph: 'Rx' },
+          { key: 'human' as const, label: t.humanHub, glyph: 'Hu' },
+          { key: 'active' as const, label: t.activeHub, glyph: 'PA' },
+          { key: 'otc' as const, label: t.otcHub, glyph: 'OT' },
+          { key: 'toolkit' as const, label: t.toolkitHub, glyph: '＋' },
         ].map((tab) => {
           const isLocked = premiumTabSet.has(tab.key) && !hasPremiumAccess;
           const isToolkitTab = tab.key === 'toolkit';
@@ -2476,13 +2508,24 @@ function App() {
               disabled={isLocked}
               title={isLocked ? accessText.lockedTitle : undefined}
             >
-              <span translate={tab.key === 'otc' ? 'no' : undefined}>{tab.label}</span>
+              <span className="product-tab-glyph" aria-hidden="true">{tab.glyph}</span>
+              <span className="product-tab-label" translate={tab.key === 'otc' ? 'no' : undefined}>{tab.label}</span>
               <small>{isLocked ? accessText.lockedBadge : premiumTabSet.has(tab.key) ? accessText.premiumBadge : accessText.freeBadge}</small>
             </button>
           );
         })}
       </nav>
 
+          <div className="sidebar-footnote">
+            <span className="sidebar-status-dot" aria-hidden="true" />
+            <p>
+              <strong>{lang === 'es' ? 'Fuentes oficiales' : 'Official sources'}</strong>
+              <span>CIMAVET · CIMA · AEMPS</span>
+            </p>
+          </div>
+        </aside>
+
+        <div className="clinical-content">
       <main className="workspace-main">
         {activeTab === 'prescription' && (
           <section className="panel module-panel">
@@ -4098,13 +4141,17 @@ function App() {
       )}
 
       <section className="app-signature">
-        <img src={wairuaLogo} alt="WAIRUA" className="brand-logo brand-logo-signature" />
-        <p>{lang === 'es' ? 'Desarrollado por' : 'Developed by'}</p>
-        <strong>PhD LV MSc German Quintana Diez</strong>
-        <span>WAIRUA Veterinary Precision Medicine</span>
+        <img src="/favicon-wairua-128.png" alt="" className="brand-logo brand-logo-signature" />
+        <div className="app-signature-copy">
+          <p>{lang === 'es' ? 'Desarrollado por' : 'Developed by'}</p>
+          <strong>PhD LV MSc German Quintana Diez</strong>
+          <span>WAIRUA Veterinary Precision Medicine</span>
+        </div>
       </section>
 
       <LegalCompliance lang={lang} contactEmail={SUPPORT_EMAIL} />
+        </div>
+      </div>
 
       {isAccountMenuOpen ? (
         <div className="account-menu-popover" role="dialog" aria-modal="true" aria-label={lang === 'es' ? 'Mi cuenta' : 'My account'}>

@@ -9,7 +9,7 @@ interface Props {
   compact?: boolean;
 }
 
-const COOKIE_CONSENT_KEY = 'wairua.cookie-consent';
+const COOKIE_NOTICE_KEY = 'wairua.cookie-notice';
 
 const copy = {
   es: {
@@ -19,24 +19,24 @@ const copy = {
     cookies: 'Cookies',
     contact: 'Contacto',
     close: 'Cerrar',
-    acceptNecessary: 'Aceptar necesarias',
-    acceptAll: 'Aceptar todas',
-    cookieSettings: 'Configurar cookies',
-    cookieBannerTitle: 'Uso de cookies',
+    acceptCookies: 'Aceptar y continuar',
+    cookieBannerTitle: 'Cookies necesarias',
     cookieBannerText:
-      'Usamos cookies técnicas y almacenamiento local necesarios para iniciar sesión, mantener preferencias y proteger la sesión. Solo activaremos cookies analíticas o de mejora si las aceptas.',
+      'WAIRUA utiliza cookies técnicas y almacenamiento local necesarios para iniciar sesión, conservar tus preferencias y prestar el servicio.',
     legalTitle: 'Aviso legal',
     privacyTitle: 'Política de privacidad',
     termsTitle: 'Condiciones de uso',
     cookiesTitle: 'Política de cookies',
     legalItems: [
-      'Titular y responsable del servicio: PhD LV MSc German Quintana Diez, WAIRUA Veterinary Precision Medicine.',
+      'Titular del servicio: Wairua Veterinary Precision Medicine, S.L.U. (Sociedad Limitada Unipersonal), con NIF B25948050.',
+      'Domicilio social: Avenida da Mariña 63, 2.º A, 27880 Burela, Lugo, España.',
       'Email de contacto y soporte: {email}.',
       'WAIRUA VetAI es una herramienta profesional de consulta veterinaria. La información se ofrece como apoyo técnico y no sustituye el criterio clínico, la ficha técnica oficial ni la normativa aplicable.',
       'El acceso puede requerir registro, validación de cuenta, suscripción o autorización por clínica.',
       'Los contenidos, estructura, marcas, textos, imágenes y desarrollos propios de la plataforma quedan protegidos por la normativa de propiedad intelectual e industrial.',
     ],
     privacyItems: [
+      'Responsable del tratamiento: Wairua Veterinary Precision Medicine, S.L.U., NIF B25948050. Contacto de privacidad: {email}.',
       'Tratamos los datos que introduces para crear y gestionar tu cuenta, darte acceso a la plataforma, atender incidencias y administrar suscripciones o permisos profesionales.',
       'Datos tratados: email, nombre, datos profesionales opcionales, roles de acceso, información de suscripción, incidencias enviadas y datos técnicos necesarios para seguridad y funcionamiento.',
       'Base jurídica: ejecución del servicio solicitado, consentimiento cuando corresponda, cumplimiento de obligaciones legales e interés legítimo en seguridad, soporte y mejora de la plataforma.',
@@ -51,11 +51,11 @@ const copy = {
       'WAIRUA puede modificar módulos, precios, condiciones de acceso o funcionalidades para mejorar el servicio o adaptarse a requisitos legales.',
     ],
     cookieItems: [
-      'Cookies técnicas y almacenamiento local: necesarios para recordar idioma, tema, consentimiento, sesión de Supabase y preferencias de acceso.',
-      'Cookies de autenticación: pueden intervenir Supabase y Google si usas inicio de sesión con Google.',
-      'Cookies de pago: Stripe puede usar cookies propias cuando accedes al checkout o portal de facturación.',
-      'Cookies analíticas o de mejora: no son necesarias para entrar y solo deben activarse si las aceptas expresamente.',
-      'Puedes cambiar tu decisión desde el enlace “Cookies” disponible en el pie legal.',
+      'WAIRUA utiliza únicamente cookies técnicas y almacenamiento local necesarios para prestar el servicio solicitado. No se utilizan actualmente cookies analíticas, publicitarias ni de seguimiento.',
+      'El almacenamiento local recuerda el idioma, el tema, la sesión de Supabase, las preferencias de acceso y datos temporales necesarios para invitaciones o herramientas clínicas.',
+      'Los servicios de autenticación pueden utilizar almacenamiento técnico para mantener la sesión o completar el inicio de sesión que solicites.',
+      'El servicio de pago puede utilizar almacenamiento técnico propio cuando solicitas acceder al checkout o al portal de facturación.',
+      'Puedes eliminar estos datos desde la configuración del navegador. Al hacerlo, es posible que se cierre la sesión o se pierdan preferencias guardadas.',
     ],
   },
   en: {
@@ -65,24 +65,24 @@ const copy = {
     cookies: 'Cookies',
     contact: 'Contact',
     close: 'Close',
-    acceptNecessary: 'Necessary only',
-    acceptAll: 'Accept all',
-    cookieSettings: 'Cookie settings',
-    cookieBannerTitle: 'Cookie use',
+    acceptCookies: 'Accept and continue',
+    cookieBannerTitle: 'Necessary cookies',
     cookieBannerText:
-      'We use technical cookies and local storage required for sign-in, preferences, and session security. Analytics or improvement cookies will only be enabled if you accept them.',
+      'WAIRUA uses technical cookies and local storage required to sign in, retain your preferences, and provide the service.',
     legalTitle: 'Legal notice',
     privacyTitle: 'Privacy policy',
     termsTitle: 'Terms of use',
     cookiesTitle: 'Cookie policy',
     legalItems: [
-      'Service owner and controller: PhD LV MSc German Quintana Diez, WAIRUA Veterinary Precision Medicine.',
+      'Service owner: Wairua Veterinary Precision Medicine, S.L.U. (a single-member limited company), Spanish tax ID B25948050.',
+      'Registered office: Avenida da Mariña 63, 2nd A, 27880 Burela, Lugo, Spain.',
       'Contact and support email: {email}.',
       'WAIRUA VetAI is a professional veterinary reference tool. Its information supports technical work and does not replace clinical judgement, official product information, or applicable regulations.',
       'Access may require registration, account validation, subscription, or clinic authorization.',
       'The platform content, structure, marks, texts, images, and proprietary development are protected by intellectual and industrial property rules.',
     ],
     privacyItems: [
+      'Data controller: Wairua Veterinary Precision Medicine, S.L.U., Spanish tax ID B25948050. Privacy contact: {email}.',
       'We process the data you enter to create and manage your account, provide platform access, handle issues, and manage subscriptions or professional permissions.',
       'Processed data: email, name, optional professional profile data, access roles, subscription information, support issues, and technical data required for security and operation.',
       'Legal basis: performance of the requested service, consent where applicable, compliance with legal obligations, and legitimate interest in security, support, and platform improvement.',
@@ -97,11 +97,11 @@ const copy = {
       'WAIRUA may change modules, prices, access conditions, or features to improve the service or comply with legal requirements.',
     ],
     cookieItems: [
-      'Technical cookies and local storage: required to remember language, theme, consent, Supabase session, and access preferences.',
-      'Authentication cookies: Supabase and Google may be involved if you use Google sign-in.',
-      'Payment cookies: Stripe may use its own cookies when you access checkout or the billing portal.',
-      'Analytics or improvement cookies: not required to sign in and should only be enabled if you expressly accept them.',
-      'You can change your choice from the “Cookies” link available in the legal footer.',
+      'WAIRUA only uses technical cookies and local storage required to provide the requested service. No analytics, advertising, or tracking cookies are currently used.',
+      'Local storage remembers language, theme, the Supabase session, access preferences, and temporary data required for invitations or clinical tools.',
+      'Authentication services may use technical storage to maintain the session or complete a sign-in flow you request.',
+      'The payment service may use its own technical storage when you request access to checkout or the billing portal.',
+      'You can delete this data in your browser settings. Doing so may sign you out or remove saved preferences.',
     ],
   },
 } as const;
@@ -135,8 +135,8 @@ const getTitle = (topic: LegalTopic, t: (typeof copy)['es'] | (typeof copy)['en'
 export default function LegalCompliance({ lang, contactEmail, compact = false }: Props) {
   const t = copy[lang];
   const [activeTopic, setActiveTopic] = useState<LegalTopic | null>(null);
-  const [cookieChoice, setCookieChoice] = useState<string | null>(() =>
-    typeof window === 'undefined' ? 'necessary' : window.localStorage.getItem(COOKIE_CONSENT_KEY),
+  const [cookieNoticeAccepted, setCookieNoticeAccepted] = useState(() =>
+    typeof window === 'undefined' ? true : window.localStorage.getItem(COOKIE_NOTICE_KEY) === 'accepted',
   );
 
   useEffect(() => {
@@ -150,10 +150,9 @@ export default function LegalCompliance({ lang, contactEmail, compact = false }:
 
   const activeItems = useMemo(() => (activeTopic ? getItems(activeTopic, t) : []), [activeTopic, t]);
 
-  const saveCookieChoice = (choice: 'necessary' | 'all') => {
-    window.localStorage.setItem(COOKIE_CONSENT_KEY, choice);
-    setCookieChoice(choice);
-    setActiveTopic(null);
+  const acceptCookieNotice = () => {
+    window.localStorage.setItem(COOKIE_NOTICE_KEY, 'accepted');
+    setCookieNoticeAccepted(true);
   };
 
   return (
@@ -174,21 +173,15 @@ export default function LegalCompliance({ lang, contactEmail, compact = false }:
         </button>
       </section>
 
-      {!cookieChoice ? (
-        <aside className="cookie-consent" role="region" aria-label={t.cookieBannerTitle}>
+      {!cookieNoticeAccepted ? (
+        <aside className="cookie-consent cookie-notice" role="region" aria-label={t.cookieBannerTitle}>
           <div>
             <strong>{t.cookieBannerTitle}</strong>
             <p>{t.cookieBannerText}</p>
           </div>
           <div className="cookie-consent-actions">
-            <button type="button" className="secondary-button" onClick={() => setActiveTopic('cookies')}>
-              {t.cookieSettings}
-            </button>
-            <button type="button" className="secondary-button" onClick={() => saveCookieChoice('necessary')}>
-              {t.acceptNecessary}
-            </button>
-            <button type="button" className="theme-button" onClick={() => saveCookieChoice('all')}>
-              {t.acceptAll}
+            <button type="button" className="theme-button" onClick={acceptCookieNotice}>
+              {t.acceptCookies}
             </button>
           </div>
         </aside>
@@ -208,16 +201,6 @@ export default function LegalCompliance({ lang, contactEmail, compact = false }:
                 <li key={item}>{item.replace('{email}', contactEmail)}</li>
               ))}
             </ul>
-            {activeTopic === 'cookies' ? (
-              <div className="legal-modal-actions">
-                <button type="button" className="secondary-button" onClick={() => saveCookieChoice('necessary')}>
-                  {t.acceptNecessary}
-                </button>
-                <button type="button" className="theme-button" onClick={() => saveCookieChoice('all')}>
-                  {t.acceptAll}
-                </button>
-              </div>
-            ) : null}
             <button type="button" className="secondary-button legal-modal-close" onClick={() => setActiveTopic(null)}>
               {t.close}
             </button>
