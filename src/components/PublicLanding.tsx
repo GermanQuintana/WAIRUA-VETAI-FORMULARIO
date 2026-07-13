@@ -53,7 +53,12 @@ const copy = {
     pricingBody:
       'Puedes conocer y utilizar las funciones esenciales antes de decidir. El acceso premium comienza con 10 días de prueba completa.',
     plans: [
-      ['Gratis', '0 €', 'Medicamentos veterinarios oficiales y búsquedas esenciales.', 'Crear acceso'],
+      [
+        'Gratis',
+        '0 €',
+        'Medicamentos oficiales, OTC y herramientas gratuitas de fluidoterapia, infusión, constantes y conversiones.',
+        'Crear acceso',
+      ],
       ['Individual', '18 €/mes', 'Conocimiento avanzado y toolkit clínico completo para un veterinario.', 'Probar 10 días'],
       ['Clínica', '39 €/mes + 7 €/vet/mes', 'Cuenta de clínica con veterinarios vinculados y acceso premium.', 'Ver plan'],
     ],
@@ -103,7 +108,12 @@ const copy = {
     pricingBody:
       'Explore and use the essential features before deciding. Premium access starts with a complete 10-day trial.',
     plans: [
-      ['Free', 'EUR 0', 'Official veterinary medicines and essential searches.', 'Create access'],
+      [
+        'Free',
+        'EUR 0',
+        'Official medicines, OTC searches, and free tools for fluids, infusions, vitals, and conversions.',
+        'Create access',
+      ],
       ['Individual', 'EUR 18/month', 'Advanced knowledge and the complete clinical toolkit for one veterinarian.', 'Try 10 days'],
       ['Clinic', 'EUR 39/month + EUR 7/vet/month', 'Clinic account with linked veterinarians and premium access.', 'View plan'],
     ],
