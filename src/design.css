@@ -413,36 +413,25 @@
 .public-deterministic-note strong { font-size: .95rem; }
 .public-deterministic-note span { color: var(--design-muted); font-size: .84rem; line-height: 1.55; }
 
-.public-plan-list { border-top: 1px solid var(--design-line); }
-.public-plan-list > button {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(10rem, auto);
-  gap: 1rem;
-  align-items: center;
-  width: 100%;
-  min-height: 6rem;
-  padding: 1rem .8rem;
-  border: 0;
-  border-bottom: 1px solid var(--design-line);
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: padding 180ms ease, background 180ms ease;
-}
-
-.public-plan-list > button:hover,
-.public-plan-list > button.featured { padding-inline: 1.1rem; background: var(--design-wash); }
-.public-plan-index { color: var(--design-accent); font-size: .7rem; font-weight: 900; }
-.public-plan-copy,
-.public-plan-price { display: grid; gap: .3rem; }
-.public-plan-copy strong { font-size: 1.05rem; }
-.public-plan-copy small { max-width: 34rem; color: var(--design-muted); font-size: .78rem; line-height: 1.45; }
-.public-plan-price { justify-items: end; text-align: right; }
-.public-plan-price strong { font-size: .95rem; }
-.public-plan-price small { color: var(--design-accent); font-size: .72rem; font-weight: 900; }
-.public-plan-list > p { margin: .9rem 0 0; color: var(--design-muted); font-size: .72rem; line-height: 1.5; }
+.public-plan-comparison { min-width: 0; }
+.public-plan-table-scroll { overflow-x: auto; border-top: 1px solid var(--design-line); scrollbar-width: thin; }
+.public-plan-comparison table { width: 100%; min-width: 580px; border-collapse: collapse; table-layout: fixed; }
+.public-plan-comparison th,
+.public-plan-comparison td { padding: .62rem .55rem; border-bottom: 1px solid var(--design-line); }
+.public-plan-comparison thead th { color: var(--design-muted); font-size: .66rem; text-align: center; vertical-align: bottom; }
+.public-plan-comparison thead th:first-child { width: 36%; text-align: left; }
+.public-plan-comparison thead strong,
+.public-plan-comparison thead small { display: block; }
+.public-plan-comparison thead strong { color: var(--design-ink); font-size: .82rem; }
+.public-plan-comparison thead small { margin-top: .24rem; color: var(--design-accent); font-size: .64rem; line-height: 1.25; }
+.public-plan-comparison tbody th { color: var(--design-muted); font-size: .7rem; line-height: 1.3; text-align: left; }
+.public-plan-comparison td { text-align: center; }
+.public-plan-comparison .featured { background: var(--design-wash); }
+.public-plan-included { color: var(--design-accent); font-size: 1rem; font-weight: 900; }
+.public-plan-missing { color: color-mix(in srgb, var(--design-muted) 55%, transparent); }
+.public-plan-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .9rem; }
+.public-plan-footer p { max-width: 27rem; margin: 0; color: var(--design-muted); font-size: .68rem; line-height: 1.45; }
+.public-plan-footer .public-primary { flex: 0 0 auto; width: auto; min-height: 2.7rem; padding: .55rem .8rem; font-size: .7rem; }
 
 .public-presentation-controls {
   position: relative;
@@ -1298,8 +1287,8 @@
   .public-slide .public-pricing-copy h2 { font-size: clamp(2.35rem, 11vw, 3.4rem); }
   .public-slide-workflow li { grid-template-columns: 2.6rem 1fr; padding: 1.15rem 0; }
   .public-slide-toolkit .public-toolkit-list div { min-height: 3.55rem; }
-  .public-plan-list > button { grid-template-columns: 2rem 1fr; }
-  .public-plan-price { grid-column: 2; justify-items: start; text-align: left; }
+  .public-plan-footer { align-items: stretch; flex-direction: column; }
+  .public-plan-footer .public-primary { width: 100%; }
   .public-floating-login {
     position: fixed;
     right: 1rem;

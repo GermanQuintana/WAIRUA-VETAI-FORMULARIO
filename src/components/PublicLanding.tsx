@@ -52,16 +52,23 @@ const copy = {
     pricingTitle: 'Empieza gratis. Amplía solo cuando lo necesites.',
     pricingBody:
       'Puedes conocer y utilizar las funciones esenciales antes de decidir. El acceso premium comienza con 10 días de prueba completa.',
-    plans: [
-      [
-        'Gratis',
-        '0 €',
-        'Medicamentos oficiales, OTC y herramientas gratuitas de fluidoterapia, infusión, constantes y conversiones.',
-        'Crear acceso',
-      ],
-      ['Individual', '18 €/mes', 'Conocimiento avanzado y toolkit clínico completo para un veterinario.', 'Probar 10 días'],
-      ['Clínica', '39 €/mes + 7 €/vet/mes', 'Cuenta de clínica con veterinarios vinculados y acceso premium.', 'Ver plan'],
+    planHeaders: [
+      ['Gratis', '0 €'],
+      ['Individual', '18 €/mes'],
+      ['Clínica', '39 € + 7 €/vet/mes'],
     ],
+    planFeatures: [
+      ['Medicamentos veterinarios oficiales', true, true, true],
+      ['Medicamentos humanos (CIMA)', true, true, true],
+      ['OTC y búsquedas esenciales', true, true, true],
+      ['Toolkit gratuito', true, true, true],
+      ['Conocimiento avanzado', false, true, true],
+      ['Herramientas premium', false, true, true],
+      ['Gestión de equipo', false, false, true],
+    ],
+    included: 'Incluido',
+    notIncluded: 'No incluido',
+    pricingAction: 'Crear acceso o probar premium',
     deterministicTitle: 'Cálculo determinista, decisión profesional',
     deterministicBody:
       'Con los mismos datos, las calculadoras producen el mismo resultado. No generan respuestas aleatorias y siempre permiten contrastar el contexto y las fuentes oficiales.',
@@ -107,16 +114,23 @@ const copy = {
     pricingTitle: 'Start free. Upgrade only when you need to.',
     pricingBody:
       'Explore and use the essential features before deciding. Premium access starts with a complete 10-day trial.',
-    plans: [
-      [
-        'Free',
-        'EUR 0',
-        'Official medicines, OTC searches, and free tools for fluids, infusions, vitals, and conversions.',
-        'Create access',
-      ],
-      ['Individual', 'EUR 18/month', 'Advanced knowledge and the complete clinical toolkit for one veterinarian.', 'Try 10 days'],
-      ['Clinic', 'EUR 39/month + EUR 7/vet/month', 'Clinic account with linked veterinarians and premium access.', 'View plan'],
+    planHeaders: [
+      ['Free', 'EUR 0'],
+      ['Individual', 'EUR 18/month'],
+      ['Clinic', 'EUR 39 + EUR 7/vet/month'],
     ],
+    planFeatures: [
+      ['Official veterinary medicines', true, true, true],
+      ['Human medicines (CIMA)', true, true, true],
+      ['OTC and essential searches', true, true, true],
+      ['Free toolkit', true, true, true],
+      ['Advanced knowledge', false, true, true],
+      ['Premium tools', false, true, true],
+      ['Team management', false, false, true],
+    ],
+    included: 'Included',
+    notIncluded: 'Not included',
+    pricingAction: 'Create access or try premium',
     deterministicTitle: 'Deterministic calculation, professional decision',
     deterministicBody:
       'Given the same inputs, calculators return the same result. They do not generate random answers and always let you verify context and official sources.',
@@ -267,15 +281,42 @@ export default function PublicLanding({
                     <span>{c.deterministicBody}</span>
                   </aside>
                 </div>
-                <div className="public-plan-list">
-                  {c.plans.map(([name, price, description, action], index) => (
-                    <button type="button" onClick={onEnter} className={index === 1 ? 'featured' : ''} key={name}>
-                      <span className="public-plan-index">0{index + 1}</span>
-                      <span className="public-plan-copy"><strong>{name}</strong><small>{description}</small></span>
-                      <span className="public-plan-price"><strong>{price}</strong><small>{action} <span aria-hidden="true">→</span></small></span>
-                    </button>
-                  ))}
-                  <p>{c.pricingNote}</p>
+                <div className="public-plan-comparison">
+                  <div className="public-plan-table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">{lang === 'es' ? 'Incluye' : 'Includes'}</th>
+                          {c.planHeaders.map(([name, price], index) => (
+                            <th scope="col" className={index === 1 ? 'featured' : ''} key={name}>
+                              <strong>{name}</strong>
+                              <small>{price}</small>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {c.planFeatures.map(([feature, ...values]) => (
+                          <tr key={feature}>
+                            <th scope="row">{feature}</th>
+                            {values.map((value, index) => (
+                              <td className={index === 1 ? 'featured' : ''} key={`${feature}-${index}`}>
+                                {value === true ? (
+                                  <span className="public-plan-included" aria-label={c.included}>✓</span>
+                                ) : (
+                                  <span className="public-plan-missing" aria-label={c.notIncluded}>—</span>
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="public-plan-footer">
+                    <p>{c.pricingNote}</p>
+                    <button type="button" className="public-primary" onClick={onEnter}>{c.pricingAction}<span aria-hidden="true">→</span></button>
+                  </div>
                 </div>
               </div>
             ) : null}
