@@ -4,6 +4,7 @@ dist/
 .env.*
 .DS_Store
 .playwright-cli/
+.backups/
 .vercel
 .env*.local
 supabase/.temp/

@@ -27,6 +27,7 @@ interface Props {
   accessPreviewMode?: AccessPreviewMode;
   onChangeAccessPreviewMode?: (mode: AccessPreviewMode) => void;
   onClose?: () => void;
+  onSignedOut?: () => void;
   supportEmail?: string;
 }
 
@@ -81,6 +82,23 @@ const roleLabels = {
     editor: 'Editor',
     reviewer: 'Reviewer',
     admin: 'Admin',
+  },
+} as const;
+
+const roleDescriptions = {
+  es: {
+    viewer: 'Consulta contenido publicado.',
+    contributor: 'Crea propuestas y borradores.',
+    editor: 'Edita contenido y gestiona borradores.',
+    reviewer: 'Revisa y valida propuestas.',
+    admin: 'Gestiona accesos, roles y publicación final.',
+  },
+  en: {
+    viewer: 'Reads published content.',
+    contributor: 'Creates proposals and drafts.',
+    editor: 'Edits content and manages drafts.',
+    reviewer: 'Reviews and validates proposals.',
+    admin: 'Manages access, roles, and final publication.',
   },
 } as const;
 
@@ -209,12 +227,20 @@ const copy = {
     hidePassword: 'Ocultar',
     compactTitle: 'Mi acceso',
     compactSubtitle: 'Plan, acceso y permisos de edición.',
+    accountOverviewTitle: 'Resumen de cuenta',
+    accountOverviewHint: 'Tu acceso y suscripción de un vistazo.',
+    accessDetailsTitle: 'Datos de acceso',
+    accessDetailsHint: 'Clave WAIRUA, roles y datos técnicos de la suscripción.',
+    securityTitle: 'Seguridad y contraseña',
+    securityHint: 'Abre este bloque solo cuando necesites cambiar la contraseña.',
+    plansBillingTitle: 'Planes y facturación',
+    plansBillingHint: 'Cambia de plan, aplica un código o abre la gestión de facturas.',
     trialWarning: 'Tiempo restante de prueba',
     autoRenewOn: 'Renovación automática',
     autoRenewOff: 'No se renovará automáticamente',
     managePlanHint: 'Aquí puedes ampliar, renovar, cambiar de plan o darte de baja.',
     adminTitle: 'Administración de editores',
-    adminSubtitle: 'Autoriza quién puede editar la base colaborativa.',
+    adminSubtitle: 'Solo administradores: consulta usuarios, cambia su acceso y asigna uno o varios roles.',
     adminRefresh: 'Recargar usuarios',
     adminRole: 'Roles',
     adminAccountType: 'Tipo de cuenta',
@@ -227,7 +253,7 @@ const copy = {
     adminLoading: 'Cargando usuarios...',
     adminEmpty: 'No se han encontrado perfiles.',
     adminRoleSaved: 'Roles actualizados correctamente.',
-    adminRoleHint: 'Puedes marcar varios roles para el mismo usuario.',
+    adminRoleHint: 'Los usuarios normales no pueden ver este directorio. Marca varios roles si una persona necesita más de una capacidad.',
     adminToolsTitle: 'Herramientas de administración',
     adminToolsSubtitle: 'Abre solo el bloque que quieras revisar para mantener el panel limpio.',
     adminToolPreview: 'Vista previa',
@@ -464,12 +490,20 @@ const copy = {
     hidePassword: 'Hide',
     compactTitle: 'My access',
     compactSubtitle: 'Plan, access, and editing permissions.',
+    accountOverviewTitle: 'Account overview',
+    accountOverviewHint: 'Your access and subscription at a glance.',
+    accessDetailsTitle: 'Access details',
+    accessDetailsHint: 'WAIRUA key, roles, and technical subscription details.',
+    securityTitle: 'Security and password',
+    securityHint: 'Open this section only when you need to change your password.',
+    plansBillingTitle: 'Plans and billing',
+    plansBillingHint: 'Change plan, apply a code, or open invoice management.',
     trialWarning: 'Remaining trial time',
     autoRenewOn: 'Auto-renew is on',
     autoRenewOff: 'Will not auto-renew',
     managePlanHint: 'You can upgrade, renew, change plan, or cancel here.',
     adminTitle: 'Editor administration',
-    adminSubtitle: 'Authorize who can edit the collaborative knowledge base.',
+    adminSubtitle: 'Administrators only: review users, change access, and assign one or more roles.',
     adminRefresh: 'Reload users',
     adminRole: 'Roles',
     adminAccountType: 'Account type',
@@ -482,7 +516,7 @@ const copy = {
     adminLoading: 'Loading users...',
     adminEmpty: 'No profiles found.',
     adminRoleSaved: 'Roles updated successfully.',
-    adminRoleHint: 'You can assign multiple roles to the same user.',
+    adminRoleHint: 'Regular users cannot see this directory. Assign multiple roles when someone needs more than one capability.',
     adminToolsTitle: 'Administration tools',
     adminToolsSubtitle: 'Open only the block you want to review to keep the panel tidy.',
     adminToolPreview: 'Preview',
@@ -928,6 +962,7 @@ export default function AuthAccessPanel({
   accessPreviewMode = 'actual',
   onChangeAccessPreviewMode,
   onClose,
+  onSignedOut,
   supportEmail = 'gerqd79@gmail.com',
 }: Props) {
   const t = copy[lang];
@@ -1334,6 +1369,7 @@ export default function AuthAccessPanel({
     try {
       await service.signOut();
       await onRefreshAccount();
+      onSignedOut?.();
       setAppliedDiscount(null);
       setDiscountInput('');
       setIsOpen(false);
@@ -1618,107 +1654,137 @@ export default function AuthAccessPanel({
         </div>
       ) : null}
 
-      <div className="auth-membership-summary">
-        <div>
-          <span>{t.accessModelLabel}</span>
-          <strong>{accountTypeLabel}</strong>
+      <section className="account-summary-section">
+        <div className="account-profile-heading">
+          <strong>{t.accountOverviewTitle}</strong>
+          <p>{t.accountOverviewHint}</p>
         </div>
-        <div>
-          <span>{t.accessKey}</span>
-          <strong>{account?.profile?.accessKey ?? '--'}</strong>
-        </div>
-        <div>
-          <span>{t.rolesLabel}</span>
-          <strong>{accountRoles.map((role) => formatUserRole(lang, role)).join(' · ')}</strong>
-        </div>
-        {effectiveAccountType === 'partner' ? (
+        <div className="auth-membership-summary account-overview-grid">
           <div>
-            <span>{t.partnerCategoryLabel}</span>
-            <strong>{getPartnerCategoryLabel(account?.profile?.partnerCategory, t)}</strong>
+            <span>{t.accessModelLabel}</span>
+            <strong>{accountTypeLabel}</strong>
           </div>
-        ) : null}
-        <div>
-          <span>{t.selectedPlan}</span>
-          <strong>
-            {hasMembership
-              ? `${getPlanLabel(membership?.planId, lang)} · ${formatPrice(
-                  lang,
-                  getMembershipDisplayPriceCents(membership, selection.finalPriceCents),
-                )}`
-              : t.noPlan}
-          </strong>
+          <div>
+            <span>{t.selectedPlan}</span>
+            <strong>
+              {hasMembership
+                ? `${getPlanLabel(membership?.planId, lang)} · ${formatPrice(
+                    lang,
+                    getMembershipDisplayPriceCents(membership, selection.finalPriceCents),
+                  )}`
+                : t.noPlan}
+            </strong>
+          </div>
+          <div>
+            <span>{t.status}</span>
+            <strong>{hasMembership ? t[membership?.status ?? 'trialing'] : t.trialPending}</strong>
+          </div>
+          <div>
+            <span>{t.nextRenewal}</span>
+            <strong>{formatDate(lang, membership?.currentPeriodEnd)}</strong>
+          </div>
         </div>
-        <div>
-          <span>{t.status}</span>
-          <strong>{hasMembership ? t[membership?.status ?? 'trialing'] : t.trialPending}</strong>
-        </div>
-        <div>
-          <span>{t.trialUntil}</span>
-          <strong>{formatDate(lang, membership?.trialEndsAt)}</strong>
-        </div>
-        <div>
-          <span>{t.stripeStatus}</span>
-          <strong>{membership?.stripeCustomerId ? stripeStatusLabel : '--'}</strong>
-        </div>
-        <div>
-          <span>{t.nextRenewal}</span>
-          <strong>{formatDate(lang, membership?.currentPeriodEnd)}</strong>
-        </div>
-      </div>
+      </section>
 
-      <p className="auth-account-hint">{t.managePlanHint}</p>
-      <p className="auth-account-hint">{t.accessKeyHint}</p>
-      <p className="auth-account-hint">{t.billingManagedByStripe}</p>
-
-      <div className="auth-password-update">
-        <label>
-          {t.newPassword}
-          <input
-            type="password"
-            value={newPassword}
-            minLength={6}
-            autoComplete="new-password"
-            onChange={(event) => setNewPassword(event.target.value)}
-          />
-        </label>
-        <button type="button" className="secondary-button" onClick={handleUpdatePassword} disabled={isBusy || !newPassword}>
-          {t.updatePassword}
-        </button>
-      </div>
-
-      {membership?.stripeCustomerId ? (
-        <div className="auth-price-note">
-          <span>{t.customerBilling}</span>
-          <strong>{stripeStatusLabel}</strong>
-          <p>{t.renewalHelp}</p>
+      <details className="account-collapsible">
+        <summary>
+          <span>{t.accessDetailsTitle}</span>
+          <small>{t.accessDetailsHint}</small>
+        </summary>
+        <div className="account-collapsible-body">
+          <div className="auth-membership-summary account-technical-grid">
+            <div>
+              <span>{t.accessKey}</span>
+              <strong>{account?.profile?.accessKey ?? '--'}</strong>
+            </div>
+            <div>
+              <span>{t.rolesLabel}</span>
+              <strong>{accountRoles.map((role) => formatUserRole(lang, role)).join(' · ')}</strong>
+            </div>
+            {effectiveAccountType === 'partner' ? (
+              <div>
+                <span>{t.partnerCategoryLabel}</span>
+                <strong>{getPartnerCategoryLabel(account?.profile?.partnerCategory, t)}</strong>
+              </div>
+            ) : null}
+            <div>
+              <span>{t.trialUntil}</span>
+              <strong>{formatDate(lang, membership?.trialEndsAt)}</strong>
+            </div>
+            <div>
+              <span>{t.stripeStatus}</span>
+              <strong>{membership?.stripeCustomerId ? stripeStatusLabel : '--'}</strong>
+            </div>
+          </div>
+          <div className="account-summary-notes">
+            <p className="auth-account-hint">{t.accessKeyHint}</p>
+            <p className="auth-account-hint">{t.billingManagedByStripe}</p>
+          </div>
         </div>
-      ) : null}
+      </details>
+
+      <details className="account-collapsible">
+        <summary>
+          <span>{t.securityTitle}</span>
+          <small>{t.securityHint}</small>
+        </summary>
+        <div className="account-collapsible-body">
+          <div className="auth-password-update">
+            <label>
+              {t.newPassword}
+              <input
+                type="password"
+                value={newPassword}
+                minLength={6}
+                autoComplete="new-password"
+                onChange={(event) => setNewPassword(event.target.value)}
+              />
+            </label>
+            <button type="button" className="secondary-button" onClick={handleUpdatePassword} disabled={isBusy || !newPassword}>
+              {t.updatePassword}
+            </button>
+          </div>
+        </div>
+      </details>
 
       {renderClinicAccessSection()}
 
-      {renderPlanSelector()}
+      <details className="account-collapsible account-plan-management">
+        <summary>
+          <span>{t.plansBillingTitle}</span>
+          <small>{t.plansBillingHint}</small>
+        </summary>
+        <div className="account-collapsible-body">
+          <p className="auth-account-hint">{t.managePlanHint}</p>
+          {membership?.stripeCustomerId ? (
+            <div className="auth-price-note">
+              <span>{t.customerBilling}</span>
+              <strong>{stripeStatusLabel}</strong>
+              <p>{t.renewalHelp}</p>
+            </div>
+          ) : null}
 
-      <div className="auth-account-actions">
-        {membership?.stripeCustomerId ? (
-          <button type="button" className="secondary-button" onClick={handleStripePortal} disabled={isBusy}>
-            {t.portalCta}
-          </button>
-        ) : (
-          <>
-            <button type="button" className="theme-button" onClick={handleSavePlan} disabled={isBusy}>
-              {hasMembership ? t.savePreference : t.activateTrial}
-            </button>
-            <button type="button" className="theme-button" onClick={handleStripeCheckout} disabled={isBusy}>
-              {t.stripeCheckout}
-            </button>
-          </>
-        )}
-        <button type="button" className="secondary-button" onClick={handleSignOut} disabled={isBusy}>
-          {t.signOut}
-        </button>
-      </div>
+          {renderPlanSelector()}
 
-      {membership?.stripeCustomerId ? <p className="auth-account-hint">{t.stripePortalHelp}</p> : null}
+          <div className="auth-account-actions">
+            {membership?.stripeCustomerId ? (
+              <button type="button" className="secondary-button" onClick={handleStripePortal} disabled={isBusy}>
+                {t.portalCta}
+              </button>
+            ) : (
+              <>
+                <button type="button" className="theme-button" onClick={handleSavePlan} disabled={isBusy}>
+                  {hasMembership ? t.savePreference : t.activateTrial}
+                </button>
+                <button type="button" className="theme-button" onClick={handleStripeCheckout} disabled={isBusy}>
+                  {t.stripeCheckout}
+                </button>
+              </>
+            )}
+          </div>
+          {membership?.stripeCustomerId ? <p className="auth-account-hint">{t.stripePortalHelp}</p> : null}
+        </div>
+      </details>
     </>
   );
 
@@ -2017,6 +2083,15 @@ export default function AuthAccessPanel({
                 <p>{t.adminDirectorySubtitle}</p>
               </div>
 
+              <div className="admin-role-guide" aria-label={lang === 'es' ? 'Capacidades de cada rol' : 'Capabilities by role'}>
+                {roleOptions.map((role) => (
+                  <span key={`role-guide-${role}`}>
+                    <strong>{formatUserRole(lang, role)}</strong>
+                    <small>{roleDescriptions[lang][role]}</small>
+                  </span>
+                ))}
+              </div>
+
               <div className="admin-directory-toolbar">
                 <button
                   type="button"
@@ -2284,11 +2359,16 @@ export default function AuthAccessPanel({
           <strong>{account?.profile?.fullName || account?.email || 'WAIRUA VetAI'}</strong>
           <p>{t.compactSubtitle}</p>
         </div>
-        {onClose ? (
-          <button type="button" className="secondary-button account-close-button" onClick={onClose}>
-            {t.close}
+        <div className="account-card-header-actions">
+          <button type="button" className="secondary-button account-signout-button" onClick={handleSignOut} disabled={isBusy}>
+            {t.signOut}
           </button>
-        ) : null}
+          {onClose ? (
+            <button type="button" className="secondary-button account-close-button" onClick={onClose}>
+              {t.close}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="account-section-tabs" role="tablist" aria-label={t.account}>

@@ -1,7 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const ADMIN_EMAILS = new Set(['gerqd79@gmail.com']);
 const rolePriority = ['admin', 'reviewer', 'editor', 'contributor', 'viewer'] as const;
 const accountTypes = ['free', 'premium', 'company', 'partner'] as const;
 const partnerCategories = ['scientific', 'training', 'strategic', 'commercial'] as const;
@@ -69,11 +68,7 @@ const normalizePartnerCategory = (value: unknown): PartnerCategory | null => {
   return partnerCategories.includes(partnerCategory as PartnerCategory) ? (partnerCategory as PartnerCategory) : null;
 };
 
-const normalizeEmail = (value: unknown) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
-
 const isAdminProfile = (profile: Record<string, unknown> | null | undefined) => {
-  const email = normalizeEmail(profile?.email);
-  if (email && ADMIN_EMAILS.has(email)) return true;
   const roles = normalizeRoles(profile?.roles ?? profile?.role);
   return roles.includes('admin') || profile?.role === 'admin';
 };
@@ -107,7 +102,7 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile, error: callerError } = await admin
       .from('profiles')
-      .select('id,email,role,roles')
+      .select('id,role,roles')
       .eq('id', user.id)
       .maybeSingle();
 
