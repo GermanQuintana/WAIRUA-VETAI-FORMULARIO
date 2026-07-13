@@ -369,7 +369,8 @@
 }
 
 .public-slide .public-section-heading h2,
-.public-slide .public-toolkit-copy h2 {
+.public-slide .public-toolkit-copy h2,
+.public-slide .public-pricing-copy h2 {
   font-size: clamp(2.75rem, 4.6vw, 5.2rem);
 }
 
@@ -395,6 +396,53 @@
 .public-slide-workflow li p { max-width: 34rem; margin: 0.42rem 0 0; color: rgba(239,248,244,.68); line-height: 1.55; }
 
 .public-slide-toolkit .public-toolkit-copy { max-width: 39rem; }
+
+.public-slide-pricing { grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr); }
+.public-pricing-copy { max-width: 42rem; }
+.public-pricing-copy > p:not(.public-kicker) { color: var(--design-muted); line-height: 1.65; }
+
+.public-deterministic-note {
+  display: grid;
+  gap: .45rem;
+  margin-top: 2rem;
+  padding: 1.1rem 0 0 1.1rem;
+  border-top: 1px solid var(--design-line);
+  border-left: 3px solid var(--design-accent);
+}
+
+.public-deterministic-note strong { font-size: .95rem; }
+.public-deterministic-note span { color: var(--design-muted); font-size: .84rem; line-height: 1.55; }
+
+.public-plan-list { border-top: 1px solid var(--design-line); }
+.public-plan-list > button {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(10rem, auto);
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  min-height: 6rem;
+  padding: 1rem .8rem;
+  border: 0;
+  border-bottom: 1px solid var(--design-line);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: padding 180ms ease, background 180ms ease;
+}
+
+.public-plan-list > button:hover,
+.public-plan-list > button.featured { padding-inline: 1.1rem; background: var(--design-wash); }
+.public-plan-index { color: var(--design-accent); font-size: .7rem; font-weight: 900; }
+.public-plan-copy,
+.public-plan-price { display: grid; gap: .3rem; }
+.public-plan-copy strong { font-size: 1.05rem; }
+.public-plan-copy small { max-width: 34rem; color: var(--design-muted); font-size: .78rem; line-height: 1.45; }
+.public-plan-price { justify-items: end; text-align: right; }
+.public-plan-price strong { font-size: .95rem; }
+.public-plan-price small { color: var(--design-accent); font-size: .72rem; font-weight: 900; }
+.public-plan-list > p { margin: .9rem 0 0; color: var(--design-muted); font-size: .72rem; line-height: 1.5; }
 
 .public-presentation-controls {
   position: relative;
@@ -796,6 +844,219 @@
 .product-tab-label { min-width: 0; font-size: 0.79rem; font-weight: 800; line-height: 1.2; }
 .clinical-sidebar .product-tabs button small { padding: 0; color: #87928d; font-size: 0.5rem; letter-spacing: 0.06em; background: transparent; }
 
+/* Account and administration workspace */
+.account-menu-panel { width: min(60rem, calc(100vw - 2rem)); }
+
+.account-menu-popover .auth-account-card {
+  gap: 1rem;
+  padding: 0 0 1.35rem;
+  border-color: #d9e1dc;
+  border-radius: 20px;
+  background: #fbfcfa;
+}
+
+.account-menu-popover .account-card-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  align-items: center;
+  padding: 1.25rem 1.35rem;
+  border-bottom: 1px solid #e0e6e1;
+  background: rgba(251, 252, 250, 0.96);
+  backdrop-filter: blur(16px);
+}
+
+.account-card-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.55rem;
+}
+
+.account-card-header-actions button {
+  min-height: 2.55rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 9px;
+}
+
+.account-signout-button { color: #8c3d34; }
+
+.account-menu-popover .account-section-tabs {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0 1.35rem;
+  padding: 0.25rem;
+  border: 1px solid #e0e6e1;
+  border-radius: 11px;
+  background: #f1f4f1;
+}
+
+.account-menu-popover .account-section-tabs button {
+  flex: 1 1 0;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #65736e;
+  font-size: 0.8rem;
+}
+
+.account-menu-popover .account-section-tabs button.active {
+  background: #fff;
+  color: #17312c;
+  box-shadow: 0 1px 4px rgba(20, 42, 36, 0.08);
+}
+
+.account-menu-popover .auth-account-card > .auth-feedback,
+.account-menu-popover .auth-account-card > .auth-account-warning,
+.account-menu-popover .auth-account-card > .account-summary-section,
+.account-menu-popover .auth-account-card > .account-collapsible,
+.account-menu-popover .auth-account-card > .account-profile-shell,
+.account-menu-popover .auth-account-card > .account-profile-group,
+.account-menu-popover .auth-account-card > .admin-role-panel {
+  margin-right: 1.35rem;
+  margin-left: 1.35rem;
+}
+
+.account-summary-section {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem 0 0.25rem;
+}
+
+.account-menu-popover .auth-membership-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.account-menu-popover .auth-membership-summary > div {
+  min-width: 0;
+  min-height: 74px;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid #e1e7e2;
+  border-radius: 11px;
+  background: #f5f7f4;
+}
+
+.account-menu-popover .auth-membership-summary span { font-size: 0.7rem; }
+.account-menu-popover .auth-membership-summary strong { margin-top: 0.18rem; font-size: 0.9rem; }
+
+.account-collapsible {
+  padding: 0.2rem 0;
+  border-top: 1px solid #e1e7e2;
+}
+
+.account-collapsible summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.18rem 1rem;
+  align-items: center;
+  padding: 0.8rem 0;
+  color: #20332e;
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-collapsible summary::-webkit-details-marker { display: none; }
+.account-collapsible summary span { font-size: 0.92rem; font-weight: 800; }
+.account-collapsible summary small { grid-column: 1; color: #72807b; font-size: 0.76rem; }
+.account-collapsible summary::after {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  content: '+';
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid #d9e1dc;
+  border-radius: 50%;
+  color: #52645e;
+  font-size: 1rem;
+}
+.account-collapsible[open] summary::after { content: '−'; }
+
+.account-collapsible-body {
+  display: grid;
+  gap: 1rem;
+  padding: 0.35rem 0 1rem;
+}
+
+.account-summary-notes { display: grid; gap: 0.35rem; }
+.account-menu-popover .auth-password-update { margin: 0; }
+.account-plan-management .auth-plan-block { margin-top: 0; }
+
+.account-menu-popover .admin-role-panel {
+  gap: 1.1rem;
+  margin-top: 0;
+  padding-top: 0.5rem;
+  border-top: 0;
+}
+
+.account-menu-popover .admin-tool-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid #e0e6e1;
+  border-radius: 11px;
+  background: #f1f4f1;
+}
+
+.account-menu-popover .admin-tool-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.7rem;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.account-menu-popover .admin-tool-button strong {
+  display: grid;
+  place-items: center;
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  border-radius: 999px;
+  background: #e2e8e4;
+  font-size: 0.72rem;
+}
+
+.account-menu-popover .admin-tool-button.is-active { background: #fff; color: #0b6562; box-shadow: 0 1px 4px rgba(20, 42, 36, 0.08); }
+.account-menu-popover .admin-role-item { gap: 1rem; padding: 1rem; }
+.account-menu-popover .admin-role-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.account-menu-popover .admin-role-controls > label:last-of-type { grid-column: 1 / -1; }
+.admin-role-guide {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e6e1;
+  border-radius: 11px;
+  background: #e0e6e1;
+}
+.admin-role-guide > span { display: grid; gap: .22rem; padding: .65rem .7rem; background: #f7f9f6; }
+.admin-role-guide strong { color: #20332e; font-size: .72rem; }
+.admin-role-guide small { color: #708079; font-size: .64rem; line-height: 1.35; }
+.app.dark .admin-role-guide { border-color: #2c413a; background: #2c413a; }
+.app.dark .admin-role-guide > span { background: #17231f; }
+.app.dark .admin-role-guide strong { color: #edf5f1; }
+.app.dark .admin-role-guide small { color: #a8bab3; }
+.account-menu-popover .admin-role-controls > button { justify-self: end; }
+
+.app.dark .account-menu-popover .auth-account-card,
+.app.dark .account-menu-popover .account-card-header { border-color: #2b3e38; background: rgba(21, 31, 28, 0.97); }
+.app.dark .account-menu-popover .account-section-tabs,
+.app.dark .account-menu-popover .admin-tool-grid { border-color: #2b3e38; background: #111a18; }
+.app.dark .account-menu-popover .account-section-tabs button.active,
+.app.dark .account-menu-popover .admin-tool-button.is-active { background: #20302b; color: #91d8cb; }
+.app.dark .account-menu-popover .auth-membership-summary > div { border-color: #2b3e38; background: #111a18; }
+.app.dark .account-collapsible { border-color: #2b3e38; }
+.app.dark .account-collapsible summary { color: #edf4f0; }
+.app.dark .account-collapsible summary small { color: #9bada6; }
+.app.dark .account-collapsible summary::after { border-color: #354a43; color: #adbbb6; }
+.app.dark .account-signout-button { color: #ffb3ac; }
+
 .sidebar-footnote {
   display: flex;
   align-items: center;
@@ -1033,9 +1294,12 @@
 
   .public-slide { gap: 2rem; padding: 2.5rem 0; }
   .public-slide .public-section-heading h2,
-  .public-slide .public-toolkit-copy h2 { font-size: clamp(2.35rem, 11vw, 3.4rem); }
+  .public-slide .public-toolkit-copy h2,
+  .public-slide .public-pricing-copy h2 { font-size: clamp(2.35rem, 11vw, 3.4rem); }
   .public-slide-workflow li { grid-template-columns: 2.6rem 1fr; padding: 1.15rem 0; }
   .public-slide-toolkit .public-toolkit-list div { min-height: 3.55rem; }
+  .public-plan-list > button { grid-template-columns: 2rem 1fr; }
+  .public-plan-price { grid-column: 2; justify-items: start; text-align: left; }
   .public-floating-login {
     position: fixed;
     right: 1rem;
@@ -1070,6 +1334,26 @@
   .clinical-sidebar .topbar-lang-switch { grid-column: span 3; width: 100%; }
   .clinical-sidebar .product-tabs button { min-width: 9.5rem; }
   .clinical-content .module-header { align-items: stretch; }
+
+  .account-menu-popover { padding: 0.5rem; }
+  .account-menu-panel { width: calc(100vw - 1rem); }
+  .account-menu-popover .auth-account-card { max-height: calc(100vh - 1rem); border-radius: 14px; }
+  .account-menu-popover .account-card-header { align-items: stretch; flex-direction: column; padding: 1rem; }
+  .account-card-header-actions { width: 100%; }
+  .account-card-header-actions button { flex: 1 1 0; }
+  .account-menu-popover .account-section-tabs,
+  .account-menu-popover .auth-account-card > .auth-feedback,
+  .account-menu-popover .auth-account-card > .auth-account-warning,
+  .account-menu-popover .auth-account-card > .account-summary-section,
+  .account-menu-popover .auth-account-card > .account-collapsible,
+  .account-menu-popover .auth-account-card > .account-profile-shell,
+  .account-menu-popover .auth-account-card > .account-profile-group,
+  .account-menu-popover .auth-account-card > .admin-role-panel { margin-right: 1rem; margin-left: 1rem; }
+  .account-menu-popover .auth-membership-summary,
+  .account-menu-popover .admin-role-controls { grid-template-columns: 1fr; }
+  .account-menu-popover .admin-role-controls > label:last-of-type { grid-column: auto; }
+  .admin-role-guide { grid-template-columns: 1fr 1fr; }
+  .account-menu-popover .admin-tool-grid { grid-template-columns: 1fr; }
 
   .clinical-content .app-signature {
     align-items: flex-start;

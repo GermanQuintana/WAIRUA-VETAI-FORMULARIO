@@ -17,7 +17,7 @@ type PublicLandingProps = {
 
 const copy = {
   es: {
-    nav: ['Qué resuelve', 'Cómo funciona', 'Herramientas'],
+    nav: ['Qué resuelve', 'Cómo funciona', 'Herramientas', 'Planes'],
     login: 'Entrar',
     eyebrow: 'Decisiones clínicas con mejor contexto',
     title: 'La consulta veterinaria, más clara y más rápida.',
@@ -48,6 +48,19 @@ const copy = {
     toolkitBody:
       'La navegación separa medicamentos, conocimiento terapéutico, productos sin receta y herramientas clínicas. Siempre sabes dónde estás y qué puedes hacer después.',
     toolkitItems: ['Dosis e infusión', 'Anestesia', 'Fluidoterapia', 'Nutrición clínica', 'Constantes', 'Gestión'],
+    pricingKicker: 'Acceso transparente',
+    pricingTitle: 'Empieza gratis. Amplía solo cuando lo necesites.',
+    pricingBody:
+      'Puedes conocer y utilizar las funciones esenciales antes de decidir. El acceso premium comienza con 10 días de prueba completa.',
+    plans: [
+      ['Gratis', '0 €', 'Medicamentos veterinarios oficiales y búsquedas esenciales.', 'Crear acceso'],
+      ['Individual', '18 €/mes', 'Conocimiento avanzado y toolkit clínico completo para un veterinario.', 'Probar 10 días'],
+      ['Clínica', '39 €/mes + 7 €/vet/mes', 'Cuenta de clínica con veterinarios vinculados y acceso premium.', 'Ver plan'],
+    ],
+    deterministicTitle: 'Cálculo determinista, decisión profesional',
+    deterministicBody:
+      'Con los mismos datos, las calculadoras producen el mismo resultado. No generan respuestas aleatorias y siempre permiten contrastar el contexto y las fuentes oficiales.',
+    pricingNote: 'Precios mostrados antes del pago. Puedes mantener el acceso gratuito al terminar la prueba.',
     finalKicker: 'Empieza cuando quieras',
     finalTitle: 'Conoce la herramienta por dentro.',
     finalBody: 'Crea tu acceso o entra con tu cuenta para abrir el espacio clínico completo.',
@@ -55,7 +68,7 @@ const copy = {
     footer: 'WAIRUA Veterinary Precision Medicine',
   },
   en: {
-    nav: ['What it solves', 'How it works', 'Tools'],
+    nav: ['What it solves', 'How it works', 'Tools', 'Plans'],
     login: 'Sign in',
     eyebrow: 'Clinical decisions with better context',
     title: 'Veterinary reference, clearer and faster.',
@@ -85,6 +98,19 @@ const copy = {
     toolkitBody:
       'Navigation separates medicines, therapeutic knowledge, OTC products, and clinical tools. You always know where you are and what to do next.',
     toolkitItems: ['Dose & infusion', 'Anesthesia', 'Fluid therapy', 'Clinical nutrition', 'Vitals', 'Management'],
+    pricingKicker: 'Transparent access',
+    pricingTitle: 'Start free. Upgrade only when you need to.',
+    pricingBody:
+      'Explore and use the essential features before deciding. Premium access starts with a complete 10-day trial.',
+    plans: [
+      ['Free', 'EUR 0', 'Official veterinary medicines and essential searches.', 'Create access'],
+      ['Individual', 'EUR 18/month', 'Advanced knowledge and the complete clinical toolkit for one veterinarian.', 'Try 10 days'],
+      ['Clinic', 'EUR 39/month + EUR 7/vet/month', 'Clinic account with linked veterinarians and premium access.', 'View plan'],
+    ],
+    deterministicTitle: 'Deterministic calculation, professional decision',
+    deterministicBody:
+      'Given the same inputs, calculators return the same result. They do not generate random answers and always let you verify context and official sources.',
+    pricingNote: 'Prices are shown before payment. Free access remains available when the trial ends.',
     finalKicker: 'Start when you are ready',
     finalTitle: 'See the complete workspace.',
     finalBody: 'Create your access or sign in to open the full clinical application.',
@@ -216,6 +242,30 @@ export default function PublicLanding({
                 </div>
                 <div className="public-toolkit-list">
                   {c.toolkitItems.map((item, index) => <div key={item}><span>{String(index + 1).padStart(2, '0')}</span><strong>{item}</strong></div>)}
+                </div>
+              </div>
+            ) : null}
+
+            {activeSlide === 3 ? (
+              <div className="public-slide public-slide-pricing" key="pricing">
+                <div className="public-pricing-copy">
+                  <p className="public-kicker">{c.pricingKicker}</p>
+                  <h2>{c.pricingTitle}</h2>
+                  <p>{c.pricingBody}</p>
+                  <aside className="public-deterministic-note">
+                    <strong>{c.deterministicTitle}</strong>
+                    <span>{c.deterministicBody}</span>
+                  </aside>
+                </div>
+                <div className="public-plan-list">
+                  {c.plans.map(([name, price, description, action], index) => (
+                    <button type="button" onClick={onEnter} className={index === 1 ? 'featured' : ''} key={name}>
+                      <span className="public-plan-index">0{index + 1}</span>
+                      <span className="public-plan-copy"><strong>{name}</strong><small>{description}</small></span>
+                      <span className="public-plan-price"><strong>{price}</strong><small>{action} <span aria-hidden="true">→</span></small></span>
+                    </button>
+                  ))}
+                  <p>{c.pricingNote}</p>
                 </div>
               </div>
             ) : null}

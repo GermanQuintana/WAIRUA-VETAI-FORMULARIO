@@ -4170,6 +4170,10 @@ function App() {
               accessPreviewMode={accessPreviewMode}
               onChangeAccessPreviewMode={setAccessPreviewMode}
               onClose={() => setIsAccountMenuOpen(false)}
+              onSignedOut={() => {
+                setShowAuthScreen(false);
+                setIsAccountMenuOpen(false);
+              }}
               supportEmail={SUPPORT_EMAIL}
             />
           </div>
