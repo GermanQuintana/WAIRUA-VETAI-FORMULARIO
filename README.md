@@ -17,10 +17,7 @@ La plataforma está diseñada como apoyo a la toma de decisiones durante la cons
 | Aplicación desplegada | [https://guia-terapeutica.vercel.app](https://guia-terapeutica.vercel.app) |
 | Repositorio público | [https://github.com/GermanQuintana/WAIRUA-VETAI-FORMULARIO](https://github.com/GermanQuintana/WAIRUA-VETAI-FORMULARIO) |
 | Vídeo de presentación y demostración | [https://youtu.be/CShrRAhvURU](https://youtu.be/CShrRAhvURU) |
-| Slides | **Pendiente de añadir la URL pública antes de la entrega** |
-
-> [!IMPORTANT]
-> El único material de entrega pendiente en esta documentación es la URL pública de las slides.
+| Slides | [TFM Máster en desarrollo con IA - Google Slides](https://docs.google.com/presentation/d/1naPozS4nSkFAKNAMVbij7ki1x4udiswnNBdXmcN9S_g/edit?usp=drivesdk) |
 
 ## Credenciales de prueba
 
