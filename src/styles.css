@@ -1871,11 +1871,13 @@ select:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.otc-card .feature-card-link {
+.otc-card .feature-card-link,
+.otc-card .feature-card-link-disabled {
   width: 100%;
   max-width: 100%;
   justify-content: center;
   box-sizing: border-box;
+  text-align: center;
 }
 
 .otc-card-meta-full {

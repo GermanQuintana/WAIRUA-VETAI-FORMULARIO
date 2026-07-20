@@ -236,6 +236,7 @@ export interface OtcProductRecord {
   activeCompounds: string;
   summary: LocalizedText;
   sourceUrl: string;
+  sourceStatus?: 'manufacturer-unavailable';
   sourceRegion: 'es' | 'global';
   searchTerms?: string[];
 }

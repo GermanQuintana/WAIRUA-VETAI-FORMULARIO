@@ -69,7 +69,7 @@
 ## Clinical and editorial safety
 
 - WAIRUA supports professional judgement; it does not replace the official product information, applicable regulation, or the responsible veterinarian's clinical decision.
-- OTC product links must point to the official manufacturer or brand website, never to retailers, distributors, marketplaces, or third-party product databases. Prefer the official product page; if it is unavailable or broken, use the manufacturer's stable official catalogue or portfolio page and do not replace it with a commercial reseller.
+- OTC product links must point to the official manufacturer or brand website, never to retailers, distributors, marketplaces, or third-party product databases. Prefer the official product page; if neither the official product page nor the manufacturer's catalogue is functional, show a non-clickable "official page unavailable / manufacturer website issue" notice and do not replace it with a commercial reseller.
 - New or changed therapeutic recommendations need a verifiable scientific or official source, applicable species, indication, dose context, contraindications, and evidence level where relevant.
 - Prefer clinical guidelines, systematic reviews, controlled studies, and official regulatory records. Explicitly label low evidence and justify off-label content.
 - Never invent regulatory, therapeutic, company, or pricing facts to fill missing content.

@@ -3018,9 +3018,17 @@ function App() {
                             </div>
                           </div>
 
-                          <a href={product.sourceUrl} target="_blank" rel="noreferrer" className="feature-card-link">
-                            <span>{lang === 'es' ? 'Abrir ficha oficial' : 'Open official page'}</span>
-                          </a>
+                          {product.sourceStatus === 'manufacturer-unavailable' ? (
+                            <span className="feature-card-link-disabled" role="status">
+                              {lang === 'es'
+                                ? 'Ficha oficial no disponible · incidencia en la web del fabricante'
+                                : 'Official product page unavailable · manufacturer website issue'}
+                            </span>
+                          ) : (
+                            <a href={product.sourceUrl} target="_blank" rel="noreferrer" className="feature-card-link">
+                              <span>{lang === 'es' ? 'Abrir ficha oficial' : 'Open official page'}</span>
+                            </a>
+                          )}
                         </article>
                       ))}
                     </div>
