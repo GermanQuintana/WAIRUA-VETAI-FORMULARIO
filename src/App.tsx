@@ -966,18 +966,29 @@ function App() {
     }
 
     let ignore = false;
+    let loadedUserId: string | null = null;
+    let authRevision = 0;
 
     const loadAuthAccount = async () => {
+      const loadRevision = authRevision;
       if (!ignore && !authResolvedRef.current) setAuthLoading(true);
 
       try {
         const snapshot = await supabaseAccessService.getAccountSnapshot();
-        if (!ignore) setAuthAccount(snapshot);
+        if (!ignore && loadRevision === authRevision) {
+          loadedUserId = snapshot.profile?.id ?? null;
+          setAuthAccount(snapshot);
+        }
       } catch {
-        if (!ignore) setAuthAccount({ profile: null, membership: null, clinicAccess: null, email: null });
+        if (!ignore && loadRevision === authRevision) {
+          loadedUserId = null;
+          setAuthAccount({ profile: null, membership: null, clinicAccess: null, email: null });
+        }
       } finally {
-        authResolvedRef.current = true;
-        if (!ignore) setAuthLoading(false);
+        if (!ignore && loadRevision === authRevision) {
+          authResolvedRef.current = true;
+          setAuthLoading(false);
+        }
       }
     };
 
@@ -985,7 +996,20 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabaseAccessService.onAuthStateChange(() => {
+    } = supabaseAccessService.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
+
+      if (event === 'SIGNED_OUT') {
+        authRevision += 1;
+        loadedUserId = null;
+        authResolvedRef.current = true;
+        setAuthAccount({ profile: null, membership: null, clinicAccess: null, email: null });
+        setAuthLoading(false);
+        return;
+      }
+
+      if (event === 'SIGNED_IN' && session?.user.id === loadedUserId) return;
+      authRevision += 1;
       void loadAuthAccount();
     });
 
@@ -1030,7 +1054,7 @@ function App() {
     }, appShellRef);
 
     return () => ctx.revert();
-  }, [authAccount, lang, theme]);
+  }, [authAccount?.profile?.id]);
 
   const refreshAuthAccount = async () => {
     if (!supabaseAccessService) {

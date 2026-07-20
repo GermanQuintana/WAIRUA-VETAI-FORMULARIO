@@ -1,4 +1,5 @@
 import {
+  AuthChangeEvent,
   createClient,
   FunctionsFetchError,
   FunctionsHttpError,
@@ -60,7 +61,7 @@ const slugify = (value: string) =>
 const uniq = <T,>(values: T[]) => Array.from(new Set(values));
 let cachedClient: SupabaseClient | null = null;
 
-const getSupabaseClient = () => {
+export const getSupabaseClient = () => {
   if (isPlaceholder(SUPABASE_URL) || isPlaceholder(SUPABASE_ANON_KEY)) return null;
   if (!cachedClient) {
     cachedClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1224,11 +1225,9 @@ export class SupabaseAccessService {
     };
   }
 
-  onAuthStateChange(callback: (session: Session | null) => void) {
-    return this.client.auth.onAuthStateChange((_event, session) => {
-      void this.syncPendingMembershipSelection(session);
-      void this.syncClinicAccessForUser();
-      callback(session);
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
+    return this.client.auth.onAuthStateChange((event, session) => {
+      callback(event, session);
     });
   }
 

@@ -1,10 +1,6 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from './supabase';
 import { ClinicalDietRecord, FoodIngredientRecord, Species } from '../types';
-
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
-const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
-
-const isPlaceholder = (value: string) => !value || value.includes('your-project') || value.includes('anon_key');
 
 const toSpeciesArray = (value: unknown) => ((Array.isArray(value) ? value : []) as string[]).filter(Boolean) as Species[];
 
@@ -174,6 +170,6 @@ export class ClinicalNutritionService {
 }
 
 export const createClinicalNutritionService = () => {
-  if (isPlaceholder(SUPABASE_URL) || isPlaceholder(SUPABASE_ANON_KEY)) return null;
-  return new ClinicalNutritionService(createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+  const client = getSupabaseClient();
+  return client ? new ClinicalNutritionService(client) : null;
 };

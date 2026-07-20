@@ -2947,6 +2947,7 @@ select:focus-visible {
 .anesthesia-toolkit {
   display: grid;
   gap: 1rem;
+  min-width: 0;
 }
 
 .anesthesia-header {
@@ -3003,6 +3004,7 @@ select:focus-visible {
 .anesthesia-panel,
 .anesthesia-print-sheet {
   padding: 1rem;
+  min-width: 0;
 }
 
 .anesthesia-profile-panel {
@@ -3102,6 +3104,9 @@ select:focus-visible {
 }
 
 .anesthesia-table-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   border-radius: 0.9rem;
   border: 1px solid #dbe3cf;
@@ -3110,9 +3115,43 @@ select:focus-visible {
 
 .anesthesia-table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 1320px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.9rem;
+}
+
+.anesthesia-col-stock {
+  width: 9%;
+}
+
+.anesthesia-col-drug {
+  width: 13%;
+}
+
+.anesthesia-col-route {
+  width: 7%;
+}
+
+.anesthesia-col-dose {
+  width: 13%;
+}
+
+.anesthesia-col-concentration {
+  width: 15%;
+}
+
+.anesthesia-col-amount {
+  width: 8%;
+}
+
+.anesthesia-col-volume-range,
+.anesthesia-col-volume {
+  width: 10%;
+}
+
+.anesthesia-col-notes {
+  width: 15%;
 }
 
 .anesthesia-table th,
@@ -3121,6 +3160,8 @@ select:focus-visible {
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid #edf1e5;
+  line-height: 1.28;
+  overflow-wrap: break-word;
 }
 
 .anesthesia-table th {
@@ -3129,14 +3170,7 @@ select:focus-visible {
   font-size: 0.74rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.anesthesia-table td:first-child {
-  width: 128px;
-}
-
-.anesthesia-table td:nth-child(2) {
-  min-width: 180px;
+  hyphens: auto;
 }
 
 .anesthesia-table td strong,
@@ -3156,16 +3190,48 @@ select:focus-visible {
   opacity: 0.48;
 }
 
+.anesthesia-table tbody tr {
+  transition: background-color 140ms ease;
+}
+
+.anesthesia-table tbody tr:hover {
+  background: #f8fbf5;
+}
+
+.anesthesia-table .anesthesia-stock-toggle {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.45rem;
+  line-height: 1.2;
+}
+
+.anesthesia-table .anesthesia-stock-toggle input {
+  margin: 0.12rem 0 0;
+}
+
 .anesthesia-dose-cell input,
 .anesthesia-concentration-cell input,
 .anesthesia-concentration-cell select {
+  width: 100%;
+  min-width: 0;
   min-height: 2.35rem;
   padding: 0.45rem 0.55rem;
   border-radius: 0.55rem;
+  box-sizing: border-box;
 }
 
-.anesthesia-print-value,
-.anesthesia-print-only {
+.anesthesia-source-link {
+  width: fit-content;
+  margin-top: 0.45rem;
+  color: #087f82;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-underline-offset: 0.14em;
+}
+
+.anesthesia-table .anesthesia-print-value,
+.anesthesia-table .anesthesia-print-only {
   display: none;
 }
 
@@ -3199,6 +3265,14 @@ select:focus-visible {
 
 .app.dark .anesthesia-table td {
   border-bottom-color: var(--border-dark);
+}
+
+.app.dark .anesthesia-table tbody tr:hover {
+  background: #1d2c32;
+}
+
+.app.dark .anesthesia-source-link {
+  color: #71d4d3;
 }
 
 .toolkit-utility {
@@ -8093,9 +8167,9 @@ select {
     page-break-before: avoid;
   }
 
-  .anesthesia-print-only,
-  .anesthesia-print-value {
-    display: block;
+  .anesthesia-table .anesthesia-print-only,
+  .anesthesia-table .anesthesia-print-value {
+    display: block !important;
   }
 
   .anesthesia-sheet-head {
@@ -8157,6 +8231,10 @@ select {
     page-break-inside: auto;
   }
 
+  .anesthesia-table col {
+    width: auto !important;
+  }
+
   .anesthesia-table th,
   .anesthesia-table td {
     padding: 2.4px 3.2px;
@@ -8170,6 +8248,12 @@ select {
     color: #111;
     font-size: 6.8pt;
     line-height: 1.1;
+  }
+
+  .anesthesia-source-link {
+    color: #111 !important;
+    font-size: 6.4pt;
+    text-decoration: none;
   }
 
   .anesthesia-table thead {
