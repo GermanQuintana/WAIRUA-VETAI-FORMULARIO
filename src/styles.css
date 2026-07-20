@@ -3046,13 +3046,19 @@ select:focus-visible {
 .anesthesia-profile-actions {
   display: flex;
   gap: 0.55rem;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
   flex-wrap: wrap;
 }
 
 .anesthesia-profile-actions button {
-  min-height: 2.6rem;
+  align-self: stretch;
+  min-height: 2.8rem;
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .anesthesia-checkbox,
@@ -8103,6 +8109,10 @@ select {
   .anesthesia-profile-actions {
     display: grid;
     justify-content: stretch;
+  }
+
+  .anesthesia-profile-actions button {
+    width: 100%;
   }
 }
 
