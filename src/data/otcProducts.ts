@@ -282,7 +282,7 @@ export const otcProducts: OtcProductRecord[] = [
       'Complemento para apoyo cognitivo y neurologico en pacientes senior.',
       'Supplement for cognitive and neurologic support in senior patients.',
     ),
-    sourceUrl: 'https://pharmadiet.com/uk/products/cognidine/',
+    sourceUrl: 'https://www.albet.es/cognidine-60-comprimidos',
     sourceRegion: 'global',
     searchTerms: ['cognitivo', 'senior', 'neurologia'],
   }),
