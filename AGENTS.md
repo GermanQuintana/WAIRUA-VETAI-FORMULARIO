@@ -83,6 +83,7 @@
 ## Change and verification checklist
 
 - Preserve unrelated user changes in the working tree.
+- After every WAIRUA production deployment, explicitly remind the user to close the current session and sign in again before validating the changes. If the site was already open before deployment, also ask them to force-refresh or close and reopen the tab so the new bundle is loaded.
 - For UI work, verify the public landing, authentication screen, and authenticated workspace when the change can affect them.
 - Check both themes for contrast and inspect common responsive breakpoints.
 - For auth, roles, billing, or database changes, inspect the corresponding Supabase function/migration and avoid relying only on frontend state.
