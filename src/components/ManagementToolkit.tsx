@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
 
 interface Props {
@@ -12,8 +12,7 @@ const copy = {
     kicker: 'Herramienta de gestión',
     title: 'Gestión',
     text:
-      'Utilidades de operativa y negocio dentro del toolkit. Esta primera versión calcula descuentos comerciales en cascada con desglose por bases de IVA.',
-    status: 'Gratuita',
+      'Calcula descuentos comerciales en cascada y revisa el resultado final con desglose por bases de IVA.',
     tabBilling: 'Facturación',
     tabQuick: 'Dto. equivalente',
     baseSuperReduced: 'Base superreducida',
@@ -24,8 +23,6 @@ const copy = {
     discountSequenceHint: 'Añade hasta cuatro descuentos sucesivos. Deja en 0 los que no necesites.',
     equivalentShort: 'Descuento equivalente',
     totalSavings: 'Ahorro total',
-    helper:
-      'Aplicamos hasta cuatro descuentos en cascada y después recalculamos las bases netas y el IVA de cada bloque.',
     netBase4: 'Neta 4%',
     netBase10: 'Neta 10%',
     netBase21: 'Neta 21%',
@@ -45,8 +42,7 @@ const copy = {
     kicker: 'Management tool',
     title: 'Management',
     text:
-      'Operational and business utilities inside the toolkit. This first version calculates cascading commercial discounts with VAT-base breakdown.',
-    status: 'Free',
+      'Calculate cascading commercial discounts and review the final result with a VAT-base breakdown.',
     tabBilling: 'Billing',
     tabQuick: 'Equivalent discount',
     baseSuperReduced: 'Super-reduced base',
@@ -57,8 +53,6 @@ const copy = {
     discountSequenceHint: 'Add up to four sequential discounts. Leave unused discounts at 0.',
     equivalentShort: 'Equivalent discount',
     totalSavings: 'Total savings',
-    helper:
-      'Up to four discounts are applied in sequence, followed by recalculation of the net taxable bases and VAT per block.',
     netBase4: 'Net 4%',
     netBase10: 'Net 10%',
     netBase21: 'Net 21%',
@@ -106,14 +100,30 @@ const getDiscountFactor = (discounts: readonly string[]) =>
     return factor * (1 - percentage);
   }, 1);
 
+const createEmptyDiscounts = () => ['0', '0', '0', '0'];
+
 export default function ManagementToolkit({ lang }: Props) {
   const t = copy[lang];
   const [activeTool, setActiveTool] = useState<ManagementTool>('billing');
   const [base4, setBase4] = useState('0');
   const [base10, setBase10] = useState('0');
   const [base21, setBase21] = useState('0');
-  const [billingDiscounts, setBillingDiscounts] = useState(['0', '0', '0', '0']);
-  const [quickDiscounts, setQuickDiscounts] = useState(['14', '18', '0', '0']);
+  const [billingDiscounts, setBillingDiscounts] = useState(createEmptyDiscounts);
+  const [quickDiscounts, setQuickDiscounts] = useState(createEmptyDiscounts);
+
+  useEffect(() => {
+    const resetCalculator = () => {
+      setBase4('0');
+      setBase10('0');
+      setBase21('0');
+      setBillingDiscounts(createEmptyDiscounts());
+      setQuickDiscounts(createEmptyDiscounts());
+    };
+
+    resetCalculator();
+    window.addEventListener('pageshow', resetCalculator);
+    return () => window.removeEventListener('pageshow', resetCalculator);
+  }, []);
 
   const updateDiscount = (
     setter: React.Dispatch<React.SetStateAction<string[]>>,
@@ -172,10 +182,6 @@ export default function ManagementToolkit({ lang }: Props) {
           <h3>{t.title}</h3>
           <p>{t.text}</p>
         </div>
-        <div className="toolkit-utility-note">
-          <strong>{t.status}</strong>
-          <p>{t.helper}</p>
-        </div>
       </div>
 
       <div className="subtabs management-subtabs" role="tablist" aria-label={t.title}>
@@ -194,19 +200,40 @@ export default function ManagementToolkit({ lang }: Props) {
               <label className="management-base-row">
                 <span className="management-tax-badge tax-4">4%</span>
                 <span>{t.baseSuperReduced}</span>
-                <input type="number" min="0" step="0.01" value={base4} onChange={(event) => setBase4(event.target.value)} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  autoComplete="off"
+                  value={base4}
+                  onChange={(event) => setBase4(event.target.value)}
+                />
               </label>
 
               <label className="management-base-row">
                 <span className="management-tax-badge tax-10">10%</span>
                 <span>{t.baseReduced}</span>
-                <input type="number" min="0" step="0.01" value={base10} onChange={(event) => setBase10(event.target.value)} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  autoComplete="off"
+                  value={base10}
+                  onChange={(event) => setBase10(event.target.value)}
+                />
               </label>
 
               <label className="management-base-row">
                 <span className="management-tax-badge tax-21">21%</span>
                 <span>{t.baseGeneral}</span>
-                <input type="number" min="0" step="0.01" value={base21} onChange={(event) => setBase21(event.target.value)} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  autoComplete="off"
+                  value={base21}
+                  onChange={(event) => setBase21(event.target.value)}
+                />
               </label>
             </div>
 
@@ -228,6 +255,7 @@ export default function ManagementToolkit({ lang }: Props) {
                         min="0"
                         max="100"
                         step="0.01"
+                        autoComplete="off"
                         value={discount}
                         onChange={(event) => updateDiscount(setBillingDiscounts, index, event.target.value)}
                       />
@@ -318,6 +346,7 @@ export default function ManagementToolkit({ lang }: Props) {
                         min="0"
                         max="100"
                         step="0.01"
+                        autoComplete="off"
                         value={discount}
                         onChange={(event) => updateDiscount(setQuickDiscounts, index, event.target.value)}
                       />
