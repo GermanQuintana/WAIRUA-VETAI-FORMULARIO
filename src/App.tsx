@@ -19,6 +19,7 @@ import PublicLanding from './components/PublicLanding';
 import ThemeIcon from './components/ThemeIcon';
 import UnitConverter from './components/UnitConverter';
 import VitalConstantsToolkit from './components/VitalConstantsToolkit';
+import WritingAssistantToolkit from './components/WritingAssistantToolkit';
 import {
   LocalizedCollectionCard,
   otcSubmissionFields,
@@ -81,6 +82,7 @@ const toolkitViews = [
   'assistant',
   'nutrition',
   'management',
+  'writing',
 ] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
@@ -104,8 +106,18 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'assistant',
   'nutrition',
   'management',
+  'writing',
 ]);
-const freeToolkitViewSet = new Set<ToolkitView>(['infusion', 'constants', 'converter', 'surface', 'management', 'fluid', 'anesthesia']);
+const freeToolkitViewSet = new Set<ToolkitView>([
+  'infusion',
+  'constants',
+  'converter',
+  'surface',
+  'management',
+  'fluid',
+  'anesthesia',
+  'writing',
+]);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
   premium_viewer: ['viewer'],
@@ -3901,6 +3913,8 @@ function App() {
             )}
 
             {activeToolkitView === 'management' && <ManagementToolkit lang={lang} />}
+
+            {activeToolkitView === 'writing' && <WritingAssistantToolkit lang={lang} />}
           </section>
         )}
 

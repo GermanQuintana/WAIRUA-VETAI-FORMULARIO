@@ -28,7 +28,8 @@ export interface LocalizedCollectionCard {
     | 'surface'
     | 'assistant'
     | 'nutrition'
-    | 'management';
+    | 'management'
+    | 'writing';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -321,6 +322,18 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     statusTone: 'available',
     accessTier: 'free',
     toolkitView: 'management',
+  },
+  {
+    id: 'writing-assistant',
+    title: { es: 'Asistente de redacción', en: 'Writing assistant' },
+    description: {
+      es: 'Mesa editorial para controlar palabras, caracteres, límites de extensión, ritmo, frases largas y repeticiones antes de enviar un texto.',
+      en: 'Editorial workspace for checking words, characters, length limits, rhythm, long sentences, and repetition before submitting text.',
+    },
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
+    toolkitView: 'writing',
   },
   {
     id: 'anesthesia',

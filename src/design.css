@@ -1438,3 +1438,663 @@
   .public-secondary,
   .clinical-content .live-card { transition: none; }
 }
+
+/* Editorial writing assistant */
+.writing-toolkit {
+  display: grid;
+  gap: 1rem;
+}
+
+.writing-toolkit-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.36fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: start;
+}
+
+.writing-toolkit-header h3 {
+  margin: 0.18rem 0 0.4rem;
+  color: #172722;
+  font-family: var(--font-serif);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.writing-toolkit-header > div > p:last-child {
+  max-width: 70ch;
+  margin: 0;
+  color: #65736e;
+}
+
+.writing-privacy-note {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0 0.8rem 1rem;
+  border-left: 2px solid #8bbdb0;
+}
+
+.writing-privacy-note strong {
+  color: #285f56;
+  font-size: 0.82rem;
+}
+
+.writing-privacy-note span {
+  color: #65736e;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.writing-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid #dfe6e1;
+  background: rgba(247, 250, 247, 0.72);
+}
+
+.writing-metric-strip > div {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.85rem clamp(0.65rem, 2vw, 1.15rem);
+}
+
+.writing-metric-strip > div + div {
+  border-left: 1px solid #dfe6e1;
+}
+
+.writing-metric-strip span {
+  color: #6b7974;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.writing-metric-strip strong {
+  color: #153c37;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.writing-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.72fr);
+  border: 1px solid #dfe6e1;
+  border-radius: 16px;
+  background: #fbfcf9;
+  overflow: hidden;
+}
+
+.writing-editor {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: clamp(0.85rem, 2.4vw, 1.35rem);
+}
+
+.writing-editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.writing-editor-toolbar > div:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.writing-editor-toolbar strong {
+  color: #213731;
+  font-size: 0.94rem;
+}
+
+.writing-editor-toolbar span {
+  color: #73817c;
+  font-size: 0.76rem;
+}
+
+.writing-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.writing-editor-actions button {
+  min-height: 2.25rem;
+  padding: 0.42rem 0.65rem;
+  border: 1px solid #d4dfda;
+  border-radius: 8px;
+  background: #fff;
+  color: #36554d;
+  font-size: 0.73rem;
+  font-weight: 800;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.writing-editor-actions button:hover {
+  border-color: #8bb9ad;
+  background: #f2f8f5;
+  transform: translateY(-1px);
+}
+
+.clinical-content .writing-toolkit textarea.writing-editor-textarea,
+.writing-toolkit textarea.writing-editor-textarea {
+  width: 100%;
+  min-height: 440px;
+  padding: clamp(1rem, 2.5vw, 1.4rem);
+  resize: vertical;
+  border: 1px solid #d9e1dc;
+  border-radius: 12px;
+  background: #fff;
+  color: #1b2c27;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.72;
+  box-shadow: inset 0 1px 0 rgba(24, 42, 36, 0.025);
+}
+
+.clinical-content .writing-toolkit textarea.writing-editor-textarea:focus-visible,
+.writing-toolkit textarea.writing-editor-textarea:focus-visible {
+  border-color: #559589;
+  box-shadow: 0 0 0 3px rgba(85, 149, 137, 0.12);
+}
+
+.writing-limit-panel {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.9rem;
+  border: 1px solid #dbe4df;
+  border-radius: 12px;
+  background: #f6f9f6;
+}
+
+.writing-limit-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.writing-limit-heading strong {
+  color: #243c35;
+  font-size: 0.84rem;
+}
+
+.writing-limit-heading span {
+  color: #697a74;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.writing-limit-controls {
+  display: grid;
+  grid-template-columns: 1fr 0.72fr 0.72fr;
+  gap: 0.6rem;
+}
+
+.writing-limit-controls label {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.writing-limit-controls label > span {
+  color: #6b7974;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.clinical-content .writing-limit-controls input,
+.clinical-content .writing-limit-controls select,
+.writing-limit-controls input,
+.writing-limit-controls select {
+  min-height: 2.45rem;
+  padding: 0.48rem 0.65rem;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.writing-limit-progress {
+  height: 5px;
+  border-radius: 99px;
+  background: #dfe7e2;
+  overflow: hidden;
+}
+
+.writing-limit-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b38e45;
+  transition: width 180ms ease, background-color 180ms ease;
+}
+
+.writing-limit-panel.is-within .writing-limit-progress span {
+  background: #398c76;
+}
+
+.writing-limit-panel.is-over .writing-limit-progress span {
+  background: #bc5d52;
+}
+
+.writing-limit-panel > p {
+  margin: 0;
+  color: #806a38;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.writing-limit-panel.is-within > p {
+  color: #2a755f;
+}
+
+.writing-limit-panel.is-over > p {
+  color: #a0443b;
+}
+
+.writing-inspector {
+  display: grid;
+  align-content: start;
+  border-left: 1px solid #dfe6e1;
+  background: #f3f6f3;
+}
+
+.writing-inspector > section {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+}
+
+.writing-inspector > section + section {
+  border-top: 1px solid #dfe6e1;
+}
+
+.writing-inspector h4,
+.writing-long-sentences h4 {
+  margin: 0;
+  color: #28423b;
+  font-size: 0.76rem;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.writing-detail-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.writing-detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(214, 224, 218, 0.8);
+}
+
+.writing-detail-list > div:last-child {
+  border-bottom: 0;
+}
+
+.writing-detail-list dt {
+  color: #67766f;
+  font-size: 0.76rem;
+}
+
+.writing-detail-list dd {
+  margin: 0;
+  color: #1c3730;
+  font-size: 0.79rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.writing-insight-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.writing-insight-list li {
+  position: relative;
+  margin: 0;
+  padding-left: 0.9rem;
+  color: #52635d;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.writing-insight-list li::before {
+  position: absolute;
+  top: 0.42rem;
+  left: 0;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: #7b9990;
+  content: "";
+}
+
+.writing-insight-list li.is-good::before {
+  background: #3b9a77;
+}
+
+.writing-insight-list li.is-attention::before {
+  background: #c07054;
+}
+
+.writing-term-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.writing-term-list span {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  min-height: 1.85rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #d5e1dc;
+  border-radius: 99px;
+  background: #fff;
+  color: #425c54;
+  font-size: 0.7rem;
+}
+
+.writing-term-list strong {
+  color: #26725f;
+  font-variant-numeric: tabular-nums;
+}
+
+.writing-empty-state {
+  margin: 0;
+  color: #7b8984;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.writing-long-sentences {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-top: 1px solid #dfe6e1;
+}
+
+.writing-long-sentences > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.writing-long-sentences > div:first-child > span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.8rem;
+  min-height: 1.8rem;
+  border-radius: 99px;
+  background: #e9f2ee;
+  color: #26725f;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.writing-long-sentences ol {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.writing-long-sentences li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  padding: 0.75rem 0;
+  border-top: 1px solid #e2e8e4;
+}
+
+.writing-long-sentences li p {
+  margin: 0;
+  color: #485b54;
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.writing-long-sentences li > span {
+  color: #9b5b43;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.app.dark .writing-toolkit-header h3,
+.app.dark .writing-editor-toolbar strong,
+.app.dark .writing-limit-heading strong,
+.app.dark .writing-detail-list dd,
+.app.dark .writing-inspector h4,
+.app.dark .writing-long-sentences h4 {
+  color: #ecf3ef;
+}
+
+.app.dark .writing-toolkit-header > div > p:last-child,
+.app.dark .writing-privacy-note span,
+.app.dark .writing-editor-toolbar span,
+.app.dark .writing-limit-heading span,
+.app.dark .writing-detail-list dt,
+.app.dark .writing-empty-state,
+.app.dark .writing-long-sentences li p {
+  color: #a9b8b2;
+}
+
+.app.dark .writing-privacy-note {
+  border-left-color: #4f8e80;
+}
+
+.app.dark .writing-privacy-note strong {
+  color: #88d2bf;
+}
+
+.app.dark .writing-metric-strip {
+  border-color: #2b3e38;
+  background: rgba(19, 30, 27, 0.72);
+}
+
+.app.dark .writing-metric-strip > div + div {
+  border-left-color: #2b3e38;
+}
+
+.app.dark .writing-metric-strip span {
+  color: #92a39d;
+}
+
+.app.dark .writing-metric-strip strong {
+  color: #a0dfcf;
+}
+
+.app.dark .writing-workspace {
+  border-color: #2b3e38;
+  background: #151f1c;
+}
+
+.app.dark .writing-editor-actions button,
+.app.dark .writing-term-list span {
+  border-color: #344a43;
+  background: #17231f;
+  color: #b8cbc4;
+}
+
+.app.dark .writing-editor-actions button:hover {
+  border-color: #4e8276;
+  background: #1a2c27;
+}
+
+.app.dark .clinical-content .writing-toolkit textarea.writing-editor-textarea,
+.app.dark .writing-toolkit textarea.writing-editor-textarea {
+  border-color: #30443e;
+  background: #101915;
+  color: #edf4f0;
+  -webkit-text-fill-color: #edf4f0;
+  caret-color: #85d5c1;
+}
+
+.app.dark .writing-limit-panel {
+  border-color: #30443e;
+  background: #17231f;
+}
+
+.app.dark .writing-limit-controls label > span {
+  color: #93a59f;
+}
+
+.app.dark .clinical-content .writing-limit-controls input,
+.app.dark .clinical-content .writing-limit-controls select,
+.app.dark .writing-limit-controls input,
+.app.dark .writing-limit-controls select {
+  border-color: #3a514a;
+  background-color: #101915;
+  color: #edf4f0;
+  -webkit-text-fill-color: #edf4f0;
+}
+
+.app.dark .writing-limit-progress {
+  background: #293a35;
+}
+
+.app.dark .writing-inspector {
+  border-left-color: #2b3e38;
+  background: #121c19;
+}
+
+.app.dark .writing-inspector > section + section,
+.app.dark .writing-detail-list > div,
+.app.dark .writing-long-sentences,
+.app.dark .writing-long-sentences li {
+  border-color: #2b3e38;
+}
+
+.app.dark .writing-insight-list li {
+  color: #adbbb6;
+}
+
+.app.dark .writing-term-list strong {
+  color: #86d7c2;
+}
+
+.app.dark .writing-long-sentences > div:first-child > span {
+  background: #1d3932;
+  color: #86d7c2;
+}
+
+@media (max-width: 960px) {
+  .writing-toolkit-header,
+  .writing-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .writing-privacy-note {
+    padding: 0.75rem 0 0;
+    border-top: 1px solid #dfe6e1;
+    border-left: 0;
+  }
+
+  .app.dark .writing-privacy-note {
+    border-top-color: #2b3e38;
+    border-left: 0;
+  }
+
+  .writing-inspector {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid #dfe6e1;
+    border-left: 0;
+  }
+
+  .writing-inspector > section + section {
+    border-top: 0;
+    border-left: 1px solid #dfe6e1;
+  }
+
+  .app.dark .writing-inspector {
+    border-top-color: #2b3e38;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .writing-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .writing-metric-strip > div:nth-child(3) {
+    border-left: 0;
+  }
+
+  .writing-metric-strip > div:nth-child(n + 3) {
+    border-top: 1px solid #dfe6e1;
+  }
+
+  .app.dark .writing-metric-strip > div:nth-child(n + 3) {
+    border-top-color: #2b3e38;
+  }
+
+  .writing-editor-toolbar,
+  .writing-limit-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .writing-editor-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .writing-editor-actions button {
+    width: 100%;
+  }
+
+  .clinical-content .writing-toolkit textarea.writing-editor-textarea,
+  .writing-toolkit textarea.writing-editor-textarea {
+    min-height: 360px;
+    font-size: 0.94rem;
+  }
+
+  .writing-limit-controls,
+  .writing-inspector {
+    grid-template-columns: 1fr;
+  }
+
+  .writing-inspector > section + section {
+    border-top: 1px solid #dfe6e1;
+    border-left: 0;
+  }
+
+  .app.dark .writing-inspector > section + section {
+    border-top-color: #2b3e38;
+    border-left: 0;
+  }
+
+  .writing-long-sentences li {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .writing-editor-actions button,
+  .writing-limit-progress span {
+    transition: none;
+  }
+}
