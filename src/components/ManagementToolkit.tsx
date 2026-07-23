@@ -9,20 +9,23 @@ type ManagementTool = 'billing' | 'quick';
 
 const copy = {
   es: {
-    kicker: 'Herramienta de gestion',
-    title: 'Gestion',
+    kicker: 'Herramienta de gestión',
+    title: 'Gestión',
     text:
-      'Utilidades de operativa y negocio dentro del toolkit. Esta primera version calcula descuentos comerciales en cascada con desglose por bases de IVA.',
+      'Utilidades de operativa y negocio dentro del toolkit. Esta primera versión calcula descuentos comerciales en cascada con desglose por bases de IVA.',
     status: 'Gratuita',
-    tabBilling: 'Facturacion',
+    tabBilling: 'Facturación',
     tabQuick: 'Dto. equivalente',
     baseSuperReduced: 'Base superreducida',
     baseReduced: 'Base reducida',
     baseGeneral: 'Base general',
-    discountOne: 'Dto. comercial 1 (%)',
-    discountTwo: 'Dto. comercial 2 (%)',
+    discountLabels: ['Descuento 1', 'Descuento 2', 'Descuento 3', 'Descuento 4'],
+    discountSequence: 'Descuentos en cascada',
+    discountSequenceHint: 'Añade hasta cuatro descuentos sucesivos. Deja en 0 los que no necesites.',
+    equivalentShort: 'Descuento equivalente',
+    totalSavings: 'Ahorro total',
     helper:
-      'Aplicamos ambos descuentos en cascada y luego recalculamos las bases netas y el IVA de cada bloque. Asi puedes comparar el resultado real de una oferta.',
+      'Aplicamos hasta cuatro descuentos en cascada y después recalculamos las bases netas y el IVA de cada bloque.',
     netBase4: 'Neta 4%',
     netBase10: 'Neta 10%',
     netBase21: 'Neta 21%',
@@ -35,8 +38,8 @@ const copy = {
     activeSummary: 'Desglose completo',
     quickTitle: 'Descuento equivalente',
     quickText:
-      'Convierte dos descuentos sucesivos en un unico porcentaje equivalente. Muy util para validar propuestas comerciales sin hacer cuentas manuales.',
-    equivalentResult: 'Descuento unico equivalente',
+      'Convierte hasta cuatro descuentos sucesivos en un único porcentaje equivalente para validar una propuesta comercial.',
+    equivalentResult: 'Descuento único equivalente',
   },
   en: {
     kicker: 'Management tool',
@@ -49,10 +52,13 @@ const copy = {
     baseSuperReduced: 'Super-reduced base',
     baseReduced: 'Reduced base',
     baseGeneral: 'General base',
-    discountOne: 'Commercial discount 1 (%)',
-    discountTwo: 'Commercial discount 2 (%)',
+    discountLabels: ['Discount 1', 'Discount 2', 'Discount 3', 'Discount 4'],
+    discountSequence: 'Cascading discounts',
+    discountSequenceHint: 'Add up to four sequential discounts. Leave unused discounts at 0.',
+    equivalentShort: 'Equivalent discount',
+    totalSavings: 'Total savings',
     helper:
-      'Both discounts are applied in sequence and then the net taxable bases and VAT are recalculated per block. This gives the real outcome of a commercial offer.',
+      'Up to four discounts are applied in sequence, followed by recalculation of the net taxable bases and VAT per block.',
     netBase4: 'Net 4%',
     netBase10: 'Net 10%',
     netBase21: 'Net 21%',
@@ -65,7 +71,7 @@ const copy = {
     activeSummary: 'Full breakdown',
     quickTitle: 'Equivalent discount',
     quickText:
-      'Convert two sequential discounts into one equivalent percentage. Useful to validate commercial proposals without manual calculations.',
+      'Convert up to four sequential discounts into one equivalent percentage to validate a commercial proposal.',
     equivalentResult: 'Single equivalent discount',
   },
 } as const;
@@ -94,24 +100,34 @@ const parseNumber = (value: string, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const getDiscountFactor = (discounts: readonly string[]) =>
+  discounts.reduce((factor, discount) => {
+    const percentage = Math.min(100, Math.max(0, parseNumber(discount))) / 100;
+    return factor * (1 - percentage);
+  }, 1);
+
 export default function ManagementToolkit({ lang }: Props) {
   const t = copy[lang];
   const [activeTool, setActiveTool] = useState<ManagementTool>('billing');
   const [base4, setBase4] = useState('0');
   const [base10, setBase10] = useState('0');
   const [base21, setBase21] = useState('0');
-  const [discountOne, setDiscountOne] = useState('0');
-  const [discountTwo, setDiscountTwo] = useState('0');
-  const [quickDiscountOne, setQuickDiscountOne] = useState('14');
-  const [quickDiscountTwo, setQuickDiscountTwo] = useState('18');
+  const [billingDiscounts, setBillingDiscounts] = useState(['0', '0', '0', '0']);
+  const [quickDiscounts, setQuickDiscounts] = useState(['14', '18', '0', '0']);
+
+  const updateDiscount = (
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    index: number,
+    value: string,
+  ) => {
+    setter((current) => current.map((discount, discountIndex) => (discountIndex === index ? value : discount)));
+  };
 
   const billingScenario = useMemo(() => {
     const b4 = Math.max(0, parseNumber(base4));
     const b10 = Math.max(0, parseNumber(base10));
     const b21 = Math.max(0, parseNumber(base21));
-    const d1 = Math.max(0, parseNumber(discountOne)) / 100;
-    const d2 = Math.max(0, parseNumber(discountTwo)) / 100;
-    const factor = (1 - d1) * (1 - d2);
+    const factor = getDiscountFactor(billingDiscounts);
 
     const net4 = b4 * factor;
     const net10 = b10 * factor;
@@ -124,6 +140,10 @@ export default function ManagementToolkit({ lang }: Props) {
     const totalNetBases = net4 + net10 + net21;
     const totalVat = vat4 + vat10 + vat21;
     const invoiceTotal = totalNetBases + totalVat;
+    const grossInvoiceTotal =
+      b4 * (1 + VAT_RATES.superReduced) +
+      b10 * (1 + VAT_RATES.reduced) +
+      b21 * (1 + VAT_RATES.general);
 
     return {
       net4,
@@ -135,14 +155,14 @@ export default function ManagementToolkit({ lang }: Props) {
       totalNetBases,
       totalVat,
       invoiceTotal,
+      equivalentDiscount: (1 - factor) * 100,
+      totalSavings: grossInvoiceTotal - invoiceTotal,
     };
-  }, [base10, base21, base4, discountOne, discountTwo]);
+  }, [base10, base21, base4, billingDiscounts]);
 
   const equivalentDiscount = useMemo(() => {
-    const d1 = Math.max(0, parseNumber(quickDiscountOne, 14)) / 100;
-    const d2 = Math.max(0, parseNumber(quickDiscountTwo, 18)) / 100;
-    return (1 - (1 - d1) * (1 - d2)) * 100;
-  }, [quickDiscountOne, quickDiscountTwo]);
+    return (1 - getDiscountFactor(quickDiscounts)) * 100;
+  }, [quickDiscounts]);
 
   return (
     <section className="toolkit-utility">
@@ -190,33 +210,48 @@ export default function ManagementToolkit({ lang }: Props) {
               </label>
             </div>
 
-            <div className="toolkit-utility-form management-discount-grid">
-              <label>
-                {t.discountOne}
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={discountOne}
-                  onChange={(event) => setDiscountOne(event.target.value)}
-                />
-              </label>
-
-              <label>
-                {t.discountTwo}
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={discountTwo}
-                  onChange={(event) => setDiscountTwo(event.target.value)}
-                />
-              </label>
+            <div className="management-discount-section">
+              <div className="management-section-heading">
+                <strong>{t.discountSequence}</strong>
+                <span>{t.discountSequenceHint}</span>
+              </div>
+              <div className="management-discount-grid">
+                {billingDiscounts.map((discount, index) => (
+                  <label className="management-discount-step" key={t.discountLabels[index]}>
+                    <span className="management-discount-label">
+                      <span>{String(index + 1).padStart(2, '0')}</span>
+                      {t.discountLabels[index]}
+                    </span>
+                    <span className="management-percent-input">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={discount}
+                        onChange={(event) => updateDiscount(setBillingDiscounts, index, event.target.value)}
+                      />
+                      <span aria-hidden="true">%</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
 
-          <section className="toolkit-utility-card result-card">
+          <section className="toolkit-utility-card result-card" aria-live="polite">
             <p className="section-kicker">{t.activeSummary}</p>
+
+            <div className="management-summary-strip">
+              <div>
+                <span>{t.equivalentShort}</span>
+                <strong>{formatPercent(lang, billingScenario.equivalentDiscount)}%</strong>
+              </div>
+              <div>
+                <span>{t.totalSavings}</span>
+                <strong>{formatMoney(lang, billingScenario.totalSavings)}</strong>
+              </div>
+            </div>
 
             <div className="management-breakdown-grid">
               <div className="management-breakdown-item">
@@ -265,36 +300,47 @@ export default function ManagementToolkit({ lang }: Props) {
       ) : (
         <div className="toolkit-utility-grid management-grid">
           <section className="toolkit-utility-card">
-            <div className="toolkit-utility-form">
-              <label>
-                {t.discountOne}
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={quickDiscountOne}
-                  onChange={(event) => setQuickDiscountOne(event.target.value)}
-                />
-              </label>
-
-              <label>
-                {t.discountTwo}
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={quickDiscountTwo}
-                  onChange={(event) => setQuickDiscountTwo(event.target.value)}
-                />
-              </label>
+            <div className="management-discount-section">
+              <div className="management-section-heading">
+                <strong>{t.discountSequence}</strong>
+                <span>{t.discountSequenceHint}</span>
+              </div>
+              <div className="management-discount-grid">
+                {quickDiscounts.map((discount, index) => (
+                  <label className="management-discount-step" key={t.discountLabels[index]}>
+                    <span className="management-discount-label">
+                      <span>{String(index + 1).padStart(2, '0')}</span>
+                      {t.discountLabels[index]}
+                    </span>
+                    <span className="management-percent-input">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={discount}
+                        onChange={(event) => updateDiscount(setQuickDiscounts, index, event.target.value)}
+                      />
+                      <span aria-hidden="true">%</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
 
-          <section className="toolkit-utility-card result-card">
+          <section className="toolkit-utility-card result-card management-quick-result" aria-live="polite">
             <p className="section-kicker">{t.quickTitle}</p>
             <div className="toolkit-utility-result management-equivalent">
               <strong>{formatPercent(lang, equivalentDiscount)}%</strong>
               <span>{t.equivalentResult}</span>
+            </div>
+            <div className="management-cascade-preview" aria-hidden="true">
+              {quickDiscounts.map((discount, index) => (
+                <span key={`${t.discountLabels[index]}-preview`}>
+                  {formatPercent(lang, Math.min(100, Math.max(0, parseNumber(discount))))}%
+                </span>
+              ))}
             </div>
             <div className="toolkit-utility-help">
               <p>{t.quickText}</p>
