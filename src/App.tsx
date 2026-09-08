@@ -1634,14 +1634,6 @@ function App() {
   );
 
   useEffect(() => {
-    const warmup = window.setTimeout(() => {
-      void cimavetService.loadCatalog().catch(() => undefined);
-    }, 300);
-
-    return () => window.clearTimeout(warmup);
-  }, [cimavetService]);
-
-  useEffect(() => {
     setLivePage(1);
   }, [livePageSize, rxDoseFilter, rxIndication, rxOnlyCommercialized, rxPresentationFilter, rxQuery, rxSortByShortestWithdrawal, rxSpecies]);
 
@@ -1745,35 +1737,16 @@ function App() {
       const cimavetSpecies = rxSpecies ? translateMedicalTerm(rxSpecies, 'es') : undefined;
 
       try {
-        const fastResults = await cimavetService.searchMedications(q || '*', {
+        const results = await cimavetService.searchMedications(q || '*', {
           species: cimavetSpecies,
           speciesResultLimit: 120,
-          includeActiveIngredientSearch: false,
+          includeActiveIngredientSearch: q.length >= 3,
         });
 
         if (!ignore) {
-          setLiveResults(fastResults);
+          setLiveResults(results);
+          setLiveLoading(false);
         }
-
-        if (q.length >= 3) {
-          try {
-            const expanded = await cimavetService.searchMedications(q, {
-              species: cimavetSpecies,
-              speciesResultLimit: 120,
-              includeActiveIngredientSearch: true,
-            });
-
-            if (!ignore) {
-              const merged = new Map<string, CimavetMedicationSummary>();
-              [...fastResults, ...expanded].forEach((item) => merged.set(item.nregistro, item));
-              setLiveResults(Array.from(merged.values()));
-            }
-          } catch {
-            // Keep the fast pass rendered even if the wider search fails.
-          }
-        }
-
-        if (!ignore) setLiveLoading(false);
       } catch (error) {
         if (!ignore) {
           setLiveResults([]);
@@ -3505,23 +3478,14 @@ function App() {
                                     </p>
                                   </div>
 
-                                  {detail?.viasAdministracion?.length ? (
-                                    <section className="live-indications">
-                                      <h5>{t.presentation}</h5>
-                                      <ul>
-                                        {detail.viasAdministracion.slice(0, 4).map((route, index) => (
-                                          <li key={`${medication.nregistro}-active-route-${index}`}>{route.nombre}</li>
-                                        ))}
-                                      </ul>
-                                    </section>
-                                  ) : null}
-
                                   {presentationCodeItems.length > 0 ? (
                                     <section className="live-indications">
                                       <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                       <ul>
                                         {presentationCodeItems.map((item, index) => (
-                                          <li key={`${medication.nregistro}-active-human-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                          <li key={`${medication.nregistro}-active-human-presentation-cn-${index}`}>
+                                            {renderPresentationCodeLine(item, lang)}
+                                          </li>
                                         ))}
                                       </ul>
                                     </section>
@@ -4120,23 +4084,14 @@ function App() {
                               </p>
                             </div>
 
-                            {detail?.presentaciones?.length ? (
-                              <section className="live-indications">
-                                <h5>{t.presentation}</h5>
-                                <ul>
-                                  {detail.presentaciones.map((presentation) => (
-                                    <li key={`${medication.nregistro}-${presentation.cn}`}>{presentation.nombre}</li>
-                                  ))}
-                                </ul>
-                              </section>
-                            ) : null}
-
                             {presentationCodeItems.length > 0 ? (
                               <section className="live-indications">
                                 <h5>{lang === 'es' ? 'Presentaciones y CN' : 'Presentations and national code'}</h5>
                                 <ul>
                                   {presentationCodeItems.map((item, index) => (
-                                    <li key={`${medication.nregistro}-human-presentation-cn-${index}`}>{formatPresentationCodeLine(item)}</li>
+                                    <li key={`${medication.nregistro}-human-presentation-cn-${index}`}>
+                                      {renderPresentationCodeLine(item, lang)}
+                                    </li>
                                   ))}
                                 </ul>
                               </section>

@@ -99,6 +99,7 @@ interface CimavetMedicationPage {
 
 interface CimavetMedicationPageFilters {
   nombre?: string;
+  practiv1?: string;
   especie?: string;
 }
 
@@ -332,6 +333,7 @@ export class CimavetService {
     url.searchParams.set('pagina', String(page));
     url.searchParams.set('tamanioPagina', String(pageSize));
     if (filters.nombre) url.searchParams.set('nombre', filters.nombre);
+    if (filters.practiv1) url.searchParams.set('practiv1', filters.practiv1);
     if (filters.especie) url.searchParams.set('especie', filters.especie);
 
     const response = await fetch(url.toString(), { headers: this.buildHeaders() });
@@ -381,6 +383,30 @@ export class CimavetService {
 
       const batchResponses = await Promise.all(
         batchPages.map((batchPage) => this.fetchMedicationPageWithRetry(batchPage, actualPageSize, { nombre: query, especie })),
+      );
+      batchResponses.forEach((batch) => all.push(...batch.results));
+    }
+
+    return all;
+  }
+
+  async searchByActiveIngredient(query: string, page = 1, pageSize = 25, especie?: string) {
+    const firstPage = await this.fetchMedicationPageWithRetry(page, pageSize, { practiv1: query, especie });
+    const all = [...firstPage.results];
+    const actualPageSize = Math.max(firstPage.pageSize, 1);
+    const totalPages = Math.ceil(firstPage.total / actualPageSize);
+    const parallelRequests = this.config.parallelRequests ?? 6;
+
+    for (let i = page + 1; i <= totalPages; i += parallelRequests) {
+      const batchPages = Array.from(
+        { length: Math.min(parallelRequests, totalPages - i + 1) },
+        (_, offset) => i + offset,
+      );
+
+      const batchResponses = await Promise.all(
+        batchPages.map((batchPage) =>
+          this.fetchMedicationPageWithRetry(batchPage, actualPageSize, { practiv1: query, especie }),
+        ),
       );
       batchResponses.forEach((batch) => all.push(...batch.results));
     }
@@ -515,21 +541,36 @@ export class CimavetService {
       basicMatch = this.filterCatalogByQuery(this.catalogCache, query, {
         includeActiveIngredient: includeActiveIngredientSearch,
       });
-    } else if (includeActiveIngredientSearch) {
-      const catalog = await this.loadCatalog({ maxPages: options.maxPages });
-      basicMatch = this.filterCatalogByQuery(catalog, query, {
-        includeActiveIngredient: true,
-      });
     } else {
       const tradeQueries = Array.from(new Set([query.trim(), ...tokenQueries]));
-      const tradeResults = await Promise.all(
-        tradeQueries.map((tradeQuery) => this.searchByTradeName(tradeQuery, 1, 25, options.species).catch(() => [])),
+      const searches: Array<Promise<CimavetMedicationSummary[]>> = tradeQueries.map((tradeQuery) =>
+        this.searchByTradeName(tradeQuery, 1, 25, options.species),
       );
+
+      if (includeActiveIngredientSearch) {
+        const familyQuery = normalizeIngredientFamily(query);
+        const activeQueries = new Set<string>([query.trim(), ...tokenQueries]);
+        if (familyQuery && familyQuery !== q) activeQueries.add(familyQuery);
+        activeQueries.forEach((activeQuery) =>
+          searches.push(this.searchByActiveIngredient(activeQuery, 1, 25, options.species)),
+        );
+      }
+
+      const settledSearches = await Promise.allSettled(searches);
+      const successfulSearches = settledSearches
+        .filter((result): result is PromiseFulfilledResult<CimavetMedicationSummary[]> => result.status === 'fulfilled')
+        .map((result) => result.value);
+
+      if (successfulSearches.length === 0) {
+        const failedSearch = settledSearches.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+        throw failedSearch?.reason instanceof Error ? failedSearch.reason : new Error('Cimavet search failed');
+      }
+
       const merged = new Map<string, CimavetMedicationSummary>();
 
-      tradeResults
+      successfulSearches
         .flat()
-        .filter((medication) => matchesCimavetMedicationQuery(medication, query, false))
+        .filter((medication) => matchesCimavetMedicationQuery(medication, query, includeActiveIngredientSearch))
         .forEach((medication) => {
           const current = merged.get(medication.nregistro);
           if (!current || scoreCimavetMedication(medication, query) > scoreCimavetMedication(current, query)) {
