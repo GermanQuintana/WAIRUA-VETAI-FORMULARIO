@@ -735,6 +735,7 @@ function App() {
   const [showAuthScreen, setShowAuthScreen] = useState(false);
   const [activeKnowledgeView, setActiveKnowledgeView] = useState<ActiveView>('records');
   const [activeToolkitView, setActiveToolkitView] = useState<ToolkitView>('overview');
+  const [toolkitSearch, setToolkitSearch] = useState('');
   const [isLiveExpanded, setIsLiveExpanded] = useState(true);
 
   const [rxQuery, setRxQuery] = useState('');
@@ -2066,7 +2067,34 @@ function App() {
   }, [activeHumanDetails, activeHumanResultsForDetails, activeKnowledgeView, activeTab, cimaService]);
 
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => {
-    const orderedCards = cards === toolkitModules ? [...cards].sort((left, right) => left.title[lang].localeCompare(right.title[lang], lang)) : cards;
+    const toolkitTags: Record<string, string[]> = {
+      'chill-protocol': ['protocolo', 'calculadora', 'perro', 'preconsulta', 'miedo', 'ansiedad', 'agresividad', 'reactividad', 'gabapentina', 'acepromacina', 'otm'],
+      'fip-protocol': ['protocolo', 'calculadora', 'gato', 'pif', 'fip', 'gs-441524', 'infecciosas', 'oral', 'inyectable sc', 'seguimiento', 'efusiva', 'seca', 'ocular', 'neurológica', 'neurológica', 'remisión'],
+      'dose-calculator': ['calculadora', 'dosis', 'mg/kg', 'mg', 'ml', 'comprimidos', 'medicación'],
+      'analgesic-infusions': ['calculadora', 'infusión', 'analgesia', 'cri', 'mlk', 'flk', 'perfusión'],
+      'species-constants': ['tabla', 'referencia', 'perro', 'gato', 'conejo', 'hurón', 'constantes', 'triage', 'urgencias', 'temperatura', 'frecuencia cardiaca', 'frecuencia respiratoria', 'presión arterial', 'diuresis'],
+      'lab-ranges': ['tabla', 'laboratorio', 'hematología', 'bioquímica', 'electrolitos', 'gasometría', 'hemograma', 'urea', 'creatinina', 'alt', 'glucosa', 'pcr', 'coagulación'],
+      haemotherapy: ['calculadora', 'hemoterapia', 'transfusión', 'perro', 'gato', 'compatibilidad'],
+      endocrine: ['guía', 'endocrinología', 'pruebas', 'perro', 'gato', 'hipotiroidismo', 'hipertiroidismo', 'adison', 'enfermedad de addison', 'cushing', 'hiperadrenocorticismo', 'diabetes', 'hiperadrenocorticismo', 'estimulación acth', 'supresión dexametasona'],
+      genetics: ['guía', 'genética', 'mdr1', 'raza', 'hereditaria', 'mutación', 'panel genético', 'poliquistosis renal', 'displasia', 'epilepsia'],
+      interactions: ['checker', 'interacciones', 'fármacos', 'seguridad', 'contraindicaciones', 'sinergias', 'sedación', 'nefrotoxicidad', 'hepatotoxicidad'],
+      'unit-converter': ['conversor', 'unidades', 'masa', 'volumen', 'concentración'],
+      'body-surface': ['calculadora', 'superficie corporal', 'perro', 'gato', 'conejo', 'hurón'],
+      'clinical-nutrition': ['calculadora', 'nutrición', 'energía', 'nutrientes', 'dietas', 'perro', 'gato', 'obesidad', 'renal', 'hepática', 'diabetes', 'alergia alimentaria', 'raciones', 'rerc'],
+      'fluid-therapy': ['calculadora', 'fluidoterapia', 'mantenimiento', 'déficit', 'pérdidas', 'anestesia', 'deshidratación', 'shock', 'hipovolemia', 'electrolitos', 'sodio', 'potasio', 'cristaloides', 'coloides'],
+      'clinical-assistant': ['formulario', 'asistente', 'consulta', 'patología', 'notas clínicas', 'anamnesis', 'exploración física', 'diagnóstico diferencial', 'plan terapéutico'],
+      management: ['gestión', 'descuentos', 'negocio', 'operativa', 'margen', 'presupuesto', 'facturación', 'clínica'],
+      'writing-assistant': ['asistente', 'redacción', 'palabras', 'caracteres', 'editorial', 'informe', 'consentimiento', 'cliente', 'comunicación'],
+      anesthesia: ['protocolo', 'anestesia', 'quirófano', 'dosis', 'concentración', 'impresión', 'premedicación', 'inducción', 'mantenimiento', 'analgesia', 'monitorización', 'sedación'],
+      recover: ['guía', 'urgencias', 'recover', 'rcp', 'anafilaxia', 'shock', 'reanimación', 'hipoglucemia', 'status epiléptico', 'convulsiones', 'paro cardiorrespiratorio', 'reversores'],
+    };
+    const query = toolkitSearch.trim().toLocaleLowerCase();
+    const filteredCards = cards.filter((card) => {
+      if (!query || cards !== toolkitModules) return true;
+      const haystack = [card.title[lang], card.description[lang], ...(toolkitTags[card.id] ?? [])].join(' ').toLocaleLowerCase();
+      return haystack.includes(query);
+    });
+    const orderedCards = cards === toolkitModules ? [...filteredCards].sort((left, right) => left.title[lang].localeCompare(right.title[lang], lang)) : cards;
 
     return (
       <div className={`feature-grid ${gridClassName ?? ''}`.trim()}>
@@ -3730,6 +3758,11 @@ function App() {
 
             {activeToolkitView === 'overview' && (
               <>
+                <div className="toolkit-search-bar">
+                  <label htmlFor="toolkit-search">{lang === 'es' ? 'Buscar en el toolkit' : 'Search the toolkit'}</label>
+                  <input id="toolkit-search" type="search" value={toolkitSearch} onChange={(event) => setToolkitSearch(event.target.value)} placeholder={lang === 'es' ? 'Ej.: calculadora, PIF, agresividad, anestesia…' : 'E.g. calculator, FIP, aggression, anesthesia…'} />
+                  {toolkitSearch ? <button type="button" onClick={() => setToolkitSearch('')} aria-label={lang === 'es' ? 'Limpiar búsqueda' : 'Clear search'}>×</button> : null}
+                </div>
                 {renderLocalizedCards(toolkitModules)}
               </>
             )}
