@@ -29,7 +29,9 @@ export interface LocalizedCollectionCard {
     | 'assistant'
     | 'nutrition'
     | 'management'
-    | 'writing';
+    | 'writing'
+    | 'chill'
+    | 'fip';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -157,6 +159,30 @@ export const protocolFocusExamples: LocalizedCollectionCard[] = [
 ];
 
 export const toolkitModules: LocalizedCollectionCard[] = [
+  {
+    id: 'chill-protocol',
+    title: { es: 'Protocolo Chill', en: 'Chill protocol' },
+    description: {
+      es: 'Pauta preconsulta para perros con miedo o reactividad: cronograma, dosis orientativas y referencias.',
+      en: 'Pre-visit plan for fearful or reactive dogs: timeline, indicative doses, and references.',
+    },
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
+    toolkitView: 'chill',
+  },
+  {
+    id: 'fip-protocol',
+    title: { es: 'Tratamiento PIF', en: 'FIP treatment' },
+    description: {
+      es: 'GS-441524 oral para PIF felina: dosis por presentación clínica, planificación y seguimiento.',
+      en: 'Oral GS-441524 for feline FIP: doses by clinical presentation, planning, and monitoring.',
+    },
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
+    toolkitView: 'fip',
+  },
   {
     id: 'dose-calculator',
     title: { es: 'Calculadora de dosis', en: 'Dose calculator' },

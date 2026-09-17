@@ -6,6 +6,7 @@ import AnesthesiaToolkit from './components/AnesthesiaToolkit';
 import AuthAccessPanel from './components/AuthAccessPanel';
 import BodySurfaceAreaCalculator from './components/BodySurfaceAreaCalculator';
 import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
+import { ChillProtocolToolkit, FipProtocolToolkit } from './components/ClinicalProtocolToolkits';
 import ComingSoonToolkit from './components/ComingSoonToolkit';
 import DoseCalculator from './components/DoseCalculator';
 import DrugInteractionChecker from './components/DrugInteractionChecker';
@@ -83,6 +84,8 @@ const toolkitViews = [
   'nutrition',
   'management',
   'writing',
+  'chill',
+  'fip',
 ] as const;
 const CIMA_BASE_URL = resolveCimaBaseUrl(import.meta.env.VITE_CIMA_BASE_URL);
 const CIMAVET_BASE_URL = resolveCimavetBaseUrl(import.meta.env.VITE_CIMAVET_BASE_URL);
@@ -107,6 +110,8 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'nutrition',
   'management',
   'writing',
+  'chill',
+  'fip',
 ]);
 const freeToolkitViewSet = new Set<ToolkitView>([
   'infusion',
@@ -117,6 +122,8 @@ const freeToolkitViewSet = new Set<ToolkitView>([
   'fluid',
   'anesthesia',
   'writing',
+  'chill',
+  'fip',
 ]);
 const accessPreviewRoleMap: Record<Exclude<AccessPreviewMode, 'actual'>, UserRole[]> = {
   free_viewer: ['viewer'],
@@ -3879,6 +3886,10 @@ function App() {
             {activeToolkitView === 'management' && <ManagementToolkit lang={lang} />}
 
             {activeToolkitView === 'writing' && <WritingAssistantToolkit lang={lang} />}
+
+            {activeToolkitView === 'chill' && <ChillProtocolToolkit lang={lang} />}
+
+            {activeToolkitView === 'fip' && <FipProtocolToolkit lang={lang} />}
           </section>
         )}
 

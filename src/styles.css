@@ -3377,6 +3377,175 @@ select:focus-visible {
   background: rgba(255, 255, 255, 0.7);
 }
 
+.protocol-toolkit h4 {
+  margin: 0 0 0.8rem;
+}
+
+.protocol-toolkit {
+  --protocol-blue: #eff6fc;
+  --protocol-blue-line: #9cbed9;
+  --protocol-green: #eaf6ef;
+  --protocol-green-line: #76b99a;
+  --protocol-amber: #fff6e6;
+  --protocol-amber-line: #d4ac62;
+  --protocol-purple: #f4f0fa;
+  --protocol-purple-line: #b4a2cf;
+}
+
+.app.dark .protocol-toolkit {
+  --protocol-blue: #182c38;
+  --protocol-blue-line: #476f8b;
+  --protocol-green: #18332c;
+  --protocol-green-line: #4c947a;
+  --protocol-amber: #352d1e;
+  --protocol-amber-line: #a08650;
+  --protocol-purple: #2b2538;
+  --protocol-purple-line: #82719f;
+}
+
+.protocol-toolkit .toolkit-utility-card,
+.app.dark .protocol-toolkit .toolkit-utility-card {
+  background: var(--protocol-card-bg, var(--protocol-blue));
+  border-color: var(--protocol-card-line, var(--protocol-blue-line));
+  border-inline-start-width: 3px;
+}
+
+.protocol-toolkit .result-card {
+  --protocol-card-bg: var(--protocol-green);
+  --protocol-card-line: var(--protocol-green-line);
+}
+
+.protocol-toolkit .protocol-caution {
+  --protocol-card-bg: var(--protocol-amber);
+  --protocol-card-line: var(--protocol-amber-line);
+}
+
+.protocol-toolkit .protocol-bibliography {
+  --protocol-card-bg: var(--protocol-purple);
+  --protocol-card-line: var(--protocol-purple-line);
+}
+
+.protocol-context p {
+  margin: 0.6rem 0 0;
+  line-height: 1.55;
+}
+
+.protocol-comparison {
+  margin: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.protocol-comparison > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(0, 4fr);
+  gap: 0.6rem 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--protocol-blue-line);
+}
+
+.protocol-comparison dt { font-weight: 700; }
+.protocol-comparison dd { margin: 0; line-height: 1.55; }
+.protocol-result-row strong { flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .protocol-comparison > div { grid-template-columns: 1fr; }
+}
+
+.protocol-toolkit .toolkit-utility-form input,
+.protocol-toolkit .toolkit-utility-form select {
+  width: 100%;
+  min-width: 0;
+}
+
+.app.dark .protocol-toolkit .toolkit-utility-form input,
+.app.dark .protocol-toolkit .toolkit-utility-form select {
+  background: #14252e;
+  border-color: #577587;
+  color: #edf5f2;
+}
+
+.app.dark .protocol-toolkit .toolkit-utility-form input::placeholder {
+  color: #a7bbb9;
+}
+
+.protocol-muted {
+  margin: 0.8rem 0 0;
+  color: var(--muted-light);
+  line-height: 1.5;
+  font-size: 0.91rem;
+}
+
+.protocol-steps {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.protocol-steps > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #d9dfcc;
+}
+
+.protocol-steps span,
+.protocol-steps small,
+.protocol-result-row span {
+  color: var(--muted-light);
+}
+
+.protocol-steps strong {
+  font-size: 1.15rem;
+}
+
+.protocol-result-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #d9dfcc;
+}
+
+.protocol-caution p {
+  margin: 0.55rem 0 0;
+  line-height: 1.55;
+}
+
+.protocol-bibliography ol {
+  margin: 0;
+  padding-left: 1.35rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.protocol-bibliography li span {
+  display: block;
+  color: var(--muted-light);
+  font-size: 0.9rem;
+}
+
+.protocol-bibliography a {
+  color: #087e82;
+  overflow-wrap: anywhere;
+}
+
+.app.dark .protocol-muted,
+.app.dark .protocol-steps span,
+.app.dark .protocol-steps small,
+.app.dark .protocol-result-row span,
+.app.dark .protocol-bibliography li span {
+  color: var(--muted-dark);
+}
+
+.app.dark .protocol-steps > div,
+.app.dark .protocol-result-row {
+  border-color: var(--border-dark);
+}
+
+.app.dark .protocol-bibliography a {
+  color: var(--accent-dark);
+}
+
 .vital-constants-toolkit {
   gap: 1.15rem;
 }
