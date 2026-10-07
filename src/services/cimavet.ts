@@ -13,6 +13,7 @@ interface CimavetAtcItem {
   codigo: string;
   nombre: string;
   nivel: number;
+  antibiotico?: boolean;
 }
 
 interface CimavetPrincipioActivo {
@@ -63,6 +64,7 @@ export interface CimavetMedicationSummary {
   comerc?: boolean;
   receta?: boolean;
   antibiotico?: boolean;
+  atcs?: CimavetAtcItem[];
   labtitular?: string;
   forma?: CimavetNameItem;
   administracion?: CimavetNameItem;
@@ -70,6 +72,11 @@ export interface CimavetMedicationSummary {
   viasAdministracion?: CimavetNameItem[];
   dispensacion?: CimavetNameItem;
 }
+
+// CIMAVet currently marks some non-antibacterial products as antibiotico=true.
+// Its ATC entries provide the classification used for the visible badge.
+export const isCimavetAntibiotic = (medication: CimavetMedicationSummary) =>
+  medication.atcs?.some((atc) => atc.antibiotico === true) ?? false;
 
 export interface CimavetMedicationDetail extends CimavetMedicationSummary {
   docs?: CimavetDocument[];

@@ -51,6 +51,7 @@ import {
   buildCimavetRecordUrl,
   getCimavetMaxWithdrawalDays,
   getCimavetWithdrawalTimeItems,
+  isCimavetAntibiotic,
   CimavetMedicationDetail,
   CimavetMedicationSummary,
   CimavetWithdrawalTimeItem,
@@ -2759,7 +2760,7 @@ function App() {
                               <div className="live-badges">
                                 {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
                                 {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
-                                {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                                {isCimavetAntibiotic(medication) && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
                               </div>
                             </header>
 
@@ -3313,7 +3314,7 @@ function App() {
                                     <div className="live-badges">
                                       {medication.comerc && <span className="live-badge live-badge-green">{t.commercialized}</span>}
                                       {medication.receta && <span className="live-badge live-badge-amber">{t.prescriptionOnly}</span>}
-                                      {medication.antibiotico && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
+                                      {isCimavetAntibiotic(medication) && <span className="live-badge live-badge-red">{t.antibiotic}</span>}
                                     </div>
                                   </header>
 
