@@ -8,6 +8,9 @@ const cases = [
   { ingredient: 'lactulosa', registration: '4531 ESP', antibiotic: false },
   { ingredient: 'fitomenadiona', registration: '4048 ESP', antibiotic: false },
   { ingredient: 'furosemida', registration: '3143 ESP', antibiotic: false },
+  { ingredient: 'pimobendan', registration: '4111 ESP', antibiotic: false },
+  { ingredient: 'benazepril', registration: '4366 ESP', antibiotic: false },
+  { ingredient: 'benazepril', registration: 'EU064 CP', antibiotic: false },
   { ingredient: 'amoxicilina', registration: '4188 ESP', antibiotic: true },
 ];
 
