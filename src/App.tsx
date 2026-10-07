@@ -980,6 +980,10 @@ function App() {
   );
 
   useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  useEffect(() => {
     if (!supabaseAccessService) {
       setAuthAccount(null);
       setAuthLoading(false);
@@ -2553,7 +2557,7 @@ function App() {
               disabled={isLocked}
               title={isLocked ? accessText.lockedTitle : undefined}
             >
-              <span className="product-tab-glyph" aria-hidden="true">{tab.glyph}</span>
+              <span className="product-tab-glyph" aria-hidden="true" translate="no">{tab.glyph}</span>
               <span className="product-tab-label" translate={tab.key === 'otc' ? 'no' : undefined}>{tab.label}</span>
               <small>{isLocked ? accessText.lockedBadge : premiumTabSet.has(tab.key) ? accessText.premiumBadge : accessText.freeBadge}</small>
             </button>
