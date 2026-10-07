@@ -2534,7 +2534,7 @@ function App() {
         </div>
       </header>
 
-      <nav className="tabs product-tabs" aria-label="Product selector">
+      <nav className="tabs product-tabs" aria-label={lang === 'es' ? 'Secciones del producto' : 'Product sections'} translate="no">
         {[
           { key: 'prescription' as const, label: t.prescriptionHub, glyph: 'Rx' },
           { key: 'human' as const, label: t.humanHub, glyph: 'Hu' },
