@@ -1,640 +1,589 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Language } from '../i18n';
+import { redCellVolume, transfusionRate } from '../lib/haemotherapyMath';
 
-interface Props {
-  lang: Language;
-}
-
-type SpeciesKey = 'dog' | 'cat';
-type ProductKey = 'packedRbc' | 'wholeBlood' | 'plasma' | 'platelets' | 'cryoprecipitate';
-
-interface SpeciesDefinition {
-  label: Record<Language, string>;
-  bloodVolumeMlKg: number;
-  plasmaDoseMlKg: {
-    min: number;
-    max: number;
-  };
-}
-
-interface ProductDefinition {
-  label: Record<Language, string>;
-  mode: 'hct' | 'range' | 'units';
-  defaultUnitHct?: number;
-  typicalDose: Record<SpeciesKey, string>;
-  doseRangeMlKg?: Record<
-    SpeciesKey,
-    {
-      min: number;
-      max: number;
-    }
-  >;
-  unitsPerKg?: number;
-}
-
-interface LocalizedRow {
-  product: Record<Language, string>;
-  when: Record<Language, string>;
-  how: Record<Language, string>;
-}
-
-type CalculationResult =
-  | { mode: 'hct'; totalVolumeMl: number; mlKg: number }
-  | { mode: 'range'; minMl: number; maxMl: number; minMlKg: number; maxMlKg: number }
-  | { mode: 'units'; units: number; unitsPerKg: number }
-  | null;
-
-const SOURCE_LINKS = {
-  official: 'https://bsanimal.eu/vets/haemotherapy/',
-  manual: 'https://bsanimal.eu/template/bsanimal/content/vets/haemotherapy/220203_ES.pdf',
+const MERCK =
+  'https://www.merckvetmanual.com/circulatory-system/blood-groups-and-blood-transfusions-in-dogs-and-cats/blood-transfusions-in-dogs-and-cats';
+const CORNELL =
+  'https://www.vet.cornell.edu/animal-health-diagnostic-center/testing/testing-protocols-interpretations/immunology/crossmatch-testing';
+const TRACS = 'https://doi.org/10.1111/vec.13045';
+const ISFM = 'https://doi.org/10.1177/1098612X211007071';
+type Product = 'redCells' | 'wholeBlood' | 'plasma';
+type View = 'calculate' | 'guide' | 'safety';
+const texts = {
+  es: {
+    title: 'Hemoterapia',
+    intro: 'Perro y gato · volumen, administración y seguridad transfusional.',
+    free: 'Acceso gratuito',
+    calculate: 'Calcular volumen',
+    guide: 'Elegir componente',
+    safety: 'Compatibilidad y vigilancia',
+    species: 'Especie',
+    dog: 'Perro',
+    cat: 'Gato',
+    product: 'Componente',
+    redCells: 'Concentrado de eritrocitos',
+    wholeBlood: 'Sangre total',
+    plasma: 'Plasma',
+    weight: 'Peso (kg)',
+    current: 'Hto actual (%)',
+    target: 'Hto objetivo (%)',
+    unit: 'Hto medido de la unidad (%)',
+    bv: 'Volemia estimada (mL/kg)',
+    dose: 'Dosis de plasma prescrita (mL/kg)',
+    clear: 'Limpiar paciente',
+    input: 'Datos del paciente y del producto',
+    volume: 'Volumen calculado',
+    empty: 'Completa los datos para calcular.',
+    invalid:
+      'Revisa los datos: peso y volemia positivos; hematocritos de 0 a 100%, objetivo mayor que actual y Hto de unidad mayor que cero.',
+    plasmaInvalid: 'Introduce peso y dosis prescrita positivos.',
+    bvHint:
+      'Referencia Merck: perro 80–90; gato 40–60 mL/kg. Se usa 85 o 55 como estimación inicial editable.',
+    hctHint:
+      'La indicación y el objetivo dependen del estado clínico. Introduce el Hto real del producto; la fórmula estima la respuesta, no la garantiza.',
+    plasmaHint:
+      'Coagulopatías: Merck orienta 10–20 mL/kg en perro y 6–10 en gato. Individualiza la dosis; el plasma no corrige la anemia.',
+    equation: 'Peso × volemia × (Hto objetivo − actual) / Hto de la unidad',
+    plan: 'Planificar administración',
+    duration: 'Duración prescrita (horas)',
+    rate: 'Velocidad media',
+    rateHint:
+      'Volumen / duración. No incluye fase de prueba ni ajustes durante la transfusión. Individualiza según estabilidad, función cardiaca/renal y protocolo del banco.',
+    durationWarning:
+      'Más de 4 h: confirma conservación y tiempo máximo fuera de refrigeración con el banco. Si necesitas administrar más despacio, acuerda fraccionamiento u otra estrategia; no prolongues automáticamente la exposición del producto.',
+    rateInvalid: 'La duración debe ser mayor que cero.',
+    summary: 'Resumen para copiar',
+    copy: 'Copiar resumen',
+    copied: 'Resumen copiado',
+    copyFailed:
+      'No se pudo copiar. Selecciona el resumen y cópialo manualmente.',
+    productsIntro:
+      'Elige según el déficit y el estado del paciente. Confirma composición, conservación y pauta con el banco de sangre.',
+    rbcUse:
+      'Soporte eritrocitario en anemia clínicamente relevante. Menor volumen que sangre total para un mismo aporte de eritrocitos.',
+    wholeUse:
+      'Aporta eritrocitos y plasma. Considerar cuando se necesitan ambos; los factores y las plaquetas disponibles dependen de cómo se obtiene y conserva el producto.',
+    plasmaUse:
+      'Soporte de factores de coagulación cuando está indicado. No es eficaz como tratamiento rutinario de la hipoproteinemia y no sustituye a eritrocitos.',
+    specialty: 'Plaquetas y crioprecipitado',
+    specialtyUse:
+      'Son productos específicos: confirma indicación, contenido y unidades con el banco. No conviertas automáticamente una “unidad” en un volumen ni extrapoles una dosis entre productos.',
+    select: 'Usar en el cálculo',
+    sources: 'Fuentes y alcance',
+    sourceHint:
+      'Referencia clínica revisada, consensos TRACS/ISFM y protocolo de laboratorio. Cálculos estimativos para uso profesional; confirmar con el producto, el banco y la evolución clínica.',
+    typing: 'Antes de transfundir: tipaje y crossmatch',
+    typingDog:
+      'Perro: tipar donante y receptor para DEA 1. Confirmar transfusiones previas y realizar crossmatch antes de repetir (especialmente si han pasado más de 4 días) o si la historia es desconocida.',
+    typingCat:
+      'Gato: tipar A/B/AB y realizar crossmatch, también antes de la primera transfusión. Puede haber anticuerpos contra otros antígenos aunque coincida A/B/AB.',
+    cross:
+      'Crossmatch mayor: plasma del receptor frente a eritrocitos del donante. Un resultado compatible no excluye todas las reacciones. Plasma y sangre total requieren considerar también anticuerpos del donante: confirmar con el banco.',
+    prepare: 'Preparar producto y vía',
+    preparation:
+      'Verificar identidad, producto, caducidad y condiciones del banco. Usar vía exclusiva con filtro y dispositivo apto para sangre; no mezclar medicamentos ni fluidos con calcio en esa vía.',
+    monitor: 'Vigilar y registrar',
+    monitoring:
+      'Registrar constantes basales. Valorar cada 15 min durante la primera hora, después cada hora hasta finalizar; volver a valorar a los 15 min, 1 h y 24 h. Tras eritrocitos, comprobar Hto y respuesta clínica.',
+    reaction: 'Si aparece una reacción',
+    reactionText:
+      'Ante sospecha de reacción (fiebre, disnea, vómitos, urticaria, hipotensión o hemólisis), detener la transfusión y evaluar de inmediato. Investigar la causa y tratar según el cuadro; no reiniciar automáticamente.',
+    checkTitle: 'Comprobación previa',
+    checkHint:
+      'Lista local de apoyo, sin guardar datos del paciente. Las casillas no certifican compatibilidad.',
+    checks: [
+      'Identidad y producto verificados',
+      'Tipaje y crossmatch revisados',
+      'Constantes basales registradas',
+      'Vía y filtro preparados',
+      'Volumen, pauta y vigilancia acordados',
+    ],
+  },
+  en: {
+    title: 'Haemotherapy',
+    intro: 'Dogs and cats · volume, administration and transfusion safety.',
+    free: 'Free access',
+    calculate: 'Calculate volume',
+    guide: 'Choose a component',
+    safety: 'Compatibility and monitoring',
+    species: 'Species',
+    dog: 'Dog',
+    cat: 'Cat',
+    product: 'Component',
+    redCells: 'Packed red cells',
+    wholeBlood: 'Whole blood',
+    plasma: 'Plasma',
+    weight: 'Weight (kg)',
+    current: 'Current Hct (%)',
+    target: 'Target Hct (%)',
+    unit: 'Measured unit Hct (%)',
+    bv: 'Estimated blood volume (mL/kg)',
+    dose: 'Prescribed plasma dose (mL/kg)',
+    clear: 'Clear patient',
+    input: 'Patient and product data',
+    volume: 'Calculated volume',
+    empty: 'Complete the data to calculate.',
+    invalid:
+      'Check the data: positive weight and blood volume; Hct between 0 and 100%, target above current and unit Hct greater than zero.',
+    plasmaInvalid: 'Enter positive weight and prescribed dose.',
+    bvHint:
+      'Merck reference: dogs 80–90; cats 40–60 mL/kg. 85 or 55 is used as an editable initial estimate.',
+    hctHint:
+      'Indication and target depend on clinical condition. Enter the actual product Hct; the formula estimates the response, without guaranteeing it.',
+    plasmaHint:
+      'Coagulopathies: Merck suggests 10–20 mL/kg in dogs and 6–10 in cats. Individualise the dose; plasma does not correct anaemia.',
+    equation: 'Weight × blood volume × (target − current Hct) / unit Hct',
+    plan: 'Plan administration',
+    duration: 'Prescribed duration (hours)',
+    rate: 'Average rate',
+    rateHint:
+      'Volume / duration. Excludes a test phase and adjustments during transfusion. Individualise to stability, cardiac/renal function and blood-bank protocol.',
+    durationWarning:
+      'More than 4 h: confirm storage and maximum time out of refrigeration with the blood bank. If slower administration is needed, agree on aliquots or another strategy; do not automatically extend product exposure.',
+    rateInvalid: 'Duration must be greater than zero.',
+    summary: 'Summary to copy',
+    copy: 'Copy summary',
+    copied: 'Summary copied',
+    copyFailed: 'Unable to copy. Select the summary and copy it manually.',
+    productsIntro:
+      'Choose according to the deficit and patient condition. Confirm composition, storage and dosing with the blood bank.',
+    rbcUse:
+      'Red-cell support for clinically relevant anaemia. Less volume than whole blood for the same red-cell contribution.',
+    wholeUse:
+      'Provides red cells and plasma. Consider when both are needed; available factors and platelets depend on collection and storage.',
+    plasmaUse:
+      'Clotting-factor support when indicated. Inefficient for routine treatment of hypoproteinaemia and does not replace red cells.',
+    specialty: 'Platelets and cryoprecipitate',
+    specialtyUse:
+      'These are specialised products: confirm indication, content and units with the blood bank. Do not automatically convert a “unit” to a volume or extrapolate a dose between products.',
+    select: 'Use in calculator',
+    sources: 'Sources and scope',
+    sourceHint:
+      'Reviewed clinical reference, TRACS/ISFM consensus and laboratory protocol. Estimates for professional use; confirm against product details, blood-bank guidance and clinical response.',
+    typing: 'Before transfusion: typing and crossmatch',
+    typingDog:
+      'Dogs: type donor and recipient for DEA 1. Confirm previous transfusions and crossmatch before repeat transfusions (especially after more than 4 days) or if history is unknown.',
+    typingCat:
+      'Cats: type A/B/AB and crossmatch, including before the first transfusion. Antibodies to other antigens may exist even with matching A/B/AB types.',
+    cross:
+      'Major crossmatch: recipient plasma against donor red cells. A compatible result does not exclude every reaction. Plasma and whole blood also require consideration of donor antibodies: confirm with the blood bank.',
+    prepare: 'Prepare product and line',
+    preparation:
+      'Verify identity, product, expiry and blood-bank conditions. Use a dedicated filtered line and blood-compatible device; do not mix medicines or calcium-containing fluids in that line.',
+    monitor: 'Monitor and record',
+    monitoring:
+      'Record baseline vital signs. Assess every 15 min during the first hour, then hourly until completion; reassess at 15 min, 1 h and 24 h. After red cells, check Hct and clinical response.',
+    reaction: 'If a reaction occurs',
+    reactionText:
+      'If a reaction is suspected (fever, dyspnoea, vomiting, urticaria, hypotension or haemolysis), stop the transfusion and assess immediately. Investigate and treat the cause; do not restart automatically.',
+    checkTitle: 'Pre-transfusion check',
+    checkHint:
+      'Local supporting checklist; no patient data are saved. Checks do not certify compatibility.',
+    checks: [
+      'Identity and product verified',
+      'Typing and crossmatch reviewed',
+      'Baseline vital signs recorded',
+      'Line and filter prepared',
+      'Volume, rate and monitoring agreed',
+    ],
+  },
 };
 
-const SPECIES: Record<SpeciesKey, SpeciesDefinition> = {
-  dog: {
-    label: { es: 'Perro', en: 'Dog' },
-    bloodVolumeMlKg: 85,
-    plasmaDoseMlKg: { min: 10, max: 20 },
-  },
-  cat: {
-    label: { es: 'Gato', en: 'Cat' },
-    bloodVolumeMlKg: 55,
-    plasmaDoseMlKg: { min: 6, max: 10 },
-  },
-};
-
-const PRODUCTS: Record<ProductKey, ProductDefinition> = {
-  packedRbc: {
-    label: { es: 'Concentrado de eritrocitos', en: 'Packed red cells' },
-    mode: 'hct',
-    defaultUnitHct: 60,
-    typicalDose: {
-      dog: '6-10 mL/kg',
-      cat: '5-6 mL/kg',
-    },
-  },
-  wholeBlood: {
-    label: { es: 'Sangre total', en: 'Whole blood' },
-    mode: 'hct',
-    defaultUnitHct: 40,
-    typicalDose: {
-      dog: '10-20 mL/kg',
-      cat: '6-10 mL/kg',
-    },
-  },
-  plasma: {
-    label: { es: 'Plasma', en: 'Plasma' },
-    mode: 'range',
-    typicalDose: {
-      dog: '10-20 mL/kg',
-      cat: '6-10 mL/kg',
-    },
-    doseRangeMlKg: {
-      dog: { min: 10, max: 20 },
-      cat: { min: 6, max: 10 },
-    },
-  },
-  platelets: {
-    label: { es: 'Plaquetas', en: 'Platelets' },
-    mode: 'units',
-    typicalDose: {
-      dog: '1 unidad / 10 kg',
-      cat: '1 unidad / 10 kg',
-    },
-    unitsPerKg: 0.1,
-  },
-  cryoprecipitate: {
-    label: { es: 'Crioprecipitado', en: 'Cryoprecipitate' },
-    mode: 'units',
-    typicalDose: {
-      dog: '1 unidad / 10 kg',
-      cat: 'Consultar banco / volumen',
-    },
-    unitsPerKg: 0.1,
-  },
-};
-
-const COMPONENT_ROWS: LocalizedRow[] = [
-  {
-    product: { es: 'Sangre total fresca', en: 'Fresh whole blood' },
-    when: {
-      es: 'Hemorragia aguda con anemia y necesidad simultanea de soporte de volumen.',
-      en: 'Acute hemorrhage with anemia and a simultaneous need for volume support.',
-    },
-    how: {
-      es: 'Aporta eritrocitos y volumen; si es fresca, tambien ofrece mejor soporte de factores y plaquetas.',
-      en: 'Provides red cells and volume; when fresh, it also offers better factor and platelet support.',
-    },
-  },
-  {
-    product: { es: 'Concentrado de eritrocitos', en: 'Packed red cells' },
-    when: {
-      es: 'Anemia clinicamente relevante en paciente normovolemico o con riesgo de sobrecarga.',
-      en: 'Clinically relevant anemia in a normovolemic patient or one at risk of volume overload.',
-    },
-    how: {
-      es: 'Se administra como la sangre total, pero con mayor hematocrito y menor volumen total.',
-      en: 'Administered like whole blood, but with a higher hematocrit and lower total volume.',
-    },
-  },
-  {
-    product: { es: 'Plasma fresco congelado', en: 'Fresh frozen plasma' },
-    when: {
-      es: 'Coagulopatias, deficit de multiples factores, anticoagulantes cumarinicos o sangrado asociado.',
-      en: 'Coagulopathies, multiple factor deficiencies, coumarin anticoagulant exposure, or related bleeding.',
-    },
-    how: {
-      es: 'No sustituye el soporte eritrocitario; se pauta por kg y por objetivo hemostatico.',
-      en: 'It does not replace red-cell support; dose it per kg and hemostatic objective.',
-    },
-  },
-  {
-    product: { es: 'Plasma congelado', en: 'Frozen plasma' },
-    when: {
-      es: 'Cuando se busca soporte de factores estables y no es imprescindible maximizar los factores labiles.',
-      en: 'When support for stable coagulation factors is needed and labile-factor support is less critical.',
-    },
-    how: {
-      es: 'Puede ser util como alternativa al plasma fresco segun disponibilidad del banco.',
-      en: 'May be useful as an alternative to fresh plasma depending on blood-bank availability.',
-    },
-  },
-  {
-    product: { es: 'Crioprecipitado', en: 'Cryoprecipitate' },
-    when: {
-      es: 'Enfermedad de von Willebrand, hemofilia A o hipofibrinogenemia cuando se busca alto contenido de factores.',
-      en: 'Von Willebrand disease, hemophilia A, or hypofibrinogenemia when a high factor content is needed.',
-    },
-    how: {
-      es: 'Componente concentrado; util cuando interesa aumentar factores con menos volumen.',
-      en: 'A concentrated component that is useful when factor support is needed with less volume.',
-    },
-  },
-  {
-    product: { es: 'Plaquetas / PRP / concentrado plaquetario', en: 'Platelets / PRP / platelet concentrate' },
-    when: {
-      es: 'Trombocitopenia grave o trombocitopatia con sangrado clinicamente relevante.',
-      en: 'Severe thrombocytopenia or thrombocytopathy with clinically relevant bleeding.',
-    },
-    how: {
-      es: 'La dosificacion suele expresarse en unidades; confirma formato y rendimiento con el banco.',
-      en: 'Dosing is usually expressed in units; confirm product format and expected yield with the blood bank.',
-    },
-  },
-];
-
-const CAT_COMPATIBILITY = {
-  es: [
-    ['Receptor A', 'Eritrocitos A'],
-    ['Receptor B', 'Eritrocitos B'],
-    ['Receptor AB', 'AB preferente; A solo si no hay alternativa y tras compatibilidad'],
-  ],
-  en: [
-    ['Type A recipient', 'Type A red cells'],
-    ['Type B recipient', 'Type B red cells'],
-    ['Type AB recipient', 'AB preferred; A only if no better option exists and compatibility is checked'],
-  ],
-} satisfies Record<Language, [string, string][]>;
-
-const roundValue = (value: number, decimals = 1) => {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-};
-
-const formatValue = (value: number, decimals = 1) => Number(value.toFixed(decimals)).toString();
-
-export default function HaemotherapyCalculator({ lang }: Props) {
-  const copy =
-    lang === 'es'
-      ? {
-          kicker: 'Hemoderivados y compatibilidad',
-          title: 'Calculadora de hemoterapia',
-          text:
-            'Calcula o estima dosis orientativas de hemoderivados para perro y gato, y deja a mano una guia de componentes, plaquetas, plasma, tipaje y compatibilidad.',
-          formulaTitle: 'Logica del calculo',
-          formulaText: 'Eritrocitos: peso x volemia x (Hto objetivo - Hto actual) / Hto de la unidad',
-          species: 'Especie',
-          product: 'Hemoderivado',
-          weight: 'Peso (kg)',
-          currentHct: 'Hto/PCV actual (%)',
-          targetHct: 'Hto/PCV objetivo (%)',
-          unitHct: 'Hto/PCV de la unidad (%)',
-          resultKicker: 'Volumen orientativo',
-          doseResultKicker: 'Dosis orientativa',
-          resultHelp:
-            'Para sangre total o concentrado de eritrocitos, ajusta el hematocrito de la unidad si tu banco trabaja con otros valores.',
-          rangeHelp: 'En plasma la orientacion util se expresa como un rango en mL/kg.',
-          unitsHelp: 'En plaquetas y crioprecipitado la referencia practica suele expresarse en unidades, no en mL.',
-          bloodVolume: 'Volemia operativa',
-          doseCheck: 'Chequeo rapido',
-          dynamicMetric: 'Referencia dinamica',
-          dynamicUnits: 'Unidades aproximadas',
-          componentGuideTitle: 'Guia de componentes',
-          compatibilityTitle: 'Grupos sanguineos y compatibilidad',
-          practiceTitle: 'Recordatorios clinicos',
-          usageKicker: 'Cuando usar cada componente',
-          usageProduct: 'Componente',
-          usageWhen: 'Cuando considerarlo',
-          usageHow: 'Nota practica',
-          compatibilityKicker: 'Compatibilidad y tipaje',
-          dogGroupsTitle: 'Perro',
-          catGroupsTitle: 'Gato',
-          catTableTitle: 'Compatibilidad rapida de eritrocitos en gato',
-          practiceKicker: 'Uso practico',
-          dogBullets: [
-            'DEA 1 es el grupo clinicamente mas relevante en transfusion canina.',
-            'Idealmente tipa antes de la primera transfusion de eritrocitos.',
-            'Haz crossmatch en transfusiones repetidas y, como regla practica, si han pasado mas de 72 h desde la anterior.',
-          ],
-          catBullets: [
-            'Los gatos tienen grupos A, B y AB y presentan aloanticuerpos naturales.',
-            'El tipaje es obligatorio antes de la primera transfusion de eritrocitos y muy recomendable antes de plasma.',
-            'Si repites transfusion, el crossmatch sigue siendo recomendable.',
-          ],
-          practiceBullets: [
-            'Empieza despacio durante los primeros 30 minutos y vigila reacciones transfusionales de cerca.',
-            'No intentes normalizar automaticamente el hematocrito: prioriza estabilidad clinica, perfusion y control del sangrado.',
-            'Confirma siempre el producto exacto, su volumen final y la pauta de tu banco si trabajas con plaquetas o crioprecipitado.',
-          ],
-          sourcesKicker: 'Referencias usadas en la herramienta',
-          officialSite: 'Web oficial BSAVA / BS Animal',
-          manual: 'Manual PDF de hemoterapia',
-        }
-      : {
-          kicker: 'Blood products and compatibility',
-          title: 'Haemotherapy calculator',
-          text:
-            'Calculate or estimate guidance doses for blood products in dogs and cats, while keeping component-use, plasma, platelets, typing, and compatibility notes visible.',
-          formulaTitle: 'Calculation logic',
-          formulaText: 'Red cells: weight x blood volume x (target Hct - current Hct) / unit Hct',
-          species: 'Species',
-          product: 'Blood product',
-          weight: 'Weight (kg)',
-          currentHct: 'Current Hct/PCV (%)',
-          targetHct: 'Target Hct/PCV (%)',
-          unitHct: 'Unit Hct/PCV (%)',
-          resultKicker: 'Guidance volume',
-          doseResultKicker: 'Guidance dose',
-          resultHelp:
-            'For whole blood or packed red cells, adjust the unit hematocrit if your blood bank uses different values.',
-          rangeHelp: 'For plasma, useful guidance is expressed as an mL/kg range.',
-          unitsHelp: 'For platelets and cryoprecipitate, practical guidance is usually expressed in units rather than mL.',
-          bloodVolume: 'Working blood volume',
-          doseCheck: 'Quick check',
-          dynamicMetric: 'Dynamic reference',
-          dynamicUnits: 'Approximate units',
-          componentGuideTitle: 'Component guide',
-          compatibilityTitle: 'Blood groups and compatibility',
-          practiceTitle: 'Clinical reminders',
-          usageKicker: 'When to use each component',
-          usageProduct: 'Component',
-          usageWhen: 'When to consider it',
-          usageHow: 'Practical note',
-          compatibilityKicker: 'Compatibility and typing',
-          dogGroupsTitle: 'Dog',
-          catGroupsTitle: 'Cat',
-          catTableTitle: 'Quick feline red-cell compatibility',
-          practiceKicker: 'Practical use',
-          dogBullets: [
-            'DEA 1 is the most clinically relevant canine blood group in transfusion practice.',
-            'Ideally type before the first red-cell transfusion.',
-            'Crossmatch repeated transfusions and, as a practical rule, when more than 72 h have passed since the prior one.',
-          ],
-          catBullets: [
-            'Cats have A, B, and AB blood groups and naturally occurring alloantibodies.',
-            'Typing is mandatory before the first red-cell transfusion and strongly advised before plasma.',
-            'If transfusion is repeated, crossmatching remains advisable.',
-          ],
-          practiceBullets: [
-            'Start slowly during the first 30 minutes and watch closely for transfusion reactions.',
-            'Do not normalize hematocrit automatically: prioritize clinical stability, perfusion, and bleeding control.',
-            'Always confirm the exact product, final volume, and blood-bank protocol when working with platelets or cryoprecipitate.',
-          ],
-          sourcesKicker: 'Sources referenced in this tool',
-          officialSite: 'Official BSAVA / BS Animal page',
-          manual: 'Haemotherapy PDF manual',
-        };
-
-  const [species, setSpecies] = useState<SpeciesKey>('dog');
-  const [product, setProduct] = useState<ProductKey>('packedRbc');
+export default function HaemotherapyCalculator({ lang }: { lang: Language }) {
+  const t = texts[lang];
+  const [view, setView] = useState<View>('calculate');
+  const [species, setSpecies] = useState<'dog' | 'cat'>('dog');
+  const [product, setProduct] = useState<Product>('redCells');
   const [weight, setWeight] = useState('');
-  const [currentHct, setCurrentHct] = useState('');
-  const [targetHct, setTargetHct] = useState('');
-  const [unitHct, setUnitHct] = useState('');
-
-  const speciesData = SPECIES[species];
-  const productData = PRODUCTS[product];
-
-  const calculation = useMemo<CalculationResult>(() => {
-    const numericWeight = Number.parseFloat(weight);
-    if (!Number.isFinite(numericWeight) || numericWeight <= 0) {
-      return null;
-    }
-
-    if (productData.mode === 'hct') {
-      const numericCurrentHct = Number.parseFloat(currentHct);
-      const numericTargetHct = Number.parseFloat(targetHct);
-      const numericUnitHct = Number.parseFloat(unitHct);
-
-      const isValidHct =
-        Number.isFinite(numericCurrentHct) &&
-        numericCurrentHct >= 0 &&
-        Number.isFinite(numericTargetHct) &&
-        numericTargetHct >= 0 &&
-        Number.isFinite(numericUnitHct) &&
-        numericUnitHct > 0;
-
-      if (!isValidHct) return null;
-
-      const deltaHct = Math.max(numericTargetHct - numericCurrentHct, 0);
-      const totalVolumeMl = (numericWeight * speciesData.bloodVolumeMlKg * deltaHct) / numericUnitHct;
-      return {
-        mode: 'hct',
-        totalVolumeMl,
-        mlKg: totalVolumeMl / numericWeight,
-      };
-    }
-
-    if (productData.mode === 'range' && productData.doseRangeMlKg) {
-      const range = productData.doseRangeMlKg[species];
-      return {
-        mode: 'range',
-        minMl: numericWeight * range.min,
-        maxMl: numericWeight * range.max,
-        minMlKg: range.min,
-        maxMlKg: range.max,
-      };
-    }
-
-    if (productData.mode === 'units' && productData.unitsPerKg) {
-      return {
-        mode: 'units',
-        units: Math.max(1, Math.ceil(numericWeight * productData.unitsPerKg)),
-        unitsPerKg: productData.unitsPerKg,
-      };
-    }
-
-    return null;
-  }, [currentHct, productData, species, speciesData.bloodVolumeMlKg, targetHct, unitHct, weight]);
-
+  const [current, setCurrent] = useState('');
+  const [target, setTarget] = useState('');
+  const [unit, setUnit] = useState('');
+  const [bloodVolume, setBloodVolume] = useState('85');
+  const [dose, setDose] = useState('');
+  const [hours, setHours] = useState('');
+  const [checked, setChecked] = useState<boolean[]>(Array(5).fill(false));
+  const [copyStatus, setCopyStatus] = useState('');
+  const reset = () => {
+    setWeight('');
+    setCurrent('');
+    setTarget('');
+    setUnit('');
+    setDose('');
+    setHours('');
+    setChecked(Array(5).fill(false));
+    setCopyStatus('');
+    setBloodVolume(species === 'dog' ? '85' : '55');
+  };
+  const required =
+    product === 'plasma'
+      ? [weight, dose]
+      : [weight, current, target, unit, bloodVolume];
+  const ready = required.every((v) => v.trim() !== '');
+  const w = Number(weight);
+  const calculated =
+    product === 'plasma'
+      ? w > 0 && Number(dose) > 0
+        ? w * Number(dose)
+        : null
+      : redCellVolume(
+          w,
+          Number(bloodVolume),
+          Number(current),
+          Number(target),
+          Number(unit),
+        );
+  const volume =
+    ready && calculated !== null && Number.isFinite(calculated)
+      ? calculated
+      : null;
+  const rate =
+    volume !== null && hours !== ''
+      ? transfusionRate(volume, Number(hours))
+      : null;
+  const n = (v: number) =>
+    new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', {
+      maximumFractionDigits: 1,
+    }).format(v);
+  const summary =
+    volume === null
+      ? ''
+      : `${t[species]} · ${t[product]}\n${t.weight}: ${weight}\n${product === 'plasma' ? `${t.dose}: ${dose}` : `${t.current}: ${current} · ${t.target}: ${target} · ${t.unit}: ${unit}\n${t.bv}: ${bloodVolume}`}\n${t.volume}: ${n(volume)} mL (${n(volume / w)} mL/kg)${rate !== null ? `\n${t.duration}: ${hours} · ${t.rate}: ${n(rate)} mL/h\n${t.rateHint}${Number(hours) > 4 ? `\n${t.durationWarning}` : ''}` : ''}\n${product === 'plasma' ? t.plasmaHint : t.hctHint}`;
+  const field = (
+    label: string,
+    value: string,
+    setter: (v: string) => void,
+    max?: number,
+  ) => (
+    <label>
+      {label}
+      <input
+        type="number"
+        min="0"
+        max={max}
+        step="any"
+        value={value}
+        onChange={(e) => {
+          setter(e.target.value);
+          setCopyStatus('');
+        }}
+      />
+    </label>
+  );
+  const changeProduct = (value: Product) => {
+    setProduct(value);
+    setUnit('');
+    setHours('');
+    setChecked(Array(5).fill(false));
+    setCopyStatus('');
+  };
   return (
-    <section className="toolkit-utility">
-      <div className="toolkit-utility-header">
+    <section className="toolkit-utility haemo-workbench">
+      <header className="clinical-heading">
         <div>
-          <p className="section-kicker">{copy.kicker}</p>
-          <h3>{copy.title}</h3>
-          <p>{copy.text}</p>
+          <h3>{t.title}</h3>
+          <p>{t.intro}</p>
         </div>
-        <div className="toolkit-utility-note">
-          <strong>{copy.formulaTitle}</strong>
-          <p>{copy.formulaText}</p>
-        </div>
+        <span className="status-pill status-pill-available">{t.free}</span>
+      </header>
+      <div className="haemo-species-control">
+        <label>
+          {t.species}
+          <select
+            value={species}
+            onChange={(e) => {
+              const next = e.target.value as 'dog' | 'cat';
+              reset();
+              setSpecies(next);
+              setBloodVolume(next === 'dog' ? '85' : '55');
+            }}
+          >
+            <option value="dog">{t.dog}</option>
+            <option value="cat">{t.cat}</option>
+          </select>
+        </label>
       </div>
-
-      <div className="toolkit-utility-grid">
-        <section className="toolkit-utility-card">
-          <div className="toolkit-utility-form">
-            <label>
-              {copy.species}
-              <select value={species} onChange={(event) => setSpecies(event.target.value as SpeciesKey)}>
-                {(Object.keys(SPECIES) as SpeciesKey[]).map((option) => (
-                  <option key={option} value={option}>
-                    {SPECIES[option].label[lang]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              {copy.product}
-              <select value={product} onChange={(event) => setProduct(event.target.value as ProductKey)}>
-                {(Object.keys(PRODUCTS) as ProductKey[]).map((option) => (
-                  <option key={option} value={option}>
-                    {PRODUCTS[option].label[lang]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              {copy.weight}
-              <input
-                type="number"
-                min="0.5"
-                step="0.1"
-                value={weight}
-                placeholder={lang === 'es' ? 'Ej: 20' : 'Eg: 20'}
-                onChange={(event) => setWeight(event.target.value)}
-              />
-            </label>
-
-            {productData.mode === 'hct' && (
-              <>
-                <label>
-                  {copy.currentHct}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={currentHct}
-                    placeholder="15"
-                    onChange={(event) => setCurrentHct(event.target.value)}
-                  />
-                </label>
-
-                <label>
-                  {copy.targetHct}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={targetHct}
-                    placeholder="25"
-                    onChange={(event) => setTargetHct(event.target.value)}
-                  />
-                </label>
-
-                <label>
-                  {copy.unitHct}
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={unitHct}
-                    placeholder={String(productData.defaultUnitHct)}
-                    onChange={(event) => setUnitHct(event.target.value)}
-                  />
-                </label>
-              </>
-            )}
-          </div>
-        </section>
-
-        <section className="toolkit-utility-card result-card">
-          <p className="section-kicker">{productData.mode === 'units' ? copy.doseResultKicker : copy.resultKicker}</p>
-          <div className="toolkit-utility-result">
+      <nav className="clinical-nav" aria-label={t.title}>
+        {(['calculate', 'guide', 'safety'] as View[]).map((key, i) => (
+          <button
+            type="button"
+            key={key}
+            aria-pressed={view === key}
+            onClick={() => setView(key)}
+          >
+            <span>{String(i + 1).padStart(2, '0')}</span>
+            {t[key]}
+          </button>
+        ))}
+      </nav>
+      <div hidden={view !== 'calculate'}>
+        <div className="clinical-workspace">
+          <section className="clinical-input">
+            <h4>{t.input}</h4>
+            <div className="toolkit-utility-form">
+              <label>
+                {t.product}
+                <select
+                  value={product}
+                  onChange={(e) => changeProduct(e.target.value as Product)}
+                >
+                  {(['redCells', 'wholeBlood', 'plasma'] as Product[]).map(
+                    (p) => (
+                      <option key={p} value={p}>
+                        {t[p]}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              {field(t.weight, weight, setWeight)}
+              {product === 'plasma' ? (
+                field(t.dose, dose, setDose)
+              ) : (
+                <>
+                  {field(t.current, current, setCurrent, 100)}
+                  {field(t.target, target, setTarget, 100)}
+                  {field(t.unit, unit, setUnit, 100)}
+                  {field(t.bv, bloodVolume, setBloodVolume)}
+                </>
+              )}
+            </div>
+            <p className="clinical-hint">
+              {product === 'plasma' ? t.plasmaHint : t.bvHint}
+            </p>
+            <button type="button" onClick={reset}>
+              {t.clear}
+            </button>
+          </section>
+          <aside className="clinical-result haemo-volume" aria-live="polite">
+            <span>{t.volume}</span>
             <strong>
-              {calculation?.mode === 'hct'
-                ? formatValue(roundValue(calculation.totalVolumeMl, 1), 1)
-                : calculation?.mode === 'range'
-                  ? `${formatValue(roundValue(calculation.minMl, 1), 1)}-${formatValue(roundValue(calculation.maxMl, 1), 1)}`
-                  : calculation?.mode === 'units'
-                    ? String(calculation.units)
-                    : '--'}
+              {volume === null ? '—' : n(volume)} <small>mL</small>
             </strong>
-            <span>{calculation?.mode === 'units' ? (lang === 'es' ? 'unid.' : 'units') : 'mL'}</span>
-          </div>
-          <p className="toolkit-utility-equation">
-            {SPECIES[species].label[lang]} · {PRODUCTS[product].label[lang]} · {weight || '--'} kg
-          </p>
-          <div className="toolkit-utility-help">
-            <p>{productData.mode === 'hct' ? copy.resultHelp : productData.mode === 'range' ? copy.rangeHelp : copy.unitsHelp}</p>
-          </div>
-
-          <div className="haemo-metrics">
-            <article className="haemo-metric-card">
-              <span>{copy.bloodVolume}</span>
-              <strong>{speciesData.bloodVolumeMlKg} mL/kg</strong>
-            </article>
-            <article className="haemo-metric-card">
-              <span>{copy.doseCheck}</span>
-              <strong>{productData.typicalDose[species]}</strong>
-            </article>
-            <article className="haemo-metric-card">
-              <span>{copy.dynamicMetric}</span>
-              <strong>
-                {calculation?.mode === 'range'
-                  ? `${formatValue(roundValue(calculation.minMl, 1), 1)}-${formatValue(roundValue(calculation.maxMl, 1), 1)} mL`
-                  : calculation?.mode === 'units'
-                    ? `${calculation.units} ${lang === 'es' ? 'unid.' : 'units'}`
-                    : `${speciesData.plasmaDoseMlKg.min}-${speciesData.plasmaDoseMlKg.max} mL/kg`}
-              </strong>
-              <p>{calculation?.mode === 'units' ? copy.unitsHelp : copy.rangeHelp}</p>
-            </article>
-            <article className="haemo-metric-card">
-              <span>{calculation?.mode === 'units' ? copy.dynamicUnits : 'mL/kg'}</span>
-              <strong>
-                {calculation?.mode === 'hct'
-                  ? formatValue(roundValue(calculation.mlKg, 1), 1)
-                  : calculation?.mode === 'range'
-                    ? `${formatValue(roundValue(calculation.minMlKg, 1), 1)}-${formatValue(roundValue(calculation.maxMlKg, 1), 1)}`
-                    : calculation?.mode === 'units'
-                      ? String(calculation.units)
-                      : '--'}
-              </strong>
-            </article>
-          </div>
-        </section>
-      </div>
-
-      <details className="toolkit-reference-table accordion-card">
-        <summary className="accordion-summary">
-          <div>
-            <p className="section-kicker">{copy.usageKicker}</p>
-            <h4>{copy.componentGuideTitle}</h4>
-          </div>
-        </summary>
-
-        <div className="toolkit-table-shell">
-          <table className="toolkit-table">
-            <thead>
-              <tr>
-                <th>{copy.usageProduct}</th>
-                <th>{copy.usageWhen}</th>
-                <th>{copy.usageHow}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMPONENT_ROWS.map((row) => (
-                <tr key={row.product.en}>
-                  <td>{row.product[lang]}</td>
-                  <td>{row.when[lang]}</td>
-                  <td>{row.how[lang]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <p>{volume !== null ? `${n(volume / w)} mL/kg` : t.empty}</p>
+            <div className="haemo-formula">
+              {product === 'plasma' ? `${t.weight} × ${t.dose}` : t.equation}
+            </div>
+            <p>{product === 'plasma' ? t.plasmaHint : t.hctHint}</p>
+            {ready && volume === null && (
+              <p role="alert">
+                {product === 'plasma' ? t.plasmaInvalid : t.invalid}
+              </p>
+            )}
+          </aside>
         </div>
-      </details>
-
-      <details className="toolkit-reference-table accordion-card">
-        <summary className="accordion-summary">
-          <div>
-            <p className="section-kicker">{copy.compatibilityKicker}</p>
-            <h4>{copy.compatibilityTitle}</h4>
+        <details className="clinical-disclosure">
+          <summary>
+            <span className="clinical-step">↗</span>
+            <strong>{t.plan}</strong>
+          </summary>
+          <div className="clinical-detail">
+            <div className="clinical-workspace">
+              <div className="toolkit-utility-form">
+                {field(t.duration, hours, setHours)}
+                <p className="clinical-hint">{t.rateHint}</p>
+                <a href={TRACS} target="_blank" rel="noreferrer">
+                  TRACS 2021 ·{' '}
+                  {lang === 'es'
+                    ? 'Pauta individualizada; evidencia limitada'
+                    : 'Individualised rate; limited evidence'}
+                </a>
+              </div>
+              <div className="clinical-result">
+                <span>{t.rate}</span>
+                <strong>
+                  {rate === null ? '—' : n(rate)} <small>mL/h</small>
+                </strong>
+                {rate !== null && <p>{n(rate / w)} mL/kg/h</p>}
+                {Number(hours) > 4 && <p role="alert">{t.durationWarning}</p>}
+                {hours !== '' && Number(hours) <= 0 && (
+                  <p role="alert">{t.rateInvalid}</p>
+                )}
+              </div>
+            </div>
           </div>
-        </summary>
-
-        <div className="haemo-guidance-grid">
-          <details className="toolkit-source-note accordion-card nested-accordion haemo-typing-card">
-            <summary className="accordion-summary">
-              <strong>{copy.dogGroupsTitle}</strong>
-              <span>DEA 1</span>
-            </summary>
-            <ul className="haemo-list">
-              {copy.dogBullets.map((item) => (
-                <li key={item}>{item}</li>
+        </details>
+        <details className="clinical-disclosure">
+          <summary>
+            <span className="clinical-step">✓</span>
+            <strong>{t.checkTitle}</strong>
+            <span>{checked.filter(Boolean).length}/5</span>
+          </summary>
+          <div className="clinical-detail">
+            <p>{t.checkHint}</p>
+            <div className="haemo-checklist">
+              {t.checks.map((label, i) => (
+                <label key={i}>
+                  <input
+                    type="checkbox"
+                    checked={checked[i]}
+                    onChange={(e) =>
+                      setChecked((values) =>
+                        values.map((v, j) => (i === j ? e.target.checked : v)),
+                      )
+                    }
+                  />
+                  <span>{label}</span>
+                </label>
               ))}
-            </ul>
-          </details>
-
-          <details className="toolkit-source-note accordion-card nested-accordion haemo-typing-card">
-            <summary className="accordion-summary">
-              <strong>{copy.catGroupsTitle}</strong>
-              <span>A / B / AB</span>
+            </div>
+          </div>
+        </details>
+        {volume !== null && (
+          <details className="clinical-disclosure">
+            <summary>
+              <span className="clinical-step">≡</span>
+              <strong>{t.summary}</strong>
             </summary>
-            <ul className="haemo-list">
-              {copy.catBullets.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-
-            <div className="toolkit-table-shell">
-              <table className="toolkit-table">
-                <thead>
-                  <tr>
-                    <th>{copy.catTableTitle}</th>
-                    <th>{lang === 'es' ? 'Compatibilidad recomendada' : 'Recommended compatibility'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CAT_COMPATIBILITY[lang].map(([recipient, donor]) => (
-                    <tr key={recipient}>
-                      <td>{recipient}</td>
-                      <td>{donor}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="clinical-detail">
+              <pre className="haemo-summary">{summary}</pre>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(summary);
+                    setCopyStatus(t.copied);
+                  } catch {
+                    setCopyStatus(t.copyFailed);
+                  }
+                }}
+              >
+                {t.copy}
+              </button>
+              <p role="status">{copyStatus}</p>
             </div>
           </details>
-        </div>
-      </details>
-
-      <details className="toolkit-reference-table accordion-card">
-        <summary className="accordion-summary">
-          <div>
-            <p className="section-kicker">{copy.practiceKicker}</p>
-            <h4>{copy.practiceTitle}</h4>
-          </div>
-        </summary>
-        <ul className="haemo-list">
-          {copy.practiceBullets.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-
-        <div className="toolkit-source-note">
-          <strong>{copy.sourcesKicker}</strong>
-          <div className="haemo-source-links">
-            <a href={SOURCE_LINKS.official} target="_blank" rel="noreferrer">
-              {copy.officialSite}
+        )}
+      </div>
+      <div hidden={view !== 'guide'}>
+        <p>{t.productsIntro}</p>
+        {(['redCells', 'wholeBlood', 'plasma'] as Product[]).map((p, i) => (
+          <details className={`clinical-disclosure product-${p}`} key={p}>
+            <summary>
+              <span className="clinical-step">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <strong>{t[p]}</strong>
+            </summary>
+            <div className="clinical-detail">
+              <p>
+                {p === 'redCells'
+                  ? t.rbcUse
+                  : p === 'wholeBlood'
+                    ? t.wholeUse
+                    : t.plasmaUse}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  changeProduct(p);
+                  setView('calculate');
+                }}
+              >
+                {t.select}
+              </button>
+              <p>
+                <a
+                  href={p === 'wholeBlood' ? ISFM : MERCK}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {p === 'wholeBlood' ? 'ISFM 2021' : 'Merck 2026'}
+                </a>
+              </p>
+            </div>
+          </details>
+        ))}
+        <details className="clinical-disclosure">
+          <summary>
+            <span className="clinical-step">04</span>
+            <strong>{t.specialty}</strong>
+          </summary>
+          <div className="clinical-detail">
+            <p>{t.specialtyUse}</p>
+            <a href={MERCK} target="_blank" rel="noreferrer">
+              Merck 2026
             </a>
-            <a href={SOURCE_LINKS.manual} target="_blank" rel="noreferrer">
-              {copy.manual}
+          </div>
+        </details>
+      </div>
+      <div hidden={view !== 'safety'}>
+        <details className="clinical-disclosure">
+          <summary>
+            <span className="clinical-step">01</span>
+            <strong>{t.typing}</strong>
+          </summary>
+          <div className="clinical-detail">
+            <h4>{t[species]}</h4>
+            <p>{species === 'dog' ? t.typingDog : t.typingCat}</p>
+            <p>{t.cross}</p>
+            <a href={CORNELL} target="_blank" rel="noreferrer">
+              Cornell · Crossmatch
+            </a>{' '}
+            ·{' '}
+            <a href={MERCK} target="_blank" rel="noreferrer">
+              Merck 2026
             </a>
           </div>
-        </div>
-      </details>
+        </details>
+        <details className="clinical-disclosure">
+          <summary>
+            <span className="clinical-step">02</span>
+            <strong>{t.prepare}</strong>
+          </summary>
+          <div className="clinical-detail">
+            <p>{t.preparation}</p>
+            <a href={MERCK} target="_blank" rel="noreferrer">
+              Merck 2026
+            </a>
+          </div>
+        </details>
+        <details className="clinical-disclosure">
+          <summary>
+            <span className="clinical-step">03</span>
+            <strong>{t.monitor}</strong>
+          </summary>
+          <div className="clinical-detail">
+            <p>{t.monitoring}</p>
+            <a href={MERCK} target="_blank" rel="noreferrer">
+              Merck 2026
+            </a>
+          </div>
+        </details>
+        <details className="clinical-disclosure haemo-reaction">
+          <summary>
+            <span className="clinical-step">!</span>
+            <strong>{t.reaction}</strong>
+          </summary>
+          <div className="clinical-detail">
+            <p>{t.reactionText}</p>
+            <a href={MERCK} target="_blank" rel="noreferrer">
+              Merck 2026
+            </a>
+          </div>
+        </details>
+      </div>
+      <footer className="clinical-sources">
+        <strong>{t.sources}</strong>
+        <p>{t.sourceHint}</p>
+        <a href={MERCK} target="_blank" rel="noreferrer">
+          Merck ·{' '}
+          {lang === 'es' ? 'Transfusiones (2026)' : 'Transfusions (2026)'}
+        </a>
+        <a href={CORNELL} target="_blank" rel="noreferrer">
+          Cornell · Crossmatch
+        </a>
+        <a href={TRACS} target="_blank" rel="noreferrer">
+          TRACS ·{' '}
+          {lang === 'es'
+            ? 'Prevención y vigilancia (2021)'
+            : 'Prevention and monitoring (2021)'}
+        </a>
+        <a href={ISFM} target="_blank" rel="noreferrer">
+          ISFM ·{' '}
+          {lang === 'es' ? 'Consenso felino (2021)' : 'Feline consensus (2021)'}
+        </a>
+      </footer>
     </section>
   );
 }

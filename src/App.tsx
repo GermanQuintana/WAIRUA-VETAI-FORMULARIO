@@ -63,6 +63,7 @@ import { AccessPreviewMode, AuthAccountSnapshot, LocalizedText, OtcProductRecord
 gsap.registerPlugin(ScrollTrigger);
 
 const EndocrineToolkit = lazy(() => import('./components/EndocrineToolkit'));
+const HaemotherapyCalculator = lazy(() => import('./components/HaemotherapyCalculator'));
 const FluidTherapyToolkit = lazy(() => import('./components/FluidTherapyToolkit'));
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
@@ -100,6 +101,7 @@ type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'active
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
+  'haemotherapy',
   'dose',
   'endocrine',
   'infusion',
@@ -118,6 +120,7 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'fip',
 ]);
 const freeToolkitViewSet = new Set<ToolkitView>([
+  'haemotherapy',
   'infusion',
   'constants',
   'converter',
@@ -2103,7 +2106,7 @@ function App() {
       'clinical-nutrition': ['calculadora', 'nutrición', 'energía', 'nutrientes', 'dietas', 'perro', 'gato', 'obesidad', 'renal', 'hepática', 'diabetes', 'alergia alimentaria', 'raciones', 'rerc'],
       'fluid-therapy': ['calculadora', 'fluidoterapia', 'sueroterapia', 'mantenimiento', 'déficit', 'pérdidas', 'anestesia', 'deshidratación', 'shock', 'hipovolemia', 'electrolitos', 'sodio', 'potasio', 'cristaloides', 'coloides', 'ringer', 'salino', 'suero', 'plasma-lyte', 'normosol', 'dextrosa', 'glucosa', 'kcl', 'balance hídrico', 'agua enteral', 'subcutáneo'],
       'clinical-assistant': ['formulario', 'asistente', 'consulta', 'patología', 'notas clínicas', 'anamnesis', 'exploración física', 'diagnóstico diferencial', 'plan terapéutico'],
-      management: ['gestión', 'descuentos', 'negocio', 'operativa', 'margen', 'presupuesto', 'facturación', 'clínica'],
+      management: ['gestión', 'descuentos', 'negocio', 'operativa', 'margen', 'presupuesto', 'facturación', 'clínica', 'precio', 'rentabilidad', 'equilibrio'],
       'writing-assistant': ['asistente', 'redacción', 'palabras', 'caracteres', 'editorial', 'informe', 'consentimiento', 'cliente', 'comunicación'],
       anesthesia: ['protocolo', 'anestesia', 'quirófano', 'dosis', 'concentración', 'impresión', 'premedicación', 'inducción', 'mantenimiento', 'analgesia', 'monitorización', 'sedación'],
       recover: ['guía', 'urgencias', 'recover', 'rcp', 'anafilaxia', 'shock', 'reanimación', 'hipoglucemia', 'status epiléptico', 'convulsiones', 'paro cardiorrespiratorio', 'reversores'],
@@ -3942,6 +3945,8 @@ function App() {
                 )}
               </section>
             )}
+
+            {activeToolkitView === 'haemotherapy' && <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando hemoterapia…' : 'Loading haemotherapy…'}</p>}><HaemotherapyCalculator lang={lang} /></Suspense>}
 
             {activeToolkitView === 'management' && <ManagementToolkit lang={lang} />}
 

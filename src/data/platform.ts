@@ -235,12 +235,12 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     id: 'haemotherapy',
     title: { es: 'Hemoterapia', en: 'Haemotherapy' },
     description: {
-      es: 'Calculadora transfusional orientativa con pautas de uso, compatibilidad y grupos sanguineos para perro y gato.',
+      es: 'Calculadora transfusional orientativa con pautas de uso, compatibilidad y grupos sanguíneos para perro y gato.',
       en: 'Guidance transfusion calculator with use notes, compatibility, and blood-group references for dogs and cats.',
     },
-    status: { es: 'Pronto', en: 'Soon' },
-    statusTone: 'soon',
-    accessTier: 'premium',
+    status: { es: 'Gratis', en: 'Free' },
+    statusTone: 'available',
+    accessTier: 'free',
     toolkitView: 'haemotherapy',
   },
   {
@@ -339,10 +339,10 @@ export const toolkitModules: LocalizedCollectionCard[] = [
   },
   {
     id: 'management',
-    title: { es: 'Gestion', en: 'Management' },
+    title: { es: 'Gestión', en: 'Management' },
     description: {
-      es: 'Carril para utilidades de negocio y operativa. Arranca con una calculadora de descuentos en cascada adaptada al uso comercial.',
-      en: 'Lane for business and operational utilities. It starts with a cascading discount calculator adapted to commercial use.',
+      es: 'Herramientas de gestión: descuentos, facturación, cálculo de precios y punto de equilibrio de la clínica.',
+      en: 'Management tools: discounts, billing, pricing and clinic break-even calculations.',
     },
     status: { es: 'Gratis', en: 'Free' },
     statusTone: 'available',

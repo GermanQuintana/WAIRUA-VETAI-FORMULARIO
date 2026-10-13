@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Language } from '../i18n';
+import ManagementPlanning from './ManagementPlanning';
 
 interface Props {
   lang: Language;
 }
 
-type ManagementTool = 'billing' | 'quick';
+type ManagementTool = 'billing' | 'quick' | 'planning';
 
 const copy = {
   es: {
     kicker: 'Herramienta de gestión',
     title: 'Gestión',
     text:
-      'Calcula descuentos comerciales en cascada y revisa el resultado final con desglose por bases de IVA.',
+      'Descuentos, facturación, precios y actividad de la clínica.',
     tabBilling: 'Facturación',
     tabQuick: 'Dto. equivalente',
     baseSuperReduced: 'Base superreducida',
@@ -42,7 +43,7 @@ const copy = {
     kicker: 'Management tool',
     title: 'Management',
     text:
-      'Calculate cascading commercial discounts and review the final result with a VAT-base breakdown.',
+      'Discounts, billing, pricing and clinic activity.',
     tabBilling: 'Billing',
     tabQuick: 'Equivalent discount',
     baseSuperReduced: 'Super-reduced base',
@@ -184,16 +185,18 @@ export default function ManagementToolkit({ lang }: Props) {
         </div>
       </div>
 
-      <div className="subtabs management-subtabs" role="tablist" aria-label={t.title}>
-        <button type="button" className={activeTool === 'billing' ? 'active' : ''} onClick={() => setActiveTool('billing')}>
+      <div className="subtabs management-subtabs" role="group" aria-label={t.title}>
+        <button type="button" aria-pressed={activeTool === 'billing'} className={activeTool === 'billing' ? 'active' : ''} onClick={() => setActiveTool('billing')}>
           {t.tabBilling}
         </button>
-        <button type="button" className={activeTool === 'quick' ? 'active' : ''} onClick={() => setActiveTool('quick')}>
+        <button type="button" aria-pressed={activeTool === 'quick'} className={activeTool === 'quick' ? 'active' : ''} onClick={() => setActiveTool('quick')}>
           {t.tabQuick}
         </button>
+        <button type="button" aria-pressed={activeTool === 'planning'} className={activeTool === 'planning' ? 'active' : ''} onClick={() => setActiveTool('planning')}>{lang === 'es' ? 'Precio y rentabilidad' : 'Pricing and profitability'}</button>
       </div>
 
-      {activeTool === 'billing' ? (
+      <div hidden={activeTool !== 'planning'}><ManagementPlanning lang={lang} /></div>
+      {activeTool === 'planning' ? null : activeTool === 'billing' ? (
         <div className="toolkit-utility-grid management-grid">
           <section className="toolkit-utility-card">
             <div className="management-base-list">

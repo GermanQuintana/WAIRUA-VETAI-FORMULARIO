@@ -2326,3 +2326,45 @@
 @keyframes fluid-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 650px) { .fluid-workspace-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }.fluid-toolkit .fluid-workspace-tabs button { justify-content: flex-start; min-height: 42px; white-space: normal; } }
 @media (prefers-reduced-motion: reduce) { .fluid-tab-panel { animation: none; }.fluid-toolkit .fluid-workspace-tabs button, .fluid-toolkit .fluid-disclosure > summary::after { transition: none; } }
+
+/* Haemotherapy and clinic planning: a readable workspace with progressive detail. */
+.haemo-workbench, .planning-tools { --clinical-paper: #fff; --clinical-ink: #243b3c; --clinical-muted: #52676a; --clinical-border: #d5e2e3; --clinical-accent: #a33c54; --clinical-tint: #fbf0f3; color: var(--clinical-ink); }
+.app.dark .haemo-workbench, .app.dark .planning-tools { --clinical-paper: #1b292b; --clinical-ink: #e5eff0; --clinical-muted: #b7c7cb; --clinical-border: #40575b; --clinical-accent: #efa1b3; --clinical-tint: #35262e; }
+.clinical-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; }
+.clinical-heading h3 { margin: 0 0 .35rem; }.clinical-heading p { margin: 0; color: var(--clinical-muted); }
+.clinical-nav { display: flex; gap: .5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.clinical-nav button { display: flex; align-items: center; gap: .65rem; padding: .8rem 1rem; color: var(--clinical-ink); background: var(--clinical-paper); border: 1px solid var(--clinical-border); border-radius: 8px; transition: background .15s, border-color .15s; }
+.clinical-nav button span { color: var(--clinical-muted); font-size: .75rem; }
+.clinical-nav button[aria-pressed="true"] { background: var(--clinical-tint); border-color: var(--clinical-accent); color: var(--clinical-accent); }
+.clinical-nav button:hover { border-color: var(--clinical-accent); }
+.clinical-workspace { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap: 1.25rem; margin-bottom: 1rem; align-items: start; }
+.clinical-input { background: var(--clinical-paper); border: 1px solid var(--clinical-border); padding: 1.25rem; border-radius: 10px; min-width: 0; }
+.clinical-input h4 { margin: 0 0 1rem; }.clinical-hint { font-size: .84rem; line-height: 1.6; color: var(--clinical-muted); }
+.haemo-workbench .toolkit-utility-form, .planning-tools .toolkit-utility-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.haemo-workbench .toolkit-utility-form input, .haemo-workbench .toolkit-utility-form select, .planning-tools input { width: 100%; min-width: 0; padding: .65rem .7rem; background: var(--clinical-paper); border: 1px solid var(--clinical-border); border-radius: 7px; color: var(--clinical-ink); }
+.haemo-workbench label, .planning-tools label { color: var(--clinical-ink); }
+.haemo-workbench .toolkit-utility-form label, .planning-tools .toolkit-utility-form label { min-width: 0; }
+.clinical-result { background: var(--clinical-tint); color: var(--clinical-ink); border-radius: 10px; padding: 1.5rem; border-top: 3px solid var(--clinical-accent); min-width: 0; }
+.clinical-result > span { display: block; font-size: .85rem; color: var(--clinical-muted); }.clinical-result > strong { display: block; font-size: clamp(2rem,4vw,3rem); line-height: 1.2; margin: .6rem 0; color: var(--clinical-accent); overflow-wrap: anywhere; }.clinical-result small { font-size: 1rem; font-weight: 500; }.clinical-result p { font-size: .85rem; line-height: 1.6; }
+.haemo-formula { padding: .8rem 0; border-block: 1px solid var(--clinical-border); font-size: .85rem; }
+.clinical-disclosure { border-bottom: 1px solid var(--clinical-border); margin: .6rem 0; border-left: 3px solid var(--clinical-accent); background: var(--clinical-paper); border-radius: 5px; overflow: hidden; }
+.clinical-disclosure summary { padding: 1rem; display: flex; align-items: center; gap: .8rem; cursor: pointer; list-style: none; color: var(--clinical-ink); }
+.clinical-disclosure summary::-webkit-details-marker { display: none; }.clinical-disclosure summary::after { content: '›'; margin-left: auto; font-size: 1.35rem; transition: transform .16s; }.clinical-disclosure[open] summary::after { transform: rotate(90deg); }.clinical-disclosure summary:hover { background: var(--clinical-tint); }
+.clinical-disclosure summary:focus-visible, .clinical-nav button:focus-visible { outline: 2px solid var(--clinical-accent); outline-offset: 3px; }
+.clinical-step { color: var(--clinical-accent); background: var(--clinical-tint); border-radius: 6px; padding: .4rem; min-width: 2rem; text-align: center; font-size: .8rem; font-weight: 700; }
+.clinical-detail { padding: .2rem 1.25rem 1.25rem; line-height: 1.65; animation: clinical-reveal .17s ease-out; }.clinical-detail h4 { margin-bottom: .2rem; }
+.haemo-reaction { border-left-color: #cd493e; }.haemo-reaction .clinical-step { color: #b43d35; background: #fff0e9; }
+.product-plasma { --clinical-accent: #96631a; --clinical-tint: #fff6df; }.app.dark .product-plasma { --clinical-accent: #f1c976; --clinical-tint: #373021; }
+.product-wholeBlood { --clinical-accent: #247476; --clinical-tint: #e9f5f3; }.app.dark .product-wholeBlood { --clinical-accent: #8cceca; --clinical-tint: #243c3d; }
+.haemo-checklist { display: grid; gap: .6rem; }.haemo-checklist label { display: flex; gap: .7rem; align-items: center; }.haemo-checklist input { width: 1.1rem; height: 1.1rem; accent-color: var(--clinical-accent); }
+.haemo-summary { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; background: var(--clinical-tint); padding: 1rem; border-radius: 6px; }
+.clinical-sources { margin-top: 1.5rem; border-top: 1px solid var(--clinical-border); padding-top: 1rem; color: var(--clinical-muted); font-size: .8rem; }.clinical-sources p { max-width: 85ch; }.clinical-sources a { display: inline-block; margin: .25rem 1rem .25rem 0; }.haemo-workbench a { color: var(--clinical-accent); text-decoration: underline; }
+.planning-tools { --clinical-accent: #237678; --clinical-tint: #eaf6f4; }.app.dark .planning-tools { --clinical-accent: #8bcec9; --clinical-tint: #253c3b; }.planning-section { padding-block: 1.1rem; border-bottom: 1px solid var(--clinical-border); margin-bottom: 1rem; }.planning-section header { display: flex; gap: .8rem; align-items: start; margin-bottom: 1rem; }.planning-section h4 { margin: 0; }.planning-section header p { margin: .4rem 0; color: var(--clinical-muted); }.planning-amber { --clinical-accent: #91601c; --clinical-tint: #fcf4e2; }.app.dark .planning-amber { --clinical-accent: #e9c47d; --clinical-tint: #373024; }.planning-tools .clinical-hint { grid-column: 1 / -1; }
+@keyframes clinical-reveal { from { opacity: .7; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 700px) { .clinical-workspace { grid-template-columns: minmax(0,1fr); }.clinical-heading { align-items: start; flex-direction: column; }.clinical-nav { display: grid; grid-template-columns: 1fr; }.clinical-nav button { text-align: left; }.clinical-detail { padding-inline: 1rem; }.clinical-disclosure summary { padding: .9rem .8rem; }.management-subtabs { flex-wrap: wrap; }.management-subtabs button { white-space: normal; } }
+@media (max-width: 420px) { .haemo-workbench .toolkit-utility-form, .planning-tools .toolkit-utility-form { grid-template-columns: minmax(0,1fr); } }
+@media (prefers-reduced-motion: reduce) { .clinical-detail { animation: none; }.clinical-nav button, .clinical-disclosure summary::after { transition: none; } }
+.haemo-species-control { margin-bottom: 1rem; }.haemo-species-control label { display: flex; align-items: center; gap: .8rem; font-weight: 600; }.haemo-species-control select { padding: .55rem 1rem; background: var(--clinical-paper); color: var(--clinical-ink); border: 1px solid var(--clinical-border); border-radius: 7px; }
+.haemo-species-control select { width: 12rem; max-width: 100%; }
+.planning-tools .toolkit-utility-form input { color: var(--clinical-ink); background: var(--clinical-paper); border-color: var(--clinical-border); }
+.app.dark .planning-tools input:not([type="checkbox"]), .app.dark .haemo-workbench input:not([type="checkbox"]), .app.dark .haemo-workbench select { background: var(--clinical-paper); color: var(--clinical-ink); -webkit-text-fill-color: var(--clinical-ink); border-color: var(--clinical-border); }
