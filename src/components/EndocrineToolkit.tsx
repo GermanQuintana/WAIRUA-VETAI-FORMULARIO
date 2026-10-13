@@ -32,7 +32,10 @@ export default function EndocrineToolkit({ lang }: { lang: Language }) {
   const [helperId, setHelperId] = useState<string>('cosacthen');
   const [weight, setWeight] = useState('');
   const [concentration, setConcentration] = useState('');
-  const [openProtocolId, setOpenProtocolId] = useState<string | null>('cosacthen');
+  const [openProtocolId, setOpenProtocolId] = useState<string | null>(null);
+  const [openSystems, setOpenSystems] = useState<EndocrineSystem[]>([]);
+  const [helperOpen, setHelperOpen] = useState(false);
+  const [curveOpen, setCurveOpen] = useState(false);
   const availableHelpers = helpers.filter((helper) => helper.species === species);
   const helper = availableHelpers.find((item) => item.id === helperId) ?? availableHelpers[0];
   const speciesProtocols = ENDOCRINE_PROTOCOLS.filter((p) => p.species.includes(species));
@@ -49,20 +52,22 @@ export default function EndocrineToolkit({ lang }: { lang: Language }) {
 
   return <section className="toolkit-utility endocrine-toolkit">
     <div className="toolkit-utility-header"><div><p className="section-kicker">{es ? 'Pruebas y seguimiento' : 'Testing and monitoring'}</p><h3>{es ? 'Endocrino' : 'Endocrinology'}</h3><p>{es ? 'Protocolos por especie, preparación, tiempos de muestreo e interpretación clínica.' : 'Species-specific protocols, preparation, sampling times, and clinical interpretation.'}</p></div></div>
-    <div className="toolkit-utility-help"><p>{es ? 'Los puntos de corte diagnósticos y objetivos terapéuticos del laboratorio prevalecen sobre los ejemplos. Sensibilidad/especificidad dependen del ensayo y población; no equivalen a la probabilidad individual de enfermedad. Revisado: 13/10/2026.' : 'Laboratory diagnostic cutoffs and treatment targets take precedence over examples. Sensitivity/specificity depend on assay and population and are not an individual probability of disease. Reviewed: 13 Oct 2026.'}</p></div>
+    <p className="endocrine-lab-note">{es ? 'Interpretación: utiliza los rangos y puntos de corte de tu laboratorio.' : 'Interpretation: use your laboratory’s reference ranges and diagnostic cutoffs.'}</p>
     <div className="toolkit-utility-form endocrine-filters">
-      <label>{es ? 'Especie' : 'Species'}<select value={species} onChange={(e) => { const next = e.target.value as EndocrineSpecies; setSpecies(next); setSystem('all'); setHelperId(helpers.find((h) => h.species === next)?.id ?? ''); setConcentration(''); setWeight(''); }}>{Object.entries(speciesLabels).map(([id, label]) => <option key={id} value={id}>{label[lang]}</option>)}</select></label>
-      <label>{es ? 'Buscar prueba, enfermedad o medicamento' : 'Search test, disease, or medication'}<input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={es ? 'ACTH, Cosacthen, cortisol, T4, fructosamina…' : 'ACTH, Cosacthen, cortisol, T4, fructosamine…'} /></label>
+      <label>{es ? 'Especie' : 'Species'}<select value={species} onChange={(e) => { const next = e.target.value as EndocrineSpecies; setSpecies(next); setSystem('all'); setOpenSystems([]); setOpenProtocolId(null); setHelperOpen(false); setCurveOpen(false); setHelperId(helpers.find((h) => h.species === next)?.id ?? ''); setConcentration(''); setWeight(''); }}>{Object.entries(speciesLabels).map(([id, label]) => <option key={id} value={id}>{label[lang]}</option>)}</select></label>
+      <label>{es ? 'Buscar prueba, enfermedad o medicamento' : 'Search test, disease, or medication'}<input type="search" value={query} onChange={(e) => { setQuery(e.target.value); setOpenSystems(e.target.value.trim() ? availableSystems : []); setOpenProtocolId(null); }} placeholder={es ? 'ACTH, Cosacthen, cortisol, T4, fructosamina…' : 'ACTH, Cosacthen, cortisol, T4, fructosamine…'} /></label>
     </div>
     <p className="live-hint">{es ? 'Cambiar de especie vacía los cálculos y la curva para iniciar otro paciente.' : 'Changing species clears calculations and the curve to start another patient.'}</p>
     <div className="endo-system-row" role="group" aria-label={es ? 'Filtrar por sistema' : 'Filter by system'}>
       <button type="button" aria-pressed={system === 'all'} className={system === 'all' ? 'active' : ''} onClick={() => setSystem('all')}>{es ? 'Todos' : 'All'}</button>
-      {availableSystems.map((id) => <button key={id} type="button" aria-pressed={system === id} className={system === id ? 'active' : ''} onClick={() => setSystem(id)}>{systemLabels[id][lang]}</button>)}
-      <a className="secondary-button" href="#endocrine-glucose-curve">{es ? 'Ir a curva de glucosa' : 'Go to glucose curve'}</a>
+      {availableSystems.map((id) => <button key={id} type="button" aria-pressed={system === id} className={system === id ? 'active' : ''} onClick={() => { setSystem(id); setOpenSystems([id]); setOpenProtocolId(null); }}>{systemLabels[id][lang]}</button>)}
     </div>
 
-    {helper && <details className="toolkit-reference-table endocrine-helper" open>
-      <summary><strong>{es ? 'Calculadora de dosis para las pruebas' : 'Test dose calculator'}</strong></summary>
+    {(helper || species !== 'ferret') && <div className="endocrine-section-heading"><h4>{es ? 'Herramientas' : 'Tools'}</h4><button type="button" className="endocrine-text-button" onClick={() => { setOpenSystems([]); setOpenProtocolId(null); setHelperOpen(false); setCurveOpen(false); }}>{es ? 'Contraer todo' : 'Collapse all'}</button></div>}
+    <div className="endocrine-tools">
+    {helper && <details key={`helper-${species}`} className="endocrine-disclosure endocrine-helper" open={helperOpen}>
+      <summary onClick={(event) => { event.preventDefault(); setHelperOpen(!helperOpen); }}><span className="endocrine-tool-icon" aria-hidden="true">{species === 'cat' ? 'mg' : 'µg'}</span><span className="endocrine-summary-copy"><strong>{es ? 'Dosis para las pruebas' : 'Test doses'}</strong><span>{species === 'cat' ? (es ? 'Dexametasona · peso y volumen' : 'Dexamethasone · weight and volume') : (es ? 'ACTH / Cosacthen y dexametasona · peso y volumen' : 'ACTH / Cosacthen and dexamethasone · weight and volume')}</span></span><span className="endocrine-chevron" aria-hidden="true">⌄</span></summary>
+      <div className="endocrine-disclosure-body">
       <div className="toolkit-utility-form">
         <label>{es ? 'Protocolo de cálculo' : 'Calculator protocol'}<select value={helper.id} onChange={(e) => { setHelperId(e.target.value); setConcentration(''); }}>{availableHelpers.map((h) => <option key={h.id} value={h.id}>{h.title[lang]}</option>)}</select></label>
         <label>{es ? 'Peso (kg)' : 'Weight (kg)'}<input type="number" min="0" step="any" value={weight} onChange={(e) => setWeight(e.target.value)} /></label>
@@ -74,24 +79,31 @@ export default function EndocrineToolkit({ lang }: { lang: Language }) {
       <div className="haemo-metrics" aria-live="polite"><article className="haemo-metric-card"><span>{es ? 'Dosis de la prueba' : 'Test dose'}</span><strong>{dose === null ? '—' : `${display(dose)} ${helper.unit}`}</strong></article><article className="haemo-metric-card"><span>{es ? 'Volumen' : 'Volume'}</span><strong>{volume === null ? '—' : `${display(volume)} mL`}</strong></article></div>
       {cap && rawDose !== null && rawDose > cap && <p>{es ? `Aplicado máximo AAHA de ${cap} µg.` : `AAHA ${cap} µg maximum applied.`}</p>}
       {concentration && (!Number.isFinite(numericConcentration) || numericConcentration <= 0) && <p role="status">{es ? 'La concentración debe ser mayor que cero para calcular mL.' : 'Concentration must be greater than zero to calculate mL.'}</p>}
-      <a href={helper.source} target="_blank" rel="noreferrer">{es ? 'Ver fuente y pauta completa' : 'View source and full protocol'}</a>
+      <footer className="endocrine-evidence"><a href={helper.source} target="_blank" rel="noreferrer">{es ? 'Fuente y pauta completa' : 'Source and full protocol'}</a></footer>
+      </div>
     </details>}
-
-    <p aria-live="polite">{filtered.length} {es ? 'protocolos' : 'protocols'} · {speciesLabels[species][lang]}</p>
-    <nav className="endocrine-protocol-index" aria-label={es ? 'Índice de protocolos endocrinos' : 'Endocrine protocol index'}>{filtered.map((p) => <a key={p.id} href={`#endo-${p.id}`} onClick={() => setOpenProtocolId(p.id)}>{p.title[lang]}</a>)}</nav>
+    {species !== 'ferret' && <GlucoseCurveTool key={`curve-${species}`} lang={lang} initialSpecies={species} open={curveOpen} onOpenChange={setCurveOpen} />}
+    </div>
+    <div className="endocrine-section-heading"><h4>{es ? 'Protocolos clínicos' : 'Clinical protocols'}</h4><span aria-live="polite">{filtered.length} {es ? 'protocolos' : 'protocols'} · {speciesLabels[species][lang]}</span></div>
     {filtered.length === 0 && <p>{es ? 'No hay protocolos para estos filtros.' : 'No protocols match these filters.'}</p>}
-    <div className="endo-card-grid">{filtered.map((protocol) => <details key={`${species}-${protocol.id}`} id={`endo-${protocol.id}`} className="toolkit-reference-table endo-protocol" open={openProtocolId === protocol.id}>
-      <summary className="accordion-summary" onClick={(event) => { event.preventDefault(); setOpenProtocolId((current) => current === protocol.id ? null : protocol.id); }}><div className="endo-protocol-summary"><p className="section-kicker">{systemLabels[protocol.system][lang]}</p><h4>{protocol.title[lang]}</h4><span>{evidenceLabels[protocol.evidence][lang]}</span></div></summary>
-      <div className="endo-protocol-content">
+    <div className="endocrine-system-list">{availableSystems.map((id, index) => {
+      const protocols = filtered.filter((p) => p.system === id);
+      if (!protocols.length) return null;
+      return <details key={`${species}-${id}`} className={`endocrine-disclosure endocrine-system endocrine-system-${id}`} open={openSystems.includes(id)}>
+      <summary onClick={(event) => { event.preventDefault(); setOpenSystems((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]); }}><span className="endocrine-system-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><span className="endocrine-summary-copy"><strong>{systemLabels[id][lang]}</strong><span>{protocols.length} {es ? 'protocolos' : 'protocols'}</span></span><span className="endocrine-chevron" aria-hidden="true">⌄</span></summary>
+      <div className="endocrine-protocol-list">{protocols.map((protocol) => <details key={protocol.id} id={`endo-${protocol.id}`} className="endocrine-protocol-row" open={openProtocolId === protocol.id}>
+      <summary onClick={(event) => { event.preventDefault(); setOpenProtocolId((current) => current === protocol.id ? null : protocol.id); }}><strong>{protocol.title[lang]}</strong><span className="endocrine-chevron" aria-hidden="true">⌄</span></summary>
+      {openProtocolId === protocol.id && <div className="endo-protocol-content">
         <div className="endo-protocol-block"><strong>{es ? 'Cuándo usarla' : 'When to use it'}</strong><p>{protocol.indications[lang]}</p></div>
         <div className="endo-protocol-block"><strong>{es ? 'Preparación y medicación' : 'Preparation and medication'}</strong><p>{protocol.preparation[lang]}</p></div>
         <div className="endo-protocol-block"><strong>{es ? 'Cronograma / toma de muestras' : 'Timeline / sampling'}</strong><ol className="endo-step-list compact">{protocol.steps.map((step, index) => <li key={`${protocol.id}-${index}`} className="endo-step-card"><span>{step.time}</span><p>{step.action[lang]}</p></li>)}</ol></div>
         <div className="endo-protocol-block"><strong>{es ? 'Interpretación y seguimiento' : 'Interpretation and follow-up'}</strong><p>{protocol.interpretation[lang]}</p></div>
-        <div className="endo-protocol-block"><strong>{es ? 'Sensibilidad / especificidad y evidencia' : 'Sensitivity / specificity and evidence'}</strong><p>{protocol.accuracy[lang]}</p></div>
         <div className="endo-protocol-block"><strong>{es ? 'Limitaciones, interferencias y seguridad' : 'Limitations, interference, and safety'}</strong><p>{protocol.limitations[lang]}</p></div>
-        <div className="haemo-source-links">{protocol.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label}</a>)}</div>
-      </div>
+        <footer className="endocrine-evidence"><details><summary>{es ? 'Evidencia, estudios y fuentes' : 'Evidence, studies, and sources'}</summary><p className="endocrine-evidence-level">{evidenceLabels[protocol.evidence][lang]}</p><p>{protocol.accuracy[lang]}</p><p className="live-hint">{es ? 'Sensibilidad y especificidad dependen del ensayo y la población; no equivalen a la probabilidad individual de enfermedad.' : 'Sensitivity and specificity depend on assay and population; they are not an individual probability of disease.'}</p><ul>{protocol.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.label}<span aria-hidden="true"> ↗</span></a></li>)}</ul></details></footer>
+      </div>}
     </details>)}</div>
-    {species !== 'ferret' && <GlucoseCurveTool key={species} lang={lang} initialSpecies={species} />}
+    </details>;
+    })}</div>
+    <p className="endocrine-review-date">{es ? 'Contenido clínico revisado el 13/10/2026.' : 'Clinical content reviewed on 13 Oct 2026.'}</p>
   </section>;
 }

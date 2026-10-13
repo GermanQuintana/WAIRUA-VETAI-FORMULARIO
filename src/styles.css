@@ -5348,7 +5348,6 @@ select:focus-visible {
 .endocrine-input-table input { width: 100%; min-width: 65px; }
 .endocrine-input-table button { padding: 0.4rem 0.65rem; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 0.5rem; }
 .endocrine-chart { width: 100%; height: auto; color: inherit; }
-.endocrine-chart text { fill: currentColor; font-size: 12px; }
 .endocrine-chart-band { fill: #198579; opacity: 0.12; }
 .endocrine-chart-grid { stroke: currentColor; opacity: 0.2; }
 .endocrine-chart-line { stroke: #087d88; stroke-width: 2.5; }

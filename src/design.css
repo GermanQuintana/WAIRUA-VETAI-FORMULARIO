@@ -2098,3 +2098,123 @@
     transition: none;
   }
 }
+/* Endocrinology: compact closed rows, progressive detail, and a distinct chart workspace. */
+.endocrine-toolkit { --endo-surface: #fff; --endo-subtle: #f5f8fa; --endo-border: #d9e3e8; --endo-muted: #536779; --endo-ink: #243b48; --endo-accent: #087b86; gap: 1rem; color: var(--endo-ink); }
+.app.dark .endocrine-toolkit { --endo-surface: #15231f; --endo-subtle: #101c19; --endo-border: #324840; --endo-muted: #acbeb6; --endo-ink: #edf5f1; --endo-accent: #83d5cb; }
+.endocrine-toolkit .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.endocrine-toolkit .toolkit-utility-header h3 { margin-bottom: .35rem; }
+.endocrine-toolkit .toolkit-utility-header p { max-width: 70ch; }
+.endocrine-toolkit .live-hint, .app.dark .endocrine-toolkit .live-hint { margin: 0; color: var(--endo-muted); font-size: .8rem; line-height: 1.5; }
+.endocrine-lab-note { margin: 0; padding: .7rem 1rem; border-left: 3px solid var(--endo-accent); background: var(--endo-subtle); color: var(--endo-muted); font-size: .88rem; }
+.endocrine-toolkit .endocrine-filters { margin-top: .5rem; gap: 1.1rem; }
+.endocrine-toolkit .endo-system-row { gap: .5rem; margin-bottom: .5rem; }
+.endocrine-toolkit .endo-system-row button { padding: .5rem .8rem; font-size: .83rem; background: var(--endo-surface); border-color: var(--endo-border); }
+.endocrine-toolkit .endo-system-row button.active { background: var(--endo-subtle); border-color: var(--endo-accent); color: var(--endo-accent); }
+.endocrine-section-heading { display: flex; justify-content: space-between; align-items: center; gap: .8rem; margin: 1.25rem 0 .65rem; }
+.endocrine-section-heading h4 { margin: 0; font-size: 1rem; }
+.endocrine-section-heading > span { font-size: .8rem; color: var(--endo-muted); }
+.endocrine-toolkit .endocrine-text-button { border: 0; background: transparent; color: var(--endo-accent); font-size: .84rem; padding: .5rem .15rem; text-align: left; cursor: pointer; }
+.app.dark .endocrine-toolkit .endocrine-text-button { background: transparent; color: var(--endo-accent); }
+.endocrine-toolkit button:disabled { opacity: .45; cursor: not-allowed; }
+.endocrine-tools, .endocrine-system-list { display: grid; gap: .8rem; }
+.endocrine-disclosure { border: 1px solid var(--endo-border); border-radius: 12px; background: var(--endo-surface); overflow: hidden; scroll-margin-top: 5rem; }
+.endocrine-disclosure > summary, .endocrine-protocol-row > summary { display: flex; align-items: center; gap: 1rem; cursor: pointer; list-style: none; padding: 1rem 1.2rem; transition: background-color .16s ease; }
+.endocrine-disclosure > summary::-webkit-details-marker, .endocrine-protocol-row > summary::-webkit-details-marker { display: none; }
+.endocrine-disclosure > summary::after, .endocrine-protocol-row > summary::after { content: none; }
+.endocrine-disclosure > summary:hover, .endocrine-protocol-row > summary:hover { background: var(--endo-subtle); }
+.endocrine-summary-copy { display: grid; gap: .25rem; flex: 1; min-width: 0; }
+.endocrine-summary-copy > strong { font-size: .98rem; font-weight: 650; }
+.endocrine-summary-copy > span { font-size: .82rem; color: var(--endo-muted); line-height: 1.45; }
+.endocrine-chevron { flex: 0 0 auto; font-size: 1.25rem; color: var(--endo-muted); transition: transform .16s ease; }
+.endocrine-disclosure[open] > summary > .endocrine-chevron, .endocrine-protocol-row[open] > summary > .endocrine-chevron { transform: rotate(180deg); }
+.endocrine-tool-icon { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 9px; background: #eaf0fb; color: #315ea0; font-weight: 650; }
+.endocrine-curve > summary .endocrine-tool-icon { background: #e1f3ed; color: #176e60; font-size: 1.3rem; }
+.app.dark .endocrine-tool-icon { background: #24354b; color: #b3d1ff; }
+.app.dark .endocrine-curve > summary .endocrine-tool-icon { background: #224539; color: #a4e2d2; }
+.endocrine-helper > summary { margin-bottom: 0; }
+.endocrine-disclosure-body { padding: 1.25rem; border-top: 1px solid var(--endo-border); animation: endocrine-reveal .18s ease-out; }
+.endocrine-disclosure-body > p { color: var(--endo-muted); line-height: 1.6; }
+.endocrine-system { --endo-system-color: #516c90; --endo-system-bg: #f0f4fa; border-left: 3px solid var(--endo-system-color); }
+.endocrine-system-adrenal { --endo-system-color: #986322; --endo-system-bg: #faf4eb; }
+.endocrine-system-thyroid { --endo-system-color: #7262a6; --endo-system-bg: #f4f1fb; }
+.endocrine-system-pancreas { --endo-system-color: #267b6c; --endo-system-bg: #edf7f3; }
+.endocrine-system > summary { background: var(--endo-system-bg); }
+.endocrine-system > summary:hover { background: var(--endo-system-bg); filter: brightness(.98); }
+.endocrine-system-number { font-size: .82rem; font-weight: 700; color: var(--endo-system-color); letter-spacing: .05em; }
+.app.dark .endocrine-system { --endo-system-color: #a9c3e8; --endo-system-bg: #202f3d; }
+.app.dark .endocrine-system-adrenal { --endo-system-color: #dfba81; --endo-system-bg: #302b23; }
+.app.dark .endocrine-system-thyroid { --endo-system-color: #c6b5f3; --endo-system-bg: #2b293b; }
+.app.dark .endocrine-system-pancreas { --endo-system-color: #a0dac9; --endo-system-bg: #1c3830; }
+.endocrine-protocol-list { padding: 0 1.1rem; }
+.endocrine-protocol-row + .endocrine-protocol-row { border-top: 1px solid var(--endo-border); }
+.endocrine-protocol-row > summary { padding: 1rem .3rem; justify-content: space-between; font-size: .9rem; }
+.endocrine-protocol-row > summary strong { font-weight: 550; line-height: 1.45; }
+.endocrine-protocol-row[open] > summary strong { color: var(--endo-accent); }
+.endocrine-toolkit .endo-protocol-content { margin: .25rem .3rem 1.25rem; gap: 1.3rem; }
+.endocrine-toolkit .endo-protocol-block { gap: .5rem; }
+.endocrine-toolkit .endo-protocol-block > strong { font-size: .82rem; letter-spacing: .02em; color: var(--endo-ink); }
+.endocrine-toolkit .endo-protocol-block p { font-size: .91rem; line-height: 1.65; color: var(--endo-muted); max-width: 100ch; }
+.endocrine-toolkit .endo-step-list { margin: .3rem 0; padding: 0; gap: 0; }
+.endocrine-toolkit .endo-step-card { grid-template-columns: minmax(80px, 110px) 1fr; align-items: start; gap: 1rem; padding: .8rem 1rem; background: var(--endo-subtle); border: 0; border-left: 2px solid var(--endo-accent); border-radius: 0; }
+.endocrine-toolkit .endo-step-card + .endo-step-card { border-top: 1px solid var(--endo-border); }
+.endocrine-toolkit .endo-step-card > span { color: var(--endo-accent); font-size: .83rem; }
+.endocrine-evidence { margin-top: 1.3rem; padding-top: .9rem; border-top: 1px solid var(--endo-border); color: var(--endo-muted); font-size: .84rem; }
+.endocrine-evidence summary { cursor: pointer; color: var(--endo-muted); padding: .35rem 0; font-weight: 550; }
+.endocrine-evidence p { line-height: 1.6; max-width: 100ch; }
+.endocrine-evidence ul { margin: .6rem 0; padding-left: 1.1rem; display: grid; gap: .4rem; }
+.endocrine-evidence a { color: var(--endo-accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.endocrine-evidence-level { font-weight: 600; }
+.endocrine-review-date { margin: 1rem 0 0; color: var(--endo-muted); font-size: .75rem; }
+.endocrine-curve-intro { margin-top: 0; max-width: 90ch; font-size: .9rem; }
+.endocrine-toolkit .endocrine-curve-settings { grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(180px, 2fr); padding: 1rem; background: var(--endo-subtle); border-radius: 8px; gap: 1rem; }
+.endocrine-curve-workspace { display: grid; grid-template-columns: minmax(245px, .85fr) minmax(0, 2fr); gap: 1.75rem; margin-top: 1.75rem; align-items: start; }
+.endocrine-curve-inputs, .endocrine-curve-preview { min-width: 0; }
+.endocrine-entry-heading { display: flex; align-items: center; gap: .6rem; margin-bottom: .85rem; }
+.endocrine-entry-heading h5 { margin: 0; font-size: .94rem; }
+.endocrine-step-number { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--endo-subtle); color: var(--endo-accent); font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+.endocrine-insulin-heading { margin-top: 1.4rem; }
+.endocrine-insulin-heading .endocrine-step-number { color: #945216; background: #fff1e2; }
+.app.dark .endocrine-insulin-heading .endocrine-step-number { color: #ffd1a4; background: #433122; }
+.endocrine-field-hint { color: var(--endo-muted); font-size: .79rem; line-height: 1.5; margin: .5rem 0; }
+.endocrine-input-table th { font-size: .77rem; font-weight: 550; color: var(--endo-muted); padding: .4rem; }
+.endocrine-input-table td { padding: .2rem .35rem; }
+.endocrine-input-table input { padding: .5rem .55rem; border-radius: 6px; font-size: .88rem; background: var(--endo-surface); color: var(--endo-ink); border: 1px solid var(--endo-border); }
+.endocrine-input-table td:last-child { width: 34px; }
+.endocrine-toolkit .endocrine-input-table .endocrine-remove-row { border: 0; background: transparent; color: var(--endo-muted); min-width: 28px; padding: .4rem; }
+.endocrine-insulin-table input { border-left: 2px solid #c78346; }
+.endocrine-input-error { font-size: .82rem; line-height: 1.5; color: #ab461f; }
+.app.dark .endocrine-input-error { color: #ffbe98; }
+.endocrine-curve-metrics { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: .75rem; border-bottom: 1px solid var(--endo-border); padding-bottom: 1rem; margin-bottom: 1rem; }
+.endocrine-curve-metrics > div { display: grid; align-content: start; gap: .3rem; }
+.endocrine-curve-metrics span { color: var(--endo-muted); font-size: .75rem; }
+.endocrine-curve-metrics strong { font-size: 1.3rem; white-space: nowrap; }
+.endocrine-curve-metrics small { font-size: .7rem; font-weight: 500; }
+.endocrine-curve-metrics .endocrine-nadir strong { color: var(--endo-accent); font-size: 1.6rem; }
+.endocrine-chart-wrap { border: 1px solid var(--endo-border); border-radius: 10px; background: #fff; overflow-x: auto; }
+.endocrine-chart-scroll-hint { display: none; }
+.endocrine-chart-wrap .endocrine-chart { display: block; width: 100%; min-width: 600px; height: auto; }
+.endocrine-chart-empty { display: grid; justify-items: center; align-content: center; min-height: 290px; padding: 1.5rem; border: 1px dashed var(--endo-border); border-radius: 10px; background: var(--endo-subtle); text-align: center; color: var(--endo-muted); }
+.endocrine-chart-empty svg { width: 170px; margin-bottom: .85rem; }
+.endocrine-chart-empty strong { font-size: .95rem; color: var(--endo-ink); }
+.endocrine-chart-empty p { font-size: .83rem; max-width: 38ch; line-height: 1.6; }
+.endocrine-export-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.endocrine-export-actions button { font-size: .83rem; padding: .65rem .8rem; }
+.endocrine-toolkit .endocrine-notes { margin-top: 1.5rem; font-size: .85rem; color: var(--endo-muted); }
+.endocrine-toolkit .endocrine-notes textarea, .endocrine-toolkit .toolkit-utility-form input, .endocrine-toolkit .toolkit-utility-form select { color: var(--endo-ink); background: var(--endo-surface); border-color: var(--endo-border); }
+.endocrine-toolkit .endocrine-notes textarea { padding: .8rem; border: 1px solid var(--endo-border); border-radius: 8px; }
+@media (max-width: 1050px) { .endocrine-curve-workspace { grid-template-columns: minmax(0, 1fr); } .endocrine-curve-inputs { max-width: 500px; } }
+@media (max-width: 600px) {
+  .endocrine-toolkit .endocrine-filters, .endocrine-toolkit .endocrine-curve-settings { grid-template-columns: 1fr; }
+  .endocrine-disclosure > summary { padding: .9rem .8rem; gap: .65rem; }
+  .endocrine-disclosure-body { padding: 1rem .8rem; }
+  .endocrine-section-heading { align-items: start; }
+  .endocrine-section-heading > span { text-align: right; }
+  .endocrine-protocol-list { padding: 0 .7rem; }
+  .endocrine-toolkit .endo-step-card { grid-template-columns: 1fr; gap: .35rem; }
+  .endocrine-curve-metrics { grid-template-columns: 1fr 1fr; }
+  .endocrine-curve-metrics > .endocrine-nadir { grid-column: 1 / -1; }
+  .endocrine-export-actions button { flex: 1 1 120px; }
+  .endocrine-chart-scroll-hint { display: block; }
+}
+@keyframes endocrine-reveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .endocrine-disclosure > summary, .endocrine-protocol-row > summary, .endocrine-chevron { transition: none; } .endocrine-disclosure-body { animation: none; } }
