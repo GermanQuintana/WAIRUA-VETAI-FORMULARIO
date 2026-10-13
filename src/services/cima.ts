@@ -311,7 +311,11 @@ export class CimaService {
     if (q.length < 2) return [];
     const familyQuery = normalizeIngredientFamily(q);
     const queryTokens = getSearchTokens(q);
-    const tokenQueries = queryTokens.filter((token) => token.length >= 3).slice(0, 4);
+    // Dosage tokens are applied locally across the official results for the medicine.
+    // Sending a standalone value such as "500" to CIMA returns a very broad catalogue.
+    const tokenQueries = queryTokens
+      .filter((token) => token.length >= 3 && !isNumericSearchToken(token))
+      .slice(0, 4);
 
     const includeTradeNameSearch = options.includeTradeNameSearch ?? true;
     const includeActiveIngredientSearch = options.includeActiveIngredientSearch ?? true;

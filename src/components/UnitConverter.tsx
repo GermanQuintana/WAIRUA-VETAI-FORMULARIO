@@ -85,7 +85,7 @@ const formatNumber = (value: number) => {
 export default function UnitConverter({ lang }: Props) {
   const t = labels[lang];
   const [group, setGroup] = useState<UnitGroupKey>('concentration');
-  const [inputValue, setInputValue] = useState('5');
+  const [inputValue, setInputValue] = useState('');
   const [fromUnit, setFromUnit] = useState(UNIT_GROUPS.concentration.units[0].id);
   const [toUnit, setToUnit] = useState(UNIT_GROUPS.concentration.units[2].id);
 

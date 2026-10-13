@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ActiveIngredientForm from './components/ActiveIngredientForm';
@@ -63,6 +63,8 @@ import { AccessPreviewMode, AuthAccountSnapshot, LocalizedText, OtcProductRecord
 
 gsap.registerPlugin(ScrollTrigger);
 
+const EndocrineToolkit = lazy(() => import('./components/EndocrineToolkit'));
+
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const premiumTabs = ['active'] as const;
 const activeViews = ['records', 'create'] as const;
@@ -99,6 +101,7 @@ type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'active
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
   'dose',
+  'endocrine',
   'infusion',
   'constants',
   'ranges',
@@ -374,6 +377,18 @@ const getCimaDocumentUrl = (medication: Pick<CimaMedicationSummary, 'docs'> | un
   const doc = medication?.docs?.find((item) => item.tipo === type);
   return doc?.urlHtml ?? doc?.url ?? null;
 };
+
+const getCimaActiveIngredientLabel = (medication: CimaMedicationSummary, detail?: CimaMedicationDetail) =>
+  detail?.principiosActivos
+    ?.map((item) =>
+      `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim(),
+    )
+    .filter(Boolean)
+    .join(' + ') ||
+  detail?.pactivos ||
+  medication.pactivos ||
+  medication.vtm?.nombre ||
+  '-';
 
 const getCimavetDocumentUrl = (medication: Pick<CimavetMedicationDetail, 'docs'> | undefined | null, type: number) => {
   const doc = medication?.docs?.find((item) => item.tipo === type);
@@ -725,7 +740,7 @@ const filterTherapeuticEntries = (
 };
 
 function App() {
-  const livePageSizeOptions = [12, 24, 'all'] as const;
+  const livePageSizeOptions = [12, 24, 48, 'all'] as const;
   const activeRecordPageSizeOptions = [12, 24, 'all'] as const;
 
   const [entryCatalog, setEntryCatalog] = useState<TherapeuticEntry[]>(therapeuticEntries);
@@ -765,7 +780,7 @@ function App() {
   const [humanDoseFilter, setHumanDoseFilter] = useState('');
   const [humanPresentationFilter, setHumanPresentationFilter] = useState('');
   const [humanOnlyCommercialized, setHumanOnlyCommercialized] = useState(false);
-  const [humanPageSize, setHumanPageSize] = useState<(typeof livePageSizeOptions)[number]>(24);
+  const [humanPageSize, setHumanPageSize] = useState<(typeof livePageSizeOptions)[number]>(48);
   const [humanPage, setHumanPage] = useState(1);
 
   const [otcQuery, setOtcQuery] = useState('');
@@ -793,7 +808,7 @@ function App() {
   const [activeHumanLoading, setActiveHumanLoading] = useState(false);
   const [activeHumanError, setActiveHumanError] = useState<string | null>(null);
   const [activeHumanDetails, setActiveHumanDetails] = useState<Record<string, CimaMedicationDetail>>({});
-  const [activeOfficialPageSize, setActiveOfficialPageSize] = useState<(typeof livePageSizeOptions)[number]>(12);
+  const [activeOfficialPageSize, setActiveOfficialPageSize] = useState<(typeof livePageSizeOptions)[number]>(48);
   const [activeVetPage, setActiveVetPage] = useState(1);
   const [activeHumanPage, setActiveHumanPage] = useState(1);
 
@@ -2080,7 +2095,7 @@ function App() {
       'species-constants': ['tabla', 'referencia', 'perro', 'gato', 'conejo', 'hurón', 'constantes', 'triage', 'urgencias', 'temperatura', 'frecuencia cardiaca', 'frecuencia respiratoria', 'presión arterial', 'diuresis'],
       'lab-ranges': ['tabla', 'laboratorio', 'hematología', 'bioquímica', 'electrolitos', 'gasometría', 'hemograma', 'urea', 'creatinina', 'alt', 'glucosa', 'pcr', 'coagulación'],
       haemotherapy: ['calculadora', 'hemoterapia', 'transfusión', 'perro', 'gato', 'compatibilidad'],
-      endocrine: ['guía', 'endocrinología', 'pruebas', 'perro', 'gato', 'hipotiroidismo', 'hipertiroidismo', 'adison', 'enfermedad de addison', 'cushing', 'hiperadrenocorticismo', 'diabetes', 'hiperadrenocorticismo', 'estimulación acth', 'supresión dexametasona'],
+      endocrine: ['guía', 'endocrinología', 'pruebas', 'perro', 'gato', 'hipotiroidismo', 'hipertiroidismo', 'addison', 'enfermedad de addison', 'cushing', 'hiperadrenocorticismo', 'diabetes', 'estimulación acth', 'supresión dexametasona', 'cosacthen', 'cosintropina', 'trilostano', 'vetoryl', 'cortisol', 'fructosamina', 'igf-1', 'insulina', 'curva de glucosa', 'nadir'],
       genetics: ['guía', 'genética', 'mdr1', 'raza', 'hereditaria', 'mutación', 'panel genético', 'poliquistosis renal', 'displasia', 'epilepsia'],
       interactions: ['checker', 'interacciones', 'fármacos', 'seguridad', 'contraindicaciones', 'sinergias', 'sedación', 'nefrotoxicidad', 'hepatotoxicidad'],
       'unit-converter': ['conversor', 'unidades', 'masa', 'volumen', 'concentración'],
@@ -3473,6 +3488,7 @@ function App() {
                         <ul className="live-results-list">
                           {activeHumanResultsForDetails.map((medication) => {
                             const detail = activeHumanDetails[medication.nregistro];
+                            const activeIngredient = getCimaActiveIngredientLabel(medication, detail);
                             const technicalSheetUrl = getCimaDocumentUrl(detail ?? medication, 1);
                             const leafletUrl = getCimaDocumentUrl(detail ?? medication, 2);
                             const recordUrl = buildCimaRecordUrl(CIMA_BASE_URL, medication.nregistro);
@@ -3506,7 +3522,7 @@ function App() {
                                     </p>
                                     <p>
                                       <span>{t.activeIngredient}</span>
-                                      <strong>{medication.pactivos ? formatDelimitedText(medication.pactivos) : '-'}</strong>
+                                      <strong>{activeIngredient}</strong>
                                     </p>
                                     <p>
                                       <span>{t.dose}</span>
@@ -3798,6 +3814,12 @@ function App() {
 
             {activeToolkitView === 'constants' && <VitalConstantsToolkit lang={lang} />}
 
+            {activeToolkitView === 'endocrine' && (
+              <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando endocrino…' : 'Loading endocrinology…'}</p>}>
+                <EndocrineToolkit lang={lang} />
+              </Suspense>
+            )}
+
             {activeToolkitView === 'ranges' && (
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.ranges} />
             )}
@@ -4069,17 +4091,7 @@ function App() {
                   <ul className="live-results-list">
                     {visibleHumanResults.map((medication) => {
                       const detail = humanDetails[medication.nregistro];
-                      const activeIngredient =
-                        detail?.principiosActivos
-                          ?.map((item) =>
-                            `${item.nombre}${item.cantidad ? ` ${item.cantidad}` : ''}${item.unidad ? ` ${item.unidad}` : ''}`.trim(),
-                          )
-                          .filter(Boolean)
-                          .join(' + ') ||
-                        detail?.pactivos ||
-                        medication.pactivos ||
-                        medication.vtm?.nombre ||
-                        '-';
+                      const activeIngredient = getCimaActiveIngredientLabel(medication, detail);
                       const technicalSheetUrl = getCimaDocumentUrl(detail ?? medication, 1);
                       const leafletUrl = getCimaDocumentUrl(detail ?? medication, 2);
                       const route = medication.viasAdministracion?.map((item) => item.nombre).join(', ') || '-';

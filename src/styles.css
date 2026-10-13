@@ -5332,6 +5332,38 @@ select:focus-visible {
   grid-template-columns: 1fr;
 }
 
+.endocrine-filters { grid-template-columns: minmax(140px, 1fr) minmax(200px, 3fr); }
+.endocrine-protocol-index { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
+.endocrine-protocol-index a { color: inherit; text-underline-offset: 3px; font-size: 0.88rem; }
+.endocrine-toolkit .endo-system-row a { color: inherit; align-self: center; text-underline-offset: 3px; }
+.endocrine-toolkit details { scroll-margin-top: 5rem; }
+.endocrine-helper summary { cursor: pointer; margin-bottom: 1rem; }
+.endocrine-toolkit .endo-step-list { padding-left: 0; list-style: none; }
+.endocrine-toolkit .endo-protocol-content { margin-top: 1rem; }
+.endocrine-curve-layout { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: 1.2rem; margin-top: 1rem; }
+.endocrine-table-scroll { min-width: 0; overflow-x: auto; }
+.endocrine-input-table { width: 100%; border-collapse: collapse; }
+.endocrine-input-table caption { text-align: left; padding: 0.6rem 0; font-weight: 600; }
+.endocrine-input-table th, .endocrine-input-table td { padding: 0.35rem; text-align: left; }
+.endocrine-input-table input { width: 100%; min-width: 65px; }
+.endocrine-input-table button { padding: 0.4rem 0.65rem; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 0.5rem; }
+.endocrine-chart { width: 100%; height: auto; color: inherit; }
+.endocrine-chart text { fill: currentColor; font-size: 12px; }
+.endocrine-chart-band { fill: #198579; opacity: 0.12; }
+.endocrine-chart-grid { stroke: currentColor; opacity: 0.2; }
+.endocrine-chart-line { stroke: #087d88; stroke-width: 2.5; }
+.endocrine-chart-point { fill: #087d88; }
+.endocrine-alert { padding: 0.85rem; background: #fff0e5; color: #7b3214; border: 1px solid #d7a387; border-radius: 0.7rem; }
+.endocrine-notes { display: grid; gap: 0.4rem; margin-top: 1rem; }
+.endocrine-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; margin-top: 1rem; }
+.app.dark .endocrine-chart-line { stroke: #5bd4d4; }
+.app.dark .endocrine-chart-point { fill: #5bd4d4; }
+.app.dark .endocrine-alert { background: #39261e; color: #ffd5b7; border-color: #9e684b; }
+@media (max-width: 840px) {
+  .endocrine-filters, .endocrine-curve-layout { grid-template-columns: 1fr; }
+  .endocrine-toolkit .haemo-metrics { grid-template-columns: 1fr; }
+}
+
 .endo-detail-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
