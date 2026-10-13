@@ -11,7 +11,6 @@ import ComingSoonToolkit from './components/ComingSoonToolkit';
 import DoseCalculator from './components/DoseCalculator';
 import DrugInteractionChecker from './components/DrugInteractionChecker';
 import EntryCard from './components/EntryCard';
-import FluidTherapyToolkit from './components/FluidTherapyToolkit';
 import GeneticsToolkit from './components/GeneticsToolkit';
 import InfusionCalculator from './components/InfusionCalculator';
 import LegalCompliance from './components/LegalCompliance';
@@ -64,6 +63,7 @@ import { AccessPreviewMode, AuthAccountSnapshot, LocalizedText, OtcProductRecord
 gsap.registerPlugin(ScrollTrigger);
 
 const EndocrineToolkit = lazy(() => import('./components/EndocrineToolkit'));
+const FluidTherapyToolkit = lazy(() => import('./components/FluidTherapyToolkit'));
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
 const premiumTabs = ['active'] as const;
@@ -2101,7 +2101,7 @@ function App() {
       'unit-converter': ['conversor', 'unidades', 'masa', 'volumen', 'concentración'],
       'body-surface': ['calculadora', 'superficie corporal', 'perro', 'gato', 'conejo', 'hurón'],
       'clinical-nutrition': ['calculadora', 'nutrición', 'energía', 'nutrientes', 'dietas', 'perro', 'gato', 'obesidad', 'renal', 'hepática', 'diabetes', 'alergia alimentaria', 'raciones', 'rerc'],
-      'fluid-therapy': ['calculadora', 'fluidoterapia', 'mantenimiento', 'déficit', 'pérdidas', 'anestesia', 'deshidratación', 'shock', 'hipovolemia', 'electrolitos', 'sodio', 'potasio', 'cristaloides', 'coloides'],
+      'fluid-therapy': ['calculadora', 'fluidoterapia', 'sueroterapia', 'mantenimiento', 'déficit', 'pérdidas', 'anestesia', 'deshidratación', 'shock', 'hipovolemia', 'electrolitos', 'sodio', 'potasio', 'cristaloides', 'coloides', 'ringer', 'salino', 'suero', 'plasma-lyte', 'normosol', 'dextrosa', 'glucosa', 'kcl', 'balance hídrico', 'agua enteral', 'subcutáneo'],
       'clinical-assistant': ['formulario', 'asistente', 'consulta', 'patología', 'notas clínicas', 'anamnesis', 'exploración física', 'diagnóstico diferencial', 'plan terapéutico'],
       management: ['gestión', 'descuentos', 'negocio', 'operativa', 'margen', 'presupuesto', 'facturación', 'clínica'],
       'writing-assistant': ['asistente', 'redacción', 'palabras', 'caracteres', 'editorial', 'informe', 'consentimiento', 'cliente', 'comunicación'],
@@ -3824,7 +3824,7 @@ function App() {
               <ComingSoonToolkit lang={lang} species={speciesReferenceScope} {...comingSoonToolkitContent.ranges} />
             )}
 
-            {activeToolkitView === 'fluid' && <FluidTherapyToolkit lang={lang} />}
+            {activeToolkitView === 'fluid' && <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando fluidoterapia…' : 'Loading fluid therapy…'}</p>}><FluidTherapyToolkit lang={lang} /></Suspense>}
 
             {activeToolkitView === 'anesthesia' && <AnesthesiaToolkit lang={lang} />}
 

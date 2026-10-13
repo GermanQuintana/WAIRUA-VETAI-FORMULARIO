@@ -317,8 +317,8 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     id: 'fluid-therapy',
     title: { es: 'Fluidoterapia', en: 'Fluid therapy' },
     description: {
-      es: 'Calcula mantenimiento, deficit, perdidas, fluidos por problema y consideraciones de anestesia por especie.',
-      en: 'Calculates maintenance, deficit, losses, problem-based fluids, and anesthesia considerations by species.',
+      es: 'Plan por especie, guía de tipos de fluidos, preparación de KCl y seguimiento del balance hídrico.',
+      en: 'Species-based plan, fluid type guide, KCl preparation, and fluid balance monitoring.',
     },
     status: { es: 'Gratis', en: 'Free' },
     statusTone: 'available',
