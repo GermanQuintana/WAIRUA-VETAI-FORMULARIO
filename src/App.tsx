@@ -3762,7 +3762,7 @@ function App() {
         )}
 
         {activeTab === 'toolkit' && (
-          <section className="panel module-panel">
+          <section className={`panel module-panel toolkit-module-panel toolkit-view-${activeToolkitView}`}>
             <div className="module-header">
               <div>
                 <p className="section-kicker">{lang === 'es' ? 'Veterinary toolkit' : 'Veterinary toolkit'}</p>

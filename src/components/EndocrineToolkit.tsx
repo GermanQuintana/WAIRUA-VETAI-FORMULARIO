@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Language } from '../i18n';
-import { ENDOCRINE_PROTOCOLS, ENDOCRINE_SOURCES, EndocrineSpecies, EndocrineSystem, EndocrineText } from '../data/endocrineTesting';
+import { ENDOCRINE_PROTOCOLS, ENDOCRINE_SOURCES, EndocrineProtocol, EndocrineSpecies, EndocrineSystem, EndocrineText } from '../data/endocrineTesting';
 import GlucoseCurveTool from './GlucoseCurveTool';
 
 const speciesLabels: Record<EndocrineSpecies, EndocrineText> = {
@@ -14,6 +14,40 @@ const evidenceLabels = {
   official: { es: 'Ficha oficial', en: 'Official product label' }, guideline: { es: 'Guía / consenso clínico', en: 'Clinical guideline / consensus' },
   study: { es: 'Estudio diagnóstico', en: 'Diagnostic study' }, limited: { es: 'Evidencia limitada / casos seleccionados', en: 'Limited evidence / selected cases' },
 };
+const adrenalGroups: { id: string; label: EndocrineText; protocols: readonly string[] }[] = [
+  { id: 'cushing', label: { es: 'Cushing · diagnóstico', en: 'Cushing syndrome · diagnosis' }, protocols: ['dog-lddst', 'dog-acth-cushing', 'uccr', 'hddst', 'cat-lddst'] },
+  { id: 'addison', label: { es: 'Addison · diagnóstico', en: 'Addison disease · diagnosis' }, protocols: ['addison', 'cat-acth-addison'] },
+  { id: 'monitoring', label: { es: 'Seguimiento del tratamiento', en: 'Treatment monitoring' }, protocols: ['trilostane', 'vetoryl-targets'] },
+  { id: 'reference', label: { es: 'Protocolo ACTH de referencia', en: 'Reference ACTH protocol' }, protocols: ['cosacthen'] },
+  { id: 'other', label: { es: 'Otras alteraciones suprarrenales', en: 'Other adrenal conditions' }, protocols: ['aldosterone', 'pheochromocytoma'] },
+];
+
+function ClinicalPoints({ value }: { value: string }) {
+  const points = value.split(/;\s*/u).map((point) => point.trim()).filter(Boolean);
+  const renderPoint = (point: string) => {
+    const labelled = point.match(/^([^:]{2,52}):\s+(.+)$/u);
+    return labelled ? <><strong>{labelled[1]}:</strong> {labelled[2]}</> : point;
+  };
+
+  return points.length > 1
+    ? <ul className="endo-clinical-points">{points.map((point, index) => <li key={`${index}-${point}`}>{renderPoint(point)}</li>)}</ul>
+    : <p className="endo-clinical-paragraph">{renderPoint(points[0] ?? value)}</p>;
+}
+
+function ProtocolRow({ protocol, lang, open, onToggle }: { protocol: EndocrineProtocol; lang: Language; open: boolean; onToggle: () => void }) {
+  const es = lang === 'es';
+  return <details id={`endo-${protocol.id}`} className="endocrine-protocol-row" open={open}>
+    <summary onClick={(event) => { event.preventDefault(); onToggle(); }}><strong>{protocol.title[lang]}</strong><span className="endocrine-chevron" aria-hidden="true">⌄</span></summary>
+    {open && <div className="endo-protocol-content">
+      <div className="endo-protocol-block"><strong>{es ? 'Cuándo usarla' : 'When to use it'}</strong><ClinicalPoints value={protocol.indications[lang]} /></div>
+      <div className="endo-protocol-block"><strong>{es ? 'Preparación y medicación' : 'Preparation and medication'}</strong><ClinicalPoints value={protocol.preparation[lang]} /></div>
+      <div className="endo-protocol-block"><strong>{es ? 'Cronograma / toma de muestras' : 'Timeline / sampling'}</strong><ol className="endo-step-list compact">{protocol.steps.map((step, index) => <li key={`${protocol.id}-${index}`} className="endo-step-card"><span>{step.time}</span><ClinicalPoints value={step.action[lang]} /></li>)}</ol></div>
+      <div className="endo-protocol-block"><strong>{es ? 'Interpretación y seguimiento' : 'Interpretation and follow-up'}</strong><ClinicalPoints value={protocol.interpretation[lang]} /></div>
+      <div className="endo-protocol-block"><strong>{es ? 'Limitaciones, interferencias y seguridad' : 'Limitations, interference, and safety'}</strong><ClinicalPoints value={protocol.limitations[lang]} /></div>
+      <footer className="endocrine-evidence"><details><summary>{es ? 'Evidencia, estudios y fuentes' : 'Evidence, studies, and sources'}</summary><p className="endocrine-evidence-level">{evidenceLabels[protocol.evidence][lang]}</p><ClinicalPoints value={protocol.accuracy[lang]} /><p className="live-hint">{es ? 'Sensibilidad y especificidad dependen del ensayo y la población; no equivalen a la probabilidad individual de enfermedad.' : 'Sensitivity and specificity depend on assay and population; they are not an individual probability of disease.'}</p><ul>{protocol.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.label}<span aria-hidden="true"> ↗</span></a></li>)}</ul></details></footer>
+    </div>}
+  </details>;
+}
 const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const helpers = [
   { id: 'cosacthen', species: 'dog', dose: 5, unit: 'µg', title: { es: 'Cosacthen · 5 µg/kg IV/IM (ficha AEMPS)', en: 'Cosacthen · 5 µg/kg IV/IM (AEMPS label)' }, note: { es: '250 µg/mL; cortisol basal y a 60–90 min. Pauta oficial sin máximo de dosis especificado. Vial de uso único.', en: '250 µg/mL; baseline and 60–90 min cortisol. Official protocol with no specified dose maximum. Single-use vial.' }, source: ENDOCRINE_SOURCES.cosacthen },
@@ -91,17 +125,20 @@ export default function EndocrineToolkit({ lang }: { lang: Language }) {
       if (!protocols.length) return null;
       return <details key={`${species}-${id}`} className={`endocrine-disclosure endocrine-system endocrine-system-${id}`} open={openSystems.includes(id)}>
       <summary onClick={(event) => { event.preventDefault(); setOpenSystems((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]); }}><span className="endocrine-system-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><span className="endocrine-summary-copy"><strong>{systemLabels[id][lang]}</strong><span>{protocols.length} {es ? 'protocolos' : 'protocols'}</span></span><span className="endocrine-chevron" aria-hidden="true">⌄</span></summary>
-      <div className="endocrine-protocol-list">{protocols.map((protocol) => <details key={protocol.id} id={`endo-${protocol.id}`} className="endocrine-protocol-row" open={openProtocolId === protocol.id}>
-      <summary onClick={(event) => { event.preventDefault(); setOpenProtocolId((current) => current === protocol.id ? null : protocol.id); }}><strong>{protocol.title[lang]}</strong><span className="endocrine-chevron" aria-hidden="true">⌄</span></summary>
-      {openProtocolId === protocol.id && <div className="endo-protocol-content">
-        <div className="endo-protocol-block"><strong>{es ? 'Cuándo usarla' : 'When to use it'}</strong><p>{protocol.indications[lang]}</p></div>
-        <div className="endo-protocol-block"><strong>{es ? 'Preparación y medicación' : 'Preparation and medication'}</strong><p>{protocol.preparation[lang]}</p></div>
-        <div className="endo-protocol-block"><strong>{es ? 'Cronograma / toma de muestras' : 'Timeline / sampling'}</strong><ol className="endo-step-list compact">{protocol.steps.map((step, index) => <li key={`${protocol.id}-${index}`} className="endo-step-card"><span>{step.time}</span><p>{step.action[lang]}</p></li>)}</ol></div>
-        <div className="endo-protocol-block"><strong>{es ? 'Interpretación y seguimiento' : 'Interpretation and follow-up'}</strong><p>{protocol.interpretation[lang]}</p></div>
-        <div className="endo-protocol-block"><strong>{es ? 'Limitaciones, interferencias y seguridad' : 'Limitations, interference, and safety'}</strong><p>{protocol.limitations[lang]}</p></div>
-        <footer className="endocrine-evidence"><details><summary>{es ? 'Evidencia, estudios y fuentes' : 'Evidence, studies, and sources'}</summary><p className="endocrine-evidence-level">{evidenceLabels[protocol.evidence][lang]}</p><p>{protocol.accuracy[lang]}</p><p className="live-hint">{es ? 'Sensibilidad y especificidad dependen del ensayo y la población; no equivalen a la probabilidad individual de enfermedad.' : 'Sensitivity and specificity depend on assay and population; they are not an individual probability of disease.'}</p><ul>{protocol.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.label}<span aria-hidden="true"> ↗</span></a></li>)}</ul></details></footer>
-      </div>}
-    </details>)}</div>
+      <div className="endocrine-protocol-list">
+        {id === 'adrenal'
+          ? adrenalGroups.map((group) => {
+              const groupProtocols = group.id === 'other'
+                ? protocols.filter((protocol) => group.protocols.includes(protocol.id) || !adrenalGroups.some((item) => item.protocols.includes(protocol.id)))
+                : group.protocols.flatMap((protocolId) => protocols.filter((protocol) => protocol.id === protocolId));
+              if (!groupProtocols.length) return null;
+              return <section key={group.id} className={`endocrine-protocol-group endocrine-protocol-group-${group.id}`} aria-label={group.label[lang]}>
+                <h5>{group.label[lang]} <span>{groupProtocols.length}</span></h5>
+                {groupProtocols.map((protocol) => <ProtocolRow key={protocol.id} protocol={protocol} lang={lang} open={openProtocolId === protocol.id} onToggle={() => setOpenProtocolId((current) => current === protocol.id ? null : protocol.id)} />)}
+              </section>;
+            })
+          : protocols.map((protocol) => <ProtocolRow key={protocol.id} protocol={protocol} lang={lang} open={openProtocolId === protocol.id} onToggle={() => setOpenProtocolId((current) => current === protocol.id ? null : protocol.id)} />)}
+      </div>
     </details>;
     })}</div>
     <p className="endocrine-review-date">{es ? 'Contenido clínico revisado el 13/10/2026.' : 'Clinical content reviewed on 13 Oct 2026.'}</p>

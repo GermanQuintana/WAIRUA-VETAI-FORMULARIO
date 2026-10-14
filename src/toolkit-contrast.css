@@ -1,0 +1,322 @@
+/* Shared visual hierarchy for the authenticated toolkit. */
+.toolkit-module-panel {
+  --tk-ink: #193a32;
+  --tk-muted: #496458;
+  --tk-line: #bcd2c4;
+  --tk-wash: #edf6ef;
+  --tk-accent: #116c56;
+  --tk-strong: #0b5845;
+}
+
+.toolkit-view-dose,
+.toolkit-view-infusion { --tk-accent: #176d81; --tk-strong: #10556a; --tk-wash: #eaf4f7; --tk-line: #bad3da; }
+.toolkit-view-genetics { --tk-accent: #6756a1; --tk-strong: #514182; --tk-wash: #f1eff8; --tk-line: #ccc5e0; }
+.toolkit-view-interactions { --tk-accent: #5964a0; --tk-strong: #445084; --tk-wash: #eef0f8; --tk-line: #c6cce0; }
+.toolkit-view-endocrine { --tk-accent: #087b83; --tk-strong: #09626a; --tk-wash: #e9f5f4; --tk-line: #b6d6d4; }
+.toolkit-view-ranges { --tk-accent: #31708a; --tk-strong: #235a70; --tk-wash: #edf5f8; --tk-line: #bfd4dc; }
+.toolkit-view-fluid { --tk-accent: #167a73; --tk-strong: #0d625d; --tk-wash: #e9f5f2; --tk-line: #bad8d1; }
+.toolkit-view-anesthesia { --tk-accent: #77569b; --tk-strong: #60417f; --tk-wash: #f3eef8; --tk-line: #d2c4df; }
+.toolkit-view-emergency { --tk-accent: #aa4f48; --tk-strong: #843c36; --tk-wash: #fbefed; --tk-line: #e3c4c0; }
+.toolkit-view-converter { --tk-accent: #266d8b; --tk-strong: #1b5771; --tk-wash: #edf5f8; --tk-line: #bed2de; }
+.toolkit-view-assistant { --tk-accent: #197b7a; --tk-strong: #116463; --tk-wash: #e9f5f3; --tk-line: #bad8d3; }
+.toolkit-view-nutrition { --tk-accent: #32724c; --tk-strong: #205d39; --tk-wash: #eef6eb; --tk-line: #c2d7bb; }
+.toolkit-view-haemotherapy { --tk-accent: #a7445e; --tk-strong: #85344b; --tk-wash: #fbf0f3; --tk-line: #e5c3ce; }
+.toolkit-view-management { --tk-accent: #286b80; --tk-strong: #1c5262; --tk-wash: #edf4f7; --tk-line: #bfd4dc; }
+.toolkit-view-chill,
+.toolkit-view-fip { --tk-accent: #86612e; --tk-strong: #6d4d21; --tk-wash: #f8f3e9; --tk-line: #dbceb6; }
+
+.toolkit-module-panel > .module-header {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--tk-line);
+}
+.toolkit-module-panel > .module-header h2,
+.toolkit-module-panel .toolkit-utility-header h3,
+.toolkit-module-panel .dose-calculator-header h3,
+.toolkit-module-panel .infusion-header h3,
+.toolkit-module-panel .anesthesia-header h3,
+.toolkit-module-panel .genetics-hero h3 { color: var(--tk-ink); }
+.toolkit-module-panel > .module-header p,
+.toolkit-module-panel .toolkit-utility-header p { color: var(--tk-muted); }
+.toolkit-module-panel .section-kicker { color: var(--tk-strong); }
+.toolkit-module-panel .module-back-button {
+  border-color: var(--tk-accent);
+  background: var(--tk-wash);
+  color: var(--tk-strong);
+}
+.toolkit-module-panel .module-back-button:hover { background: var(--tk-line); }
+.toolkit-module-panel :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #d99432;
+  outline-offset: 2px;
+}
+.toolkit-module-panel :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { border-color: var(--tk-line); }
+
+.toolkit-module-panel .toolkit-search-bar input { border-color: var(--tk-line); }
+.toolkit-module-panel .feature-card:not(.feature-card-soon) {
+  border-color: var(--tk-line);
+  border-top: 3px solid var(--tk-accent);
+  background: #fff;
+}
+.toolkit-module-panel .feature-card h3 { color: var(--tk-ink); }
+.toolkit-module-panel .feature-card p,
+.toolkit-module-panel .feature-card li { color: var(--tk-muted); }
+.toolkit-module-panel .feature-card-link { color: var(--tk-strong); }
+.toolkit-module-panel .feature-card-link:not(.feature-card-link-disabled) {
+  border-color: #116c56;
+  background: #116c56;
+  color: #fff;
+}
+.toolkit-module-panel .feature-card-link:not(.feature-card-link-disabled):hover { background: #0b5845; color: #fff; }
+
+.toolkit-module-panel .toolkit-utility:not(.vital-constants-toolkit):not(.endocrine-toolkit) > .toolkit-utility-header {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--tk-line);
+}
+.toolkit-module-panel .toolkit-utility:not(.vital-constants-toolkit) .toolkit-utility-note,
+.toolkit-module-panel .toolkit-utility-card,
+.toolkit-module-panel .toolkit-reference-table {
+  border-color: var(--tk-line);
+  background: #fff;
+}
+.toolkit-module-panel .toolkit-utility:not(.vital-constants-toolkit) .toolkit-utility-note {
+  border-left: 4px solid var(--tk-accent);
+  background: var(--tk-wash);
+}
+.toolkit-module-panel .toolkit-utility-card.result-card,
+.toolkit-module-panel .nutrition-metric-grid .result-card { border-top: 3px solid var(--tk-accent); background: var(--tk-wash); }
+.toolkit-module-panel .toolkit-utility-result strong,
+.toolkit-module-panel .management-total-banner strong { color: var(--tk-strong); }
+.toolkit-module-panel .toolkit-source-note:not(.vital-source-note) {
+  border-color: var(--tk-line);
+  border-left: 3px solid var(--tk-accent);
+  background: var(--tk-wash);
+}
+.toolkit-module-panel .toolkit-source-note:not(.vital-source-note) p { color: var(--tk-muted); }
+.toolkit-module-panel .protocol-muted,
+.toolkit-module-panel .toolkit-utility-card > p { max-width: 85ch; line-height: 1.6; color: var(--tk-muted); }
+.toolkit-module-panel .protocol-guidance {
+  display: grid;
+  max-width: 90ch;
+  margin: 0.9rem 0 0;
+  border: 1px solid var(--tk-line);
+  border-left: 3px solid var(--tk-accent);
+  border-radius: 0.6rem;
+  background: var(--tk-wash);
+  overflow: hidden;
+}
+.toolkit-module-panel .protocol-guidance > div {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.27fr) minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  padding: 0.65rem 0.8rem;
+}
+.toolkit-module-panel .protocol-guidance > div + div { border-top: 1px solid var(--tk-line); }
+.toolkit-module-panel .protocol-guidance dt { color: var(--tk-strong); font-size: 0.83rem; font-weight: 800; }
+.toolkit-module-panel .protocol-guidance dd { margin: 0; color: var(--tk-ink); font-size: 0.85rem; line-height: 1.55; }
+.toolkit-module-panel .subtabs button.active { border-color: var(--tk-accent); background: var(--tk-wash); color: var(--tk-strong); }
+
+.toolkit-module-panel .dose-weight-card,
+.toolkit-module-panel .infusion-summary-card,
+.toolkit-module-panel .anesthesia-action-panel,
+.toolkit-module-panel .anesthesia-panel,
+.toolkit-module-panel .clinical-input {
+  border-color: var(--tk-line);
+  background: #fff;
+}
+.toolkit-module-panel .dose-weight-card,
+.toolkit-module-panel .infusion-summary-card,
+.toolkit-module-panel .anesthesia-action-panel { border-left: 4px solid var(--tk-accent); background: var(--tk-wash); }
+.toolkit-module-panel .dose-weight-card strong,
+.toolkit-module-panel .infusion-summary-card strong { color: var(--tk-strong); }
+.toolkit-module-panel .infusion-result-card,
+.toolkit-module-panel .infusion-block { border-color: var(--tk-line); }
+.toolkit-module-panel .dose-table-shell,
+.toolkit-module-panel .toolkit-table-shell { border-color: var(--tk-line); }
+.toolkit-module-panel .toolkit-table th,
+.toolkit-module-panel .dose-table th { border-bottom-color: var(--tk-line); background: var(--tk-wash); color: var(--tk-strong); }
+.toolkit-module-panel .toolkit-table td,
+.toolkit-module-panel .dose-table td { border-bottom-color: var(--tk-line); }
+.toolkit-module-panel .management-summary-strip,
+.toolkit-module-panel .management-breakdown-item { border-color: var(--tk-line); background: var(--tk-wash); }
+.toolkit-module-panel .management-total-banner { background: var(--tk-wash); border-color: var(--tk-accent); }
+.toolkit-view-assistant .embedded-section { border-top: 3px solid var(--tk-accent); }
+.toolkit-view-assistant .assistant-result { border-left: 4px solid var(--tk-accent); background: var(--tk-wash); }
+.toolkit-view-assistant .assistant-item,
+.toolkit-view-interactions .interaction-result-card,
+.toolkit-view-interactions .interaction-chip { border-color: var(--tk-line); }
+.toolkit-view-interactions .interaction-result-card { border-top: 3px solid var(--tk-accent); background: var(--tk-wash); }
+
+/* Endocrine protocols: diagnosis, monitoring and shared references remain distinct. */
+.endocrine-toolkit { --endo-ink: #193b42; --endo-muted: #49646b; --endo-border: #bad3d3; --endo-subtle: #eaf4f3; --endo-accent: #08747a; }
+.endocrine-toolkit .toolkit-utility-header { padding-bottom: 1rem; border-bottom: 2px solid var(--endo-border); }
+.endocrine-lab-note { border-left-width: 4px; border-radius: 0.35rem; background: #e8f4f3; color: #28545a; font-weight: 600; }
+.endocrine-toolkit .endo-system-row button { border-color: var(--endo-border); color: var(--endo-ink); }
+.endocrine-toolkit .endo-system-row button.active { border-color: var(--endo-accent); background: #d9eeea; color: #075c61; }
+.endocrine-disclosure { border-color: var(--endo-border); }
+.endocrine-system { border-left-width: 4px; }
+.endocrine-system-adrenal { --endo-system-color: #936124; --endo-system-bg: #f8f0e4; }
+.endocrine-system-thyroid { --endo-system-color: #6b58a2; --endo-system-bg: #f0ecf8; }
+.endocrine-system-pancreas { --endo-system-color: #217464; --endo-system-bg: #e7f4ee; }
+.endocrine-system-list .endocrine-summary-copy > strong { color: var(--endo-ink); }
+.endocrine-system-list .endocrine-summary-copy > span { color: var(--endo-muted); }
+.endocrine-system-list .endocrine-system-number { color: var(--endo-system-color); }
+.endocrine-protocol-list { padding: 0.8rem 1.1rem 1.1rem; }
+.endocrine-protocol-group + .endocrine-protocol-group { margin-top: 0.95rem; }
+.endocrine-protocol-group {
+  border: 1px solid var(--endo-border);
+  border-left: 3px solid var(--group-accent, var(--endo-accent));
+  border-radius: 0.65rem;
+  background: #fff;
+  overflow: hidden;
+}
+.endocrine-protocol-group-cushing { --group-accent: #176b79; --group-wash: #e9f3f5; }
+.endocrine-protocol-group-addison { --group-accent: #6b5a9d; --group-wash: #f1eff8; }
+.endocrine-protocol-group-monitoring { --group-accent: #22775b; --group-wash: #e9f5ed; }
+.endocrine-protocol-group-reference { --group-accent: #936124; --group-wash: #f8f1e6; }
+.endocrine-protocol-group-other { --group-accent: #536e8a; --group-wash: #edf2f7; }
+.endocrine-protocol-group h5 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--endo-border);
+  background: var(--group-wash);
+  color: var(--group-accent);
+  font-size: 0.83rem;
+  font-weight: 800;
+}
+.endocrine-protocol-group h5 span { font-variant-numeric: tabular-nums; }
+.endocrine-protocol-group .endocrine-protocol-row { padding-inline: 0.8rem; }
+.endocrine-protocol-row > summary strong { color: var(--endo-ink); font-weight: 700; }
+.endocrine-protocol-row[open] > summary strong { color: var(--group-accent, var(--endo-accent)); }
+.endocrine-toolkit .endo-protocol-content {
+  gap: 0;
+  margin: 0 0 1rem;
+  border: 1px solid var(--endo-border);
+  border-radius: 0.65rem;
+  background: #fbfdfc;
+  overflow: hidden;
+}
+.endocrine-toolkit .endo-protocol-block { gap: 0.45rem; padding: 0.85rem 1rem; }
+.endocrine-toolkit .endo-protocol-block + .endo-protocol-block { border-top: 1px solid var(--endo-border); }
+.endocrine-toolkit .endo-protocol-block > strong { color: #176d70; font-size: 0.82rem; }
+.endocrine-toolkit .endo-clinical-paragraph,
+.endocrine-toolkit .endo-clinical-points { margin: 0; color: var(--endo-ink); font-size: 0.88rem; line-height: 1.65; }
+.endocrine-toolkit .endo-clinical-points { display: grid; gap: 0.35rem; padding-left: 1.2rem; }
+.endocrine-toolkit .endo-clinical-points li::marker { color: var(--endo-accent); }
+.endocrine-toolkit .endo-clinical-points strong,
+.endocrine-toolkit .endo-clinical-paragraph strong { color: #086268; font-weight: 800; }
+.endocrine-toolkit .endo-step-card { background: #e8f2f3; border-left-width: 3px; }
+.endocrine-toolkit .endo-step-card > span { color: #07646a; font-weight: 800; }
+.endocrine-toolkit .endo-step-card .endo-clinical-paragraph,
+.endocrine-toolkit .endo-step-card .endo-clinical-points { color: var(--endo-ink); }
+.endocrine-evidence { margin: 0; padding: 0.8rem 1rem; border-top: 1px solid var(--endo-border); background: #f1f6f4; }
+.endocrine-evidence summary { color: #185b61; font-weight: 750; }
+
+.app.dark .toolkit-module-panel {
+  --tk-ink: #edf6ef;
+  --tk-muted: #b8cdc1;
+  --tk-line: #416756;
+  --tk-wash: #1a3529;
+  --tk-accent: #8cdab0;
+  --tk-strong: #a9ebc5;
+}
+.app.dark .toolkit-view-dose,
+.app.dark .toolkit-view-infusion { --tk-accent: #91cfdd; --tk-strong: #b4e4ed; --tk-wash: #1d3540; --tk-line: #406475; }
+.app.dark .toolkit-view-genetics { --tk-accent: #c5b1ed; --tk-strong: #dbcdf5; --tk-wash: #29263d; --tk-line: #5b5079; }
+.app.dark .toolkit-view-interactions { --tk-accent: #b8c5f0; --tk-strong: #d7def9; --tk-wash: #252d43; --tk-line: #53617e; }
+.app.dark .toolkit-view-endocrine { --tk-accent: #8cdbd4; --tk-strong: #b2ede6; --tk-wash: #1a3535; --tk-line: #3d6867; }
+.app.dark .toolkit-view-ranges { --tk-accent: #9dcee2; --tk-strong: #c3e8f3; --tk-wash: #203541; --tk-line: #4b6b78; }
+.app.dark .toolkit-view-fluid { --tk-accent: #8bdacb; --tk-strong: #b3eee0; --tk-wash: #1a3732; --tk-line: #416d62; }
+.app.dark .toolkit-view-anesthesia { --tk-accent: #d0b1e7; --tk-strong: #ead4f6; --tk-wash: #30263b; --tk-line: #675174; }
+.app.dark .toolkit-view-emergency { --tk-accent: #f0aea5; --tk-strong: #ffd2ca; --tk-wash: #3b2927; --tk-line: #75534e; }
+.app.dark .toolkit-view-converter { --tk-accent: #9cd3ed; --tk-strong: #c8e9f6; --tk-wash: #203644; --tk-line: #4a6b7c; }
+.app.dark .toolkit-view-assistant { --tk-accent: #9bdfd3; --tk-strong: #c5f0e6; --tk-wash: #203b35; --tk-line: #4a756c; }
+.app.dark .toolkit-view-nutrition { --tk-accent: #a7ddaa; --tk-strong: #d3f0c9; --tk-wash: #243a28; --tk-line: #527356; }
+.app.dark .toolkit-view-haemotherapy { --tk-accent: #f1aabd; --tk-strong: #ffd0dc; --tk-wash: #372631; --tk-line: #765060; }
+.app.dark .toolkit-view-management { --tk-accent: #a0d5e5; --tk-strong: #c5eaf2; --tk-wash: #203641; --tk-line: #4a6978; }
+.app.dark .toolkit-view-chill,
+.app.dark .toolkit-view-fip { --tk-accent: #e3c486; --tk-strong: #f2dcae; --tk-wash: #352e21; --tk-line: #716042; }
+.app.dark .toolkit-module-panel .feature-card:not(.feature-card-soon),
+.app.dark .toolkit-module-panel .toolkit-utility-card,
+.app.dark .toolkit-module-panel .toolkit-reference-table,
+.app.dark .toolkit-module-panel .dose-weight-card,
+.app.dark .toolkit-module-panel .infusion-summary-card,
+.app.dark .toolkit-module-panel .anesthesia-action-panel,
+.app.dark .toolkit-module-panel .anesthesia-panel,
+.app.dark .toolkit-module-panel .clinical-input { border-color: var(--tk-line); background: #192a22; }
+.app.dark .toolkit-module-panel .toolkit-utility:not(.vital-constants-toolkit) .toolkit-utility-note,
+.app.dark .toolkit-module-panel .dose-weight-card,
+.app.dark .toolkit-module-panel .infusion-summary-card,
+.app.dark .toolkit-module-panel .anesthesia-action-panel,
+.app.dark .toolkit-module-panel .toolkit-utility-card.result-card { border-color: var(--tk-line); border-left-color: var(--tk-accent); background: var(--tk-wash); }
+.app.dark .toolkit-module-panel .toolkit-source-note:not(.vital-source-note),
+.app.dark .toolkit-module-panel .management-summary-strip,
+.app.dark .toolkit-module-panel .management-breakdown-item,
+.app.dark .toolkit-module-panel .management-total-banner { border-color: var(--tk-line); background: var(--tk-wash); }
+.app.dark .toolkit-module-panel .subtabs button.active,
+.app.dark .toolkit-module-panel .module-back-button { border-color: var(--tk-accent); background: var(--tk-wash); color: var(--tk-strong); }
+.app.dark .toolkit-module-panel .feature-card h3,
+.app.dark .toolkit-module-panel .feature-card p,
+.app.dark .toolkit-module-panel .feature-card li { color: var(--tk-ink); }
+.app.dark .toolkit-module-panel .feature-card-soon { border-color: #84575a; background: #382629; }
+.app.dark .toolkit-module-panel :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  border-color: var(--tk-line);
+  background-color: #172b25;
+  color: #edf7f0;
+  -webkit-text-fill-color: #edf7f0;
+}
+.app.dark .toolkit-module-panel :is(input, textarea)::placeholder {
+  color: #adc7b8;
+  -webkit-text-fill-color: #adc7b8;
+  opacity: 1;
+}
+.app.dark .toolkit-module-panel input:disabled { opacity: 0.6; }
+.toolkit-view-fluid .fluid-workspace-tabs button[aria-selected="true"] { border-color: var(--tk-accent); background: var(--tk-wash); color: var(--tk-strong); font-weight: 800; }
+.app.dark .toolkit-view-fluid .fluid-workspace-tabs button[aria-selected="true"] { border-color: var(--tk-accent); background: #205049; color: #ddf7e9; }
+
+.app.dark .endocrine-toolkit { --endo-ink: #eaf5f0; --endo-muted: #bed2c8; --endo-border: #446962; --endo-subtle: #1c3934; --endo-accent: #8cddd4; }
+.app.dark .endocrine-lab-note { background: #1a3734; color: #d1ede3; }
+.app.dark .endocrine-toolkit .endocrine-filters input,
+.app.dark .endocrine-toolkit .endocrine-filters select {
+  border-color: #4b746d;
+  background: #192c27;
+  color: #eef8f2;
+  -webkit-text-fill-color: #eef8f2;
+}
+.app.dark .endocrine-toolkit .endocrine-filters input::placeholder { color: #adc7bc; -webkit-text-fill-color: #adc7bc; opacity: 1; }
+.app.dark .endocrine-toolkit .endo-system-row button.active { background: #25524d; color: #dcf7ec; }
+.app.dark .endocrine-system-adrenal { --endo-system-color: #e8bd82; --endo-system-bg: #302b23; }
+.app.dark .endocrine-system-thyroid { --endo-system-color: #d0bff0; --endo-system-bg: #2b293b; }
+.app.dark .endocrine-system-pancreas { --endo-system-color: #a2dec9; --endo-system-bg: #1c3830; }
+.app.dark .endocrine-protocol-group { background: #172b27; }
+.app.dark .endocrine-protocol-group-cushing { --group-accent: #9bd8e2; --group-wash: #213b43; }
+.app.dark .endocrine-protocol-group-addison { --group-accent: #d0bdf0; --group-wash: #2d2a42; }
+.app.dark .endocrine-protocol-group-monitoring { --group-accent: #9de2bb; --group-wash: #213c2d; }
+.app.dark .endocrine-protocol-group-reference { --group-accent: #eacb91; --group-wash: #3a3022; }
+.app.dark .endocrine-protocol-group-other { --group-accent: #b9d2e9; --group-wash: #253748; }
+.app.dark .endocrine-protocol-group h5 { border-color: var(--endo-border); }
+.app.dark .endocrine-protocol-row > summary strong { color: var(--endo-ink); }
+.app.dark .endocrine-protocol-row[open] > summary strong { color: var(--group-accent, var(--endo-accent)); }
+.app.dark .endocrine-toolkit .endo-protocol-content { border-color: var(--endo-border); background: #142821; }
+.app.dark .endocrine-toolkit .endo-protocol-block + .endo-protocol-block { border-color: var(--endo-border); }
+.app.dark .endocrine-toolkit .endo-protocol-block > strong,
+.app.dark .endocrine-toolkit .endo-clinical-points strong,
+.app.dark .endocrine-toolkit .endo-clinical-paragraph strong { color: #9cddd1; }
+.app.dark .endocrine-toolkit .endo-clinical-paragraph,
+.app.dark .endocrine-toolkit .endo-clinical-points,
+.app.dark .endocrine-toolkit .endo-step-card .endo-clinical-paragraph,
+.app.dark .endocrine-toolkit .endo-step-card .endo-clinical-points { color: var(--endo-ink); }
+.app.dark .endocrine-toolkit .endo-step-card { background: #1d3b3b; border-color: var(--endo-border); border-left-color: var(--endo-accent); }
+.app.dark .endocrine-toolkit .endo-step-card > span { color: #a7e7df; }
+.app.dark .endocrine-evidence { background: #1b322c; border-color: var(--endo-border); }
+.app.dark .endocrine-evidence summary { color: #a1ded8; }
+
+@media (max-width: 700px) {
+  .toolkit-module-panel .protocol-guidance > div { grid-template-columns: 1fr; }
+  .endocrine-protocol-list { padding: 0.65rem; }
+  .endocrine-protocol-group .endocrine-protocol-row { padding-inline: 0.55rem; }
+  .endocrine-toolkit .endo-protocol-block { padding: 0.75rem; }
+  .endocrine-toolkit .endo-step-card { grid-template-columns: 1fr; gap: 0.3rem; }
+}

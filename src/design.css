@@ -2098,6 +2098,314 @@
     transition: none;
   }
 }
+
+/* Toolkit workspaces: clearer reading order and stronger, restrained contrast. */
+.toolkit-preview { min-height: 100vh; padding: 1rem; }
+.toolkit-preview.app.dark { background: #101816; color: #eaf5f0; }
+.toolkit-preview-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: 1200px;
+  margin: 0 auto 1.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #b9cec4;
+}
+.toolkit-preview-controls > div { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.toolkit-preview-controls button {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #a9c4b8;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #185549;
+  cursor: pointer;
+}
+.toolkit-preview-controls button[aria-pressed="true"] { background: #096d60; color: #fff; }
+.toolkit-preview-controls select { min-height: 2.5rem; padding: 0.45rem 0.75rem; border: 1px solid #a9c4b8; border-radius: 0.5rem; background: #fff; color: #185549; }
+.toolkit-preview-controls button:focus-visible { outline: 3px solid #e0a04c; outline-offset: 2px; }
+.toolkit-preview-content { max-width: 1200px; margin: 0 auto; }
+.toolkit-preview-hint { margin: 0 0 1rem; color: #4c625a; font-size: 0.82rem; }
+.app.dark .toolkit-preview-controls { border-bottom-color: #3c6152; }
+.app.dark .toolkit-preview-hint { color: #b4c9bd; }
+.app.dark .toolkit-preview-controls button { border-color: #4c7965; background: #19352b; color: #d1eadb; }
+.app.dark .toolkit-preview-controls select { border-color: #4c7965; background: #19352b; color: #d1eadb; }
+.app.dark .toolkit-preview-controls button[aria-pressed="true"] { background: #28724b; color: #fff; }
+
+.writing-toolkit {
+  --writing-ink: #17332d;
+  --writing-muted: #4c625a;
+  --writing-line: #c9d9d1;
+  --writing-accent: #096d60;
+}
+
+.writing-toolkit-header {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--writing-line);
+}
+
+.writing-toolkit-header h3,
+.writing-editor-toolbar strong,
+.writing-limit-heading strong,
+.writing-inspector h4,
+.writing-long-sentences h4 {
+  color: var(--writing-ink);
+}
+
+.writing-toolkit-header > div > p:last-child,
+.writing-privacy-note span,
+.writing-editor-toolbar span,
+.writing-limit-heading span,
+.writing-detail-list dt,
+.writing-empty-state,
+.writing-long-sentences li p {
+  color: var(--writing-muted);
+}
+
+.writing-privacy-note {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #b6d8ca;
+  border-left: 4px solid var(--writing-accent);
+  border-radius: 0.65rem;
+  background: #e9f5ef;
+}
+
+.writing-privacy-note strong { color: #07594d; }
+
+.writing-metric-strip {
+  overflow: hidden;
+  border: 1px solid #b9d5cb;
+  border-radius: 0.85rem;
+  background: #e8f2ed;
+}
+
+.writing-metric-strip > div:first-child { background: #d5ebe2; }
+.writing-metric-strip span { color: #315c50; }
+.writing-metric-strip strong { color: #07594d; }
+
+.writing-workspace {
+  border-color: #b9cec4;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(17, 58, 46, 0.06);
+}
+
+.writing-editor { background: #f9fbf9; }
+.writing-editor-toolbar strong { font-size: 1rem; }
+.writing-editor-actions button { border-color: #a9c4b8; color: #185549; }
+.writing-editor-actions button:last-child {
+  border-color: #096d60;
+  background: #096d60;
+  color: #fff;
+}
+.writing-editor-actions button:last-child:hover { background: #075449; color: #fff; }
+.writing-editor-actions button:focus-visible,
+.vital-species-button:focus-visible {
+  outline: 3px solid #e0a04c;
+  outline-offset: 2px;
+}
+
+.clinical-content .writing-toolkit textarea.writing-editor-textarea,
+.writing-toolkit textarea.writing-editor-textarea { border-color: #b7cfc3; }
+
+.writing-limit-panel {
+  border-color: #c3d4ca;
+  border-left: 4px solid #99701d;
+  background: #fff9e9;
+}
+.writing-limit-panel.is-within { border-left-color: #168265; background: #eaf7f0; }
+.writing-limit-panel.is-over { border-left-color: #b5453b; background: #fff0ed; }
+.writing-limit-progress { height: 8px; background: #d8e3dc; }
+.writing-limit-panel > p { color: #765313; }
+.writing-limit-panel.is-within > p { color: #116c50; }
+.writing-limit-panel.is-over > p { color: #9e322b; }
+
+.writing-inspector {
+  border-left-color: #b9cec4;
+  background: #eaf2ed;
+}
+.writing-inspector > section + section { border-color: #c1d2c8; }
+.writing-inspector h4,
+.writing-long-sentences h4 { color: #0d6254; }
+.writing-detail-list > div { border-color: #c7d7cd; }
+.writing-detail-list dd { color: #123f34; }
+.writing-insight-list li { color: #36594e; }
+.writing-insight-list li::before { background: #487f70; }
+.writing-term-list span { border-color: #b6d0c2; color: #24594b; }
+.writing-long-sentences {
+  border: 1px solid #d0ddd3;
+  border-left: 4px solid #197b69;
+  border-radius: 0.7rem;
+  background: #f7faf7;
+}
+
+.vital-constants-toolkit {
+  --vital-accent: #147159;
+  --vital-soft: #e8f4eb;
+  --vital-line: #b8d4c2;
+}
+.vital-constants-toolkit .vital-constants-header {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #c5d8ca;
+}
+.vital-constants-toolkit .vital-constants-header h3 { color: #173d30; }
+.vital-constants-toolkit .vital-constants-header p { color: #486457; }
+.vital-constants-toolkit .vital-constants-note {
+  border-color: #a9d2b4;
+  border-left: 4px solid #188258;
+  background: #e9f6ec;
+}
+.vital-constants-toolkit .vital-constants-note strong { color: #0f6843; }
+.vital-species-button {
+  border-color: #b8d4c2;
+  background: #f4f9f4;
+  color: #174633;
+  box-shadow: none;
+}
+.vital-species-button small { color: #456d56; }
+.vital-species-button:hover { border-color: #4b9b70; background: #e6f3e9; }
+.vital-species-button.is-active,
+.vital-species-button.is-active:hover {
+  border-color: #146a49;
+  background: #176e4d;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(23, 88, 58, 0.18);
+  outline: 0;
+}
+.vital-species-button.is-active small { color: #e0f5e8; }
+.vital-species-button.is-active:focus-visible { outline: 3px solid #e0a04c; }
+
+.vital-species-panel {
+  --vital-accent: #147159;
+  --vital-soft: #e8f4eb;
+  --vital-line: #b8d4c2;
+  border-color: var(--vital-line);
+  border-top: 5px solid var(--vital-accent);
+  background: var(--vital-soft);
+}
+.vital-species-panel.tone-equine { --vital-accent: #8b6331; --vital-soft: #f8f1e4; --vital-line: #dac9a9; }
+.vital-species-panel.tone-ruminant,
+.vital-species-panel.tone-bovine { --vital-accent: #24754f; --vital-soft: #eaf5ec; --vital-line: #b9d6c2; }
+.vital-species-panel.tone-porcine { --vital-accent: #a45662; --vital-soft: #fbf0f1; --vital-line: #e0c2c6; }
+.vital-species-panel.tone-exotic { --vital-accent: #357e8b; --vital-soft: #eaf4f5; --vital-line: #b8d3d8; }
+.vital-species-panel.tone-reptile { --vital-accent: #5b783b; --vital-soft: #f0f5e7; --vital-line: #cad8b5; }
+.vital-species-panel.tone-avian { --vital-accent: #3b7094; --vital-soft: #ebf3f9; --vital-line: #bed2df; }
+.vital-species-title { border-bottom-color: var(--vital-line); }
+.vital-species-title h4 { color: #1c342b; }
+.vital-species-title span,
+.vital-species-title strong { color: #425c4f; }
+.vital-metric {
+  border-color: var(--vital-line);
+  border-top: 3px solid var(--vital-accent);
+  background: #fff;
+}
+.vital-metric span { color: var(--vital-accent); }
+.vital-metric strong { color: #172d24; }
+.vital-metric small,
+.vital-metric p,
+.vital-fact-row span,
+.vital-note-list { color: #486052; }
+.vital-detail-block { border-color: var(--vital-line); background: #fff; }
+.vital-detail-block h5 { color: var(--vital-accent); }
+.vital-fact-row { border-bottom-color: var(--vital-line); }
+.vital-fact-row strong { color: #20372b; }
+.vital-source-note {
+  border-color: #bad5c2;
+  border-left: 4px solid #317d5d;
+  background: #f1f8f2;
+}
+.vital-source-note p { color: #466252; }
+
+.app.dark .writing-toolkit {
+  --writing-ink: #eff8f2;
+  --writing-muted: #b4c9bd;
+  --writing-line: #3a6253;
+  --writing-accent: #73d0b2;
+}
+.app.dark .writing-privacy-note { border-color: #3d6956; border-left-color: #73d0b2; background: #19372d; }
+.app.dark .writing-privacy-note strong { color: #a1ead0; }
+.app.dark .writing-metric-strip { border-color: #3c6d59; background: #19352b; }
+.app.dark .writing-metric-strip > div:first-child { background: #20503d; }
+.app.dark .writing-metric-strip span { color: #c3dfcc; }
+.app.dark .writing-metric-strip strong { color: #b0efcf; }
+.app.dark .writing-workspace { border-color: #3c6152; background: #17251e; }
+.app.dark .writing-editor { background: #1a2921; }
+.app.dark .writing-editor-actions button { border-color: #4c7965; color: #d1eadb; }
+.app.dark .writing-editor-actions button:last-child { border-color: #58b896; background: #146b53; color: #fff; }
+.app.dark .writing-editor-actions button:last-child:hover { background: #1a8063; }
+.app.dark .writing-limit-panel { border-color: #796739; border-left-color: #e3b552; background: #302b1b; }
+.app.dark .writing-limit-panel.is-within { border-color: #35795d; background: #193c2e; }
+.app.dark .writing-limit-panel.is-over { border-color: #8d4a43; background: #3c2522; }
+.app.dark .writing-limit-panel > p { color: #f3cf78; }
+.app.dark .writing-limit-panel.is-within > p { color: #a5e7bf; }
+.app.dark .writing-limit-panel.is-over > p { color: #ffafa3; }
+.app.dark .writing-inspector { border-left-color: #3c6152; background: #13291f; }
+.app.dark .writing-inspector > section + section,
+.app.dark .writing-detail-list > div { border-color: #315744; }
+.app.dark .writing-inspector h4,
+.app.dark .writing-long-sentences h4 { color: #8cdec0; }
+.app.dark .writing-detail-list dd { color: #e4f6e9; }
+.app.dark .writing-insight-list li { color: #c0d9c8; }
+.app.dark .writing-term-list span { border-color: #44745e; background: #1b392b; color: #d3eddb; }
+.app.dark .writing-long-sentences { border-color: #3d6150; border-left-color: #73d0b2; background: #182b20; }
+
+.app.dark .vital-constants-toolkit .vital-constants-header { border-bottom-color: #3d6450; }
+.app.dark .vital-constants-toolkit .vital-constants-header h3 { color: #edf8ef; }
+.app.dark .vital-constants-toolkit .vital-constants-header p { color: #bbd3c1; }
+.app.dark .vital-constants-toolkit .vital-constants-note { border-color: #41745a; border-left-color: #70d19a; background: #1b3929; }
+.app.dark .vital-constants-toolkit .vital-constants-note strong { color: #9ce6b3; }
+.app.dark .vital-species-button { border-color: #3d664d; background: #1a2f23; color: #e5f2e8; }
+.app.dark .vital-species-button small { color: #b4d0bc; }
+.app.dark .vital-species-button:hover { border-color: #76c995; background: #234632; }
+.app.dark .vital-species-button.is-active,
+.app.dark .vital-species-button.is-active:hover { border-color: #92ddb0; background: #28724b; color: #fff; }
+.app.dark .vital-species-button.is-active small { color: #e6f8e9; }
+.app.dark .vital-species-panel {
+  --vital-accent: #81d8a2;
+  --vital-line: #416b52;
+  border-color: var(--vital-line);
+  border-top-color: var(--vital-accent);
+  background: #152b20;
+}
+.app.dark .vital-species-panel.tone-equine { --vital-accent: #e0b77a; --vital-line: #795e3e; background: #30291f; }
+.app.dark .vital-species-panel.tone-porcine { --vital-accent: #e7a9b0; --vital-line: #785057; background: #302328; }
+.app.dark .vital-species-panel.tone-exotic { --vital-accent: #9ad9e2; --vital-line: #416b72; background: #1a2c30; }
+.app.dark .vital-species-panel.tone-reptile { --vital-accent: #bed88e; --vital-line: #627445; background: #282e20; }
+.app.dark .vital-species-panel.tone-avian { --vital-accent: #9ccbeb; --vital-line: #486984; background: #1d2a35; }
+.app.dark .vital-species-title h4,
+.app.dark .vital-metric strong,
+.app.dark .vital-fact-row strong { color: #edf7ef; }
+.app.dark .vital-species-title span,
+.app.dark .vital-species-title strong,
+.app.dark .vital-metric small,
+.app.dark .vital-metric p,
+.app.dark .vital-fact-row span,
+.app.dark .vital-note-list { color: #bfd4c6; }
+.app.dark .vital-metric,
+.app.dark .vital-detail-block { border-color: var(--vital-line); background: #1b3126; }
+.app.dark .vital-metric { border-top-color: var(--vital-accent); }
+.app.dark .vital-metric span,
+.app.dark .vital-detail-block h5 { color: var(--vital-accent); }
+.app.dark .vital-fact-row { border-bottom-color: var(--vital-line); }
+.app.dark .vital-source-note { border-color: #416c51; border-left-color: #74c992; background: #1b3124; }
+.app.dark .vital-source-note p { color: #bdd4c3; }
+
+@media (max-width: 960px) {
+  .writing-privacy-note { border-top: 1px solid #b6d8ca; border-left: 4px solid var(--writing-accent); padding: 0.7rem 0.9rem; }
+  .app.dark .writing-privacy-note { border-top-color: #3d6956; border-left: 4px solid #73d0b2; }
+  .writing-inspector { border-top-color: #b9cec4; }
+  .writing-inspector > section + section { border-left-color: #c1d2c8; }
+  .app.dark .writing-inspector { border-top-color: #3c6152; }
+}
+
+@media (max-width: 680px) {
+  .vital-species-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vital-species-button { min-height: 68px; padding: 0.7rem; }
+  .writing-metric-strip > div:nth-child(n + 3) { border-top-color: #b9d5cb; }
+  .app.dark .writing-metric-strip > div:nth-child(n + 3) { border-top-color: #3c6d59; }
+  .writing-inspector > section + section { border-top-color: #c1d2c8; }
+}
 /* Endocrinology: compact closed rows, progressive detail, and a distinct chart workspace. */
 .endocrine-toolkit { --endo-surface: #fff; --endo-subtle: #f5f8fa; --endo-border: #d9e3e8; --endo-muted: #536779; --endo-ink: #243b48; --endo-accent: #087b86; gap: 1rem; color: var(--endo-ink); }
 .app.dark .endocrine-toolkit { --endo-surface: #15231f; --endo-subtle: #101c19; --endo-border: #324840; --endo-muted: #acbeb6; --endo-ink: #edf5f1; --endo-accent: #83d5cb; }

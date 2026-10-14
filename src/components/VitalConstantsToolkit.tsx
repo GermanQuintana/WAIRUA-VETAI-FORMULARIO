@@ -557,6 +557,7 @@ export default function VitalConstantsToolkit({ lang }: { lang: Language }) {
             key={species.id}
             type="button"
             className={`vital-species-button is-available ${activeSpecies.id === species.id ? 'is-active' : ''}`}
+            aria-pressed={activeSpecies.id === species.id}
             onClick={() => setActiveSpeciesId(species.id)}
           >
             <span>{species.name[lang]}</span>

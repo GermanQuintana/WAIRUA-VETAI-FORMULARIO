@@ -13,6 +13,10 @@ const validPositive = (value: string) => {
 const format = (value: number, lang: Language, digits = 2) =>
   new Intl.NumberFormat(lang === 'es' ? 'es-ES' : 'en-GB', { maximumFractionDigits: digits }).format(value);
 
+function ProtocolGuidance({ lang, items }: { lang: Language; items: { label: Localized; text: Localized }[] }) {
+  return <dl className="protocol-guidance">{items.map((item) => <div key={item.label.en}><dt>{item.label[lang]}</dt><dd>{item.text[lang]}</dd></div>)}</dl>;
+}
+
 const chillMelatonin: Record<DogSize, string> = { small: '0.5–1 mg', medium: '1–3 mg', large: '5 mg' };
 
 function Bibliography({ lang, items }: { lang: Language; items: { title: string; url: string; note: Localized }[] }) {
@@ -78,7 +82,11 @@ export function ChillProtocolToolkit({ lang }: { lang: Language }) {
               <input type="number" min="0.01" step="0.1" value={concentration} onChange={(event) => setConcentration(event.target.value)} />
             </label>
           </div>
-          <p className="protocol-muted">{lang === 'es' ? 'La bibliografía no proporciona rangos de peso para “pequeño”, “mediano” o “grande”: ofrece una dosis fija de melatonina para cada categoría. Por eso se selecciona el tamaño clínico del perro y no se calcula con mg/kg. En Chill se usa la formulación inyectable de acepromazina aplicada sobre la mucosa oral (OTM), sin inyectarla; no se debe sustituir por una suspensión oral salvo indicación expresa de la ficha y del veterinario. La referencia describe 10 mg/mL; confirma la concentración real.' : 'The literature does not provide weight cut-offs for “small”, “medium”, or “large”: it gives a fixed melatonin dose for each category. Choose the dog’s clinical size rather than calculating melatonin in mg/kg. Chill uses the injectable acepromazine formulation applied to the oral mucosa (OTM), without injecting it; do not substitute an oral suspension unless the product information and veterinarian explicitly confirm it. The reference describes 10 mg/mL; confirm the actual concentration.'}</p>
+          <ProtocolGuidance lang={lang} items={[
+            { label: { es: 'Tamaño y melatonina', en: 'Size and melatonin' }, text: { es: 'La bibliografía no proporciona rangos de peso para “pequeño”, “mediano” o “grande”: ofrece una dosis fija de melatonina para cada categoría. Por eso se selecciona el tamaño clínico del perro y no se calcula con mg/kg.', en: 'The literature does not provide weight cut-offs for “small”, “medium”, or “large”: it gives a fixed melatonin dose for each category. Choose the dog’s clinical size rather than calculating melatonin in mg/kg.' } },
+            { label: { es: 'Acepromazina OTM', en: 'OTM acepromazine' }, text: { es: 'En Chill se usa la formulación inyectable aplicada sobre la mucosa oral, sin inyectarla. No se debe sustituir por una suspensión oral salvo indicación expresa de la ficha y del veterinario.', en: 'Chill uses the injectable formulation applied to the oral mucosa, without injecting it. Do not substitute an oral suspension unless the product information and veterinarian explicitly confirm it.' } },
+            { label: { es: 'Concentración', en: 'Concentration' }, text: { es: 'La referencia describe 10 mg/mL; confirma la concentración real.', en: 'The reference describes 10 mg/mL; confirm the actual concentration.' } },
+          ]} />
         </section>
         <section className="toolkit-utility-card result-card" aria-live="polite">
           <h4>{lang === 'es' ? 'Chill original · cronograma orientativo' : 'Original Chill · indicative schedule'}</h4>
@@ -96,7 +104,12 @@ export function ChillProtocolToolkit({ lang }: { lang: Language }) {
 
       <section className="toolkit-utility-card protocol-caution">
         <h4>{lang === 'es' ? 'Antes de prescribir' : 'Before prescribing'}</h4>
-        <p>{lang === 'es' ? 'Valorar estado cardiovascular y renal, edad, sedantes concomitantes y riesgo de hipotensión o sedación excesiva. La acepromazina no aporta analgesia. Avisar de posible ataxia y supervisar al perro; no repetir dosis automáticamente si la visita se retrasa. Ajustar o evitar la pauta según el paciente y el procedimiento.' : 'Assess cardiovascular and renal status, age, concurrent sedatives, and risks of hypotension or excessive sedation. Acepromazine provides no analgesia. Warn about possible ataxia and supervise the dog; do not automatically redose if the visit is delayed. Adjust or avoid the protocol according to the patient and procedure.'}</p>
+        <ProtocolGuidance lang={lang} items={[
+          { label: { es: 'Riesgos', en: 'Risks' }, text: { es: 'Valorar estado cardiovascular y renal, edad, sedantes concomitantes y riesgo de hipotensión o sedación excesiva.', en: 'Assess cardiovascular and renal status, age, concurrent sedatives, and risks of hypotension or excessive sedation.' } },
+          { label: { es: 'Analgesia', en: 'Analgesia' }, text: { es: 'La acepromazina no aporta analgesia.', en: 'Acepromazine provides no analgesia.' } },
+          { label: { es: 'Supervisión', en: 'Supervision' }, text: { es: 'Avisar de posible ataxia y supervisar al perro; no repetir dosis automáticamente si la visita se retrasa.', en: 'Warn about possible ataxia and supervise the dog; do not automatically redose if the visit is delayed.' } },
+          { label: { es: 'Ajuste', en: 'Adjustment' }, text: { es: 'Ajustar o evitar la pauta según el paciente y el procedimiento.', en: 'Adjust or avoid the protocol according to the patient and procedure.' } },
+        ]} />
       </section>
       <Bibliography lang={lang} items={[
         { title: 'Costa et al. JAVMA 2023 · DOI 10.2460/javma.23.02.0067', url: 'https://pubmed.ncbi.nlm.nih.gov/37495226/', note: { es: 'Ensayo prospectivo de 45 perros; apoya efecto sobre estrés, con diseño antes/después.', en: 'Prospective trial in 45 dogs; supports stress reduction, with a before/after design.' } },
@@ -187,8 +200,13 @@ export function FipProtocolToolkit({ lang }: { lang: Language }) {
               <input type="number" min="0.01" step="0.1" value={concentration} onChange={(event) => setConcentration(event.target.value)} placeholder={lang === 'es' ? 'Según etiqueta' : 'From label'} />
             </label>}
           </div>
-          <p className="protocol-muted">{lang === 'es' ? 'La forma efusiva (húmeda) o no efusiva (seca) no cambia por sí sola esta dosis base; la afectación ocular o neurológica sí modifica la pauta. Los mg/mL o mg/comprimido sirven para convertirla a volumen o unidades.' : 'Effusive (wet) or non-effusive (dry) disease does not by itself change this baseline dose; ocular or neurological involvement does. Mg/mL or mg/tablet converts it into volume or units.'}</p>
-          <p className="protocol-muted">{lang === 'es' ? 'Si coexisten signos oculares y neurológicos, selecciona neurológica. El escenario de 42 días se limita aquí a PIF sin afectación ocular o neurológica: el ensayo aleatorizado incluyó principalmente casos con derrame. Usa solo la concentración comprobada de la preparación oral; no extrapoles a remdesivir ni a GS inyectable.' : 'If ocular and neurological signs coexist, choose neurological. The 42-day scenario is limited here to FIP without ocular or neurological involvement: the randomised trial mainly enrolled cats with effusions. Use only the verified concentration of the oral preparation; do not extrapolate to remdesivir or injectable GS.'}</p>
+          <ProtocolGuidance lang={lang} items={[
+            { label: { es: 'Forma clínica', en: 'Clinical form' }, text: { es: 'La forma efusiva (húmeda) o no efusiva (seca) no cambia por sí sola esta dosis base.', en: 'Effusive (wet) or non-effusive (dry) disease does not by itself change this baseline dose.' } },
+            { label: { es: 'Ocular o neurológica', en: 'Ocular or neurological' }, text: { es: 'La afectación ocular o neurológica sí modifica la pauta. Si coexisten signos, selecciona neurológica.', en: 'Ocular or neurological involvement changes the regimen. If both are present, select neurological.' } },
+            { label: { es: 'Conversión', en: 'Conversion' }, text: { es: 'Los mg/mL o mg/comprimido sirven para convertir la dosis a volumen o unidades.', en: 'Mg/mL or mg/tablet converts the dose into volume or units.' } },
+            { label: { es: '42 días', en: '42 days' }, text: { es: 'Este escenario se limita aquí a PIF sin afectación ocular o neurológica: el ensayo aleatorizado incluyó principalmente casos con derrame.', en: 'This scenario is limited here to FIP without ocular or neurological involvement: the randomised trial mainly enrolled cats with effusions.' } },
+            { label: { es: 'Formulación', en: 'Formulation' }, text: { es: 'Usa solo la concentración comprobada de la preparación oral; no extrapoles a remdesivir ni a GS inyectable.', en: 'Use only the verified concentration of the oral preparation; do not extrapolate to remdesivir or injectable GS.' } },
+          ]} />
         </section>
         <section className="toolkit-utility-card result-card" aria-live="polite">
           <h4>{route === 'sc' ? (lang === 'es' ? 'Resultado · GS-441524 inyectable SC' : 'Result · injectable SC GS-441524') : (lang === 'es' ? 'Resultado · GS-441524 oral' : 'Result · oral GS-441524')}</h4>
@@ -200,7 +218,10 @@ export function FipProtocolToolkit({ lang }: { lang: Language }) {
             {route === 'oral' && formulation === 'suspension' && mgPerMl && <div className="protocol-result-row"><span>{lang === 'es' ? 'Volumen por toma · oral' : 'Volume per dose · oral'}</span><strong>{format(administrationMg / mgPerMl, lang, 3)} mL</strong></div>}
             {route === 'oral' && formulation === 'tablet' && mgPerTablet && <div className="protocol-result-row"><span>{lang === 'es' ? 'Comprimidos por toma · equivalencia matemática' : 'Tablets per dose · mathematical equivalent'}</span><strong>≈ {format(administrationMg / mgPerTablet, lang, 3)}</strong></div>}
             <div className="protocol-result-row"><span>{lang === 'es' ? `Estimación para ${duration} días` : `Estimate for ${duration} days`}</span><strong>{format(dailyMg * Number(duration), lang)} mg</strong></div>
-            <p className="protocol-muted">{lang === 'es' ? 'El total del ciclo presupone peso y dosis constantes; recalcula al menos cada 1–2 semanas y al ganar peso. No redondees comprimidos sin confirmar su divisibilidad.' : 'The course total assumes constant weight and dose; recalculate at least every 1–2 weeks and after weight gain. Do not round tablets without confirming whether they can be divided.'}</p>
+            <ProtocolGuidance lang={lang} items={[
+              { label: { es: 'Recalcular', en: 'Recalculate' }, text: { es: 'El total del ciclo presupone peso y dosis constantes; recalcula al menos cada 1–2 semanas y al ganar peso.', en: 'The course total assumes constant weight and dose; recalculate at least every 1–2 weeks and after weight gain.' } },
+              { label: { es: 'Comprimidos', en: 'Tablets' }, text: { es: 'No redondees comprimidos sin confirmar su divisibilidad.', en: 'Do not round tablets without confirming whether they can be divided.' } },
+            ]} />
           </> : <p>{lang === 'es' ? 'Introduce un peso válido para ver la dosis.' : 'Enter a valid weight to see the dose.'}</p>}
           {(route === 'sc' ? !mgPerMl : formulation === 'suspension' ? !mgPerMl : !mgPerTablet) && <p className="protocol-muted">{lang === 'es' ? 'Introduce un valor mayor que cero según la etiqueta para obtener mL o comprimidos. La dosis en mg sigue disponible.' : 'Enter a positive value from the label to obtain mL or tablets. The dose in mg remains available.'}</p>}
         </section>
@@ -232,11 +253,17 @@ export function FipProtocolToolkit({ lang }: { lang: Language }) {
       </section>
       <section className="toolkit-utility-card protocol-caution">
         <h4>{lang === 'es' ? 'Seguimiento y límites' : 'Monitoring and limits'}</h4>
-        <p>{lang === 'es' ? 'Administrar preferentemente en ayunas, 30 minutos antes de comer; puede usarse una pequeña cantidad de alimento si es necesario. Contactar a las 48 h, pesar cada 1–2 semanas, revisar derrames a las 2 semanas y repetir hemograma/bioquímica a las 2 semanas y después mensualmente si es posible. Antes de suspender, comprobar resolución clínica y analítica; AGP normal en dos mediciones separadas 1–2 semanas puede ayudar. Vigilar vómitos, diarrea y alteraciones analíticas.' : 'Ideally give on an empty stomach, 30 minutes before food; a small amount of food may be used if needed. Check in at 48 h, weigh every 1–2 weeks, reassess effusions at 2 weeks, and repeat blood count/biochemistry at 2 weeks and then monthly if possible. Before stopping, confirm clinical and laboratory resolution; normal AGP on two measurements 1–2 weeks apart can help. Monitor vomiting, diarrhoea, and laboratory abnormalities.'}</p>
-        <p>{duration === '42'
-          ? lang === 'es' ? '42 días: respaldado por estudios en gatos con buena respuesta, pero no implica suspensión automática. Si la respuesta no es rápida y completa, reevaluar y prolongar según criterio clínico.' : '42 days: supported by studies in cats responding well, but it does not mean automatic discontinuation. If response is not prompt and complete, reassess and extend as clinically indicated.'
-          : lang === 'es' ? '84 días: escenario usado en numerosos estudios; tampoco sustituye la decisión de suspender según respuesta.' : '84 days: a scenario used in many studies; it still does not replace response-based stopping decisions.'}</p>
-        <p>{lang === 'es' ? 'La disponibilidad y legalidad de GS-441524 varían por país. Evitar preparaciones no reguladas de composición incierta; verificar la vía legal, calidad y ficha de la formulación concreta. Molnupiravir y otros antivirales requieren valoración especializada y no se calculan aquí.' : 'GS-441524 availability and legality vary by country. Avoid unregulated products of uncertain composition; verify the lawful route, quality, and product-specific information. Molnupiravir and other antivirals need specialist assessment and are not calculated here.'}</p>
+        <ProtocolGuidance lang={lang} items={[
+          { label: { es: 'Administración', en: 'Administration' }, text: { es: 'Preferentemente en ayunas, 30 minutos antes de comer; puede usarse una pequeña cantidad de alimento si es necesario.', en: 'Ideally on an empty stomach, 30 minutes before food; a small amount of food may be used if needed.' } },
+          { label: { es: 'Controles', en: 'Check-ups' }, text: { es: 'Contactar a las 48 h, pesar cada 1–2 semanas, revisar derrames a las 2 semanas y repetir hemograma/bioquímica a las 2 semanas y después mensualmente si es posible.', en: 'Check in at 48 h, weigh every 1–2 weeks, reassess effusions at 2 weeks, and repeat blood count/biochemistry at 2 weeks and then monthly if possible.' } },
+          { label: { es: 'Antes de suspender', en: 'Before stopping' }, text: { es: 'Comprobar resolución clínica y analítica; AGP normal en dos mediciones separadas 1–2 semanas puede ayudar.', en: 'Confirm clinical and laboratory resolution; normal AGP on two measurements 1–2 weeks apart can help.' } },
+          { label: { es: 'Vigilancia', en: 'Watch for' }, text: { es: 'Vómitos, diarrea y alteraciones analíticas.', en: 'Vomiting, diarrhoea, and laboratory abnormalities.' } },
+          { label: { es: 'Duración', en: 'Duration' }, text: duration === '42'
+            ? { es: '42 días: respaldado por estudios en gatos con buena respuesta, pero no implica suspensión automática. Si la respuesta no es rápida y completa, reevaluar y prolongar según criterio clínico.', en: '42 days: supported by studies in cats responding well, but it does not mean automatic discontinuation. If response is not prompt and complete, reassess and extend as clinically indicated.' }
+            : { es: '84 días: escenario usado en numerosos estudios; tampoco sustituye la decisión de suspender según respuesta.', en: '84 days: a scenario used in many studies; it still does not replace response-based stopping decisions.' } },
+          { label: { es: 'Disponibilidad', en: 'Availability' }, text: { es: 'La disponibilidad y legalidad de GS-441524 varían por país. Evitar preparaciones no reguladas de composición incierta; verificar la vía legal, calidad y ficha de la formulación concreta.', en: 'GS-441524 availability and legality vary by country. Avoid unregulated products of uncertain composition; verify the lawful route, quality, and product-specific information.' } },
+          { label: { es: 'Otros antivirales', en: 'Other antivirals' }, text: { es: 'Molnupiravir y otros antivirales requieren valoración especializada y no se calculan aquí.', en: 'Molnupiravir and other antivirals need specialist assessment and are not calculated here.' } },
+        ]} />
       </section>
       <Bibliography lang={lang} items={[
         { title: 'ABCD · FIP guideline, updated March 2026', url: 'https://www.abcdcatsvets.org/guideline-for-feline-infectious-peritonitis/', note: { es: 'Fuente principal de dosis, duración, seguridad y seguimiento.', en: 'Primary source for dosing, duration, safety, and monitoring.' } },
