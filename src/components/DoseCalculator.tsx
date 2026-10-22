@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Language, labels } from '../i18n';
 import { translateMedicalTerm } from '../lib/terms';
 import { DoseCalculatorEntry } from '../types';
+import CriProtocolLinks from './CriProtocolLinks';
 
 interface Props {
   entries: DoseCalculatorEntry[];
@@ -11,6 +12,7 @@ interface Props {
   onPublicationChange?: (entry: DoseCalculatorEntry, status: 'active' | 'rejected') => void;
   canReview?: boolean;
   canActivate?: boolean;
+  onOpenCri?: (id?: string) => void;
 }
 
 const KG_TO_LB = 2.2046226218;
@@ -54,6 +56,7 @@ export default function DoseCalculator({
   onPublicationChange,
   canReview = false,
   canActivate = false,
+  onOpenCri,
 }: Props) {
   const t = labels[lang];
   const [weightKg, setWeightKg] = useState('');
@@ -221,6 +224,8 @@ export default function DoseCalculator({
           </select>
         </label>
       </div>
+
+      {onOpenCri && <CriProtocolLinks lang={lang} query={search} onOpen={onOpenCri} />}
 
       <details className="toolkit-reference-table accordion-card ameg-reference-card">
         <summary className="accordion-summary">

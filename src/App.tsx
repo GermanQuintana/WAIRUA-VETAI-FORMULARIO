@@ -9,6 +9,8 @@ import ClinicalNutritionToolkit from './components/ClinicalNutritionToolkit';
 import { ChillProtocolToolkit, FipProtocolToolkit } from './components/ClinicalProtocolToolkits';
 import ComingSoonToolkit from './components/ComingSoonToolkit';
 import DoseCalculator from './components/DoseCalculator';
+import CriProtocolLinks from './components/CriProtocolLinks';
+import { normalizeCriSearch, searchCriProtocols } from './lib/criSearch';
 import DrugInteractionChecker from './components/DrugInteractionChecker';
 import EntryCard from './components/EntryCard';
 import GeneticsToolkit from './components/GeneticsToolkit';
@@ -64,6 +66,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const EndocrineToolkit = lazy(() => import('./components/EndocrineToolkit'));
 const HaemotherapyCalculator = lazy(() => import('./components/HaemotherapyCalculator'));
+const ContinuousInfusionToolkit = lazy(() => import('./components/ContinuousInfusionToolkit'));
 const FluidTherapyToolkit = lazy(() => import('./components/FluidTherapyToolkit'));
 
 const productTabs = ['prescription', 'human', 'active', 'otc', 'toolkit'] as const;
@@ -73,6 +76,7 @@ const toolkitViews = [
   'overview',
   'dose',
   'infusion',
+  'cri',
   'haemotherapy',
   'endocrine',
   'genetics',
@@ -105,6 +109,7 @@ const availableToolkitViewSet = new Set<ToolkitView>([
   'dose',
   'endocrine',
   'infusion',
+  'cri',
   'constants',
   'ranges',
   'fluid',
@@ -122,6 +127,7 @@ const availableToolkitViewSet = new Set<ToolkitView>([
 const freeToolkitViewSet = new Set<ToolkitView>([
   'haemotherapy',
   'infusion',
+  'cri',
   'constants',
   'converter',
   'surface',
@@ -750,10 +756,12 @@ function App() {
   const [editingEntry, setEditingEntry] = useState<TherapeuticEntry | null>(null);
   const [lang, setLang] = useState<Language>('es');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [activeTab, setActiveTab] = useState<ProductTab>('prescription');
+  const [activeTab, setActiveTab] = useState<ProductTab>(() => new URLSearchParams(window.location.search).get('view') === 'toolkit' ? 'toolkit' : 'prescription');
   const [showAuthScreen, setShowAuthScreen] = useState(false);
   const [activeKnowledgeView, setActiveKnowledgeView] = useState<ActiveView>('records');
-  const [activeToolkitView, setActiveToolkitView] = useState<ToolkitView>('overview');
+  const [criProtocolId, setCriProtocolId] = useState<string | undefined>();
+  const openCri = (id?: string) => { setCriProtocolId(id); setActiveTab('toolkit'); setActiveToolkitView('cri'); };
+  const [activeToolkitView, setActiveToolkitView] = useState<ToolkitView>(() => { const requested = new URLSearchParams(window.location.search).get('tool'); return requested && toolkitViews.includes(requested as ToolkitView) ? requested as ToolkitView : 'overview'; });
   const [toolkitSearch, setToolkitSearch] = useState('');
   const [isLiveExpanded, setIsLiveExpanded] = useState(true);
 
@@ -1248,10 +1256,11 @@ function App() {
   };
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
     if (activeTab === 'toolkit' && !canAccessToolkitView(activeToolkitView, hasPremiumAccess)) {
       setActiveToolkitView('overview');
     }
-  }, [activeTab, activeToolkitView, hasPremiumAccess]);
+  }, [activeTab, activeToolkitView, hasPremiumAccess, authLoading, isAuthenticated]);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -2094,6 +2103,7 @@ function App() {
       'chill-protocol': ['protocolo', 'calculadora', 'perro', 'preconsulta', 'miedo', 'ansiedad', 'agresividad', 'reactividad', 'gabapentina', 'acepromacina', 'otm'],
       'fip-protocol': ['protocolo', 'calculadora', 'gato', 'pif', 'fip', 'gs-441524', 'infecciosas', 'oral', 'inyectable sc', 'seguimiento', 'efusiva', 'seca', 'ocular', 'neurológica', 'neurológica', 'remisión'],
       'dose-calculator': ['calculadora', 'dosis', 'mg/kg', 'mg', 'ml', 'comprimidos', 'medicación'],
+      'continuous-infusions': ['cri', 'infusión', 'infusion', 'propofol', 'dexmedetomidina', 'ketamina', 'ketamine', 'furosemida', 'furosemide', 'fenobarbital', 'phenobarbital', 'midazolam', 'epilepsia', 'convulsiones', 'tiva', 'noradrenalina', 'dopamina', 'dobutamina', 'bomba', 'jeringa', 'lkd'],
       'analgesic-infusions': ['calculadora', 'infusión', 'analgesia', 'cri', 'mlk', 'flk', 'perfusión'],
       'species-constants': ['tabla', 'referencia', 'perro', 'gato', 'conejo', 'hurón', 'constantes', 'triage', 'urgencias', 'temperatura', 'frecuencia cardiaca', 'frecuencia respiratoria', 'presión arterial', 'diuresis'],
       'lab-ranges': ['tabla', 'laboratorio', 'hematología', 'bioquímica', 'electrolitos', 'gasometría', 'hemograma', 'urea', 'creatinina', 'alt', 'glucosa', 'pcr', 'coagulación'],
@@ -2111,11 +2121,12 @@ function App() {
       anesthesia: ['protocolo', 'anestesia', 'quirófano', 'dosis', 'concentración', 'impresión', 'premedicación', 'inducción', 'mantenimiento', 'analgesia', 'monitorización', 'sedación'],
       recover: ['guía', 'urgencias', 'recover', 'rcp', 'anafilaxia', 'shock', 'reanimación', 'hipoglucemia', 'status epiléptico', 'convulsiones', 'paro cardiorrespiratorio', 'reversores'],
     };
-    const query = toolkitSearch.trim().toLocaleLowerCase();
+    const query = normalizeCriSearch(toolkitSearch.trim());
     const filteredCards = cards.filter((card) => {
       if (!query || cards !== toolkitModules) return true;
-      const haystack = [card.title[lang], card.description[lang], ...(toolkitTags[card.id] ?? [])].join(' ').toLocaleLowerCase();
-      return haystack.includes(query);
+      if (card.id === 'continuous-infusions' && searchCriProtocols(query).length > 0) return true;
+      const haystack = normalizeCriSearch([card.title[lang], card.description[lang], ...(toolkitTags[card.id] ?? [])].join(' '));
+      return query.split(/\s+/).every((term) => haystack.includes(term));
     });
     const orderedCards = cards === toolkitModules ? [...filteredCards].sort((left, right) => left.title[lang].localeCompare(right.title[lang], lang)) : cards;
 
@@ -2159,6 +2170,7 @@ function App() {
                       className="feature-card-link"
                       onClick={() => {
                         setActiveTab('toolkit');
+                        setCriProtocolId(card.id === 'continuous-infusions' && toolkitSearch.trim() ? searchCriProtocols(toolkitSearch)[0]?.id : undefined);
                         setActiveToolkitView(card.toolkitView!);
                       }}
                     >
@@ -3209,6 +3221,8 @@ function App() {
               </label>
             </div>
 
+            {activeKnowledgeView === 'records' && <CriProtocolLinks lang={lang} query={activeQuery} onOpen={openCri} />}
+
             <section className="tag-filter-panel">
               <div className="tag-filter-header">
                 <div>
@@ -3775,7 +3789,7 @@ function App() {
               </div>
               {activeToolkitView !== 'overview' ? (
                 <button type="button" className="module-back-button" onClick={() => setActiveToolkitView('overview')}>
-                  {lang === 'es' ? 'Volver al resumen' : 'Back to overview'}
+                  {lang === 'es' ? 'Volver al toolkit' : 'Back to toolkit'}
                 </button>
               ) : null}
             </div>
@@ -3794,6 +3808,7 @@ function App() {
             {activeToolkitView === 'dose' && (
               <DoseCalculator
                 entries={doseCalculatorEntries}
+                onOpenCri={openCri}
                 lang={lang}
                 onOpenKnowledge={(entry) => openKnowledgeRecord(entry.linkedEntryId, entry.activeIngredient)}
                 onReviewEntry={(entry, approvalLevel) => {
@@ -3808,6 +3823,10 @@ function App() {
                 canActivate={canActivateEditorial}
               />
             )}
+
+            {activeToolkitView === 'cri' && <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando CRI…' : 'Loading CRI…'}</p>}><ContinuousInfusionToolkit key={criProtocolId ?? "default"} lang={lang} initialProtocolId={criProtocolId} /></Suspense>}
+
+            {(['infusion', 'fluid', 'anesthesia'] as ToolkitView[]).includes(activeToolkitView) && <CriProtocolLinks lang={lang} onOpen={openCri} />}
 
             {activeToolkitView === 'infusion' && <InfusionCalculator lang={lang} />}
 

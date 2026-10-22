@@ -15,6 +15,7 @@ export interface LocalizedCollectionCard {
     | 'overview'
     | 'dose'
     | 'infusion'
+    | 'cri'
     | 'haemotherapy'
     | 'endocrine'
     | 'genetics'
@@ -206,6 +207,12 @@ export const toolkitModules: LocalizedCollectionCard[] = [
     statusTone: 'available',
     accessTier: 'free',
     toolkitView: 'infusion',
+  },
+  {
+    id: 'continuous-infusions',
+    title: { es: 'Infusión continua · CRI', en: 'Continuous infusion · CRI' },
+    description: { es: 'Principios activos y combinaciones: dosis por indicación, bomba, jeringas y evidencia. Incluye carga de fenobarbital.', en: 'Active ingredients and combinations: indication-specific doses, pump, syringes and evidence. Includes phenobarbital loading.' },
+    status: { es: 'Gratis', en: 'Free' }, statusTone: 'available', accessTier: 'free', toolkitView: 'cri',
   },
   {
     id: 'species-constants',

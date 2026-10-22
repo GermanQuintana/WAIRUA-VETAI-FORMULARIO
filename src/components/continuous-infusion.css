@@ -1,0 +1,519 @@
+.cri-toolkit {
+  --cri-paper: #fff;
+  --cri-ink: #183c43;
+  --cri-muted: #46636b;
+  --cri-line: #b7d0d5;
+  --cri-wash: #eaf4f6;
+  --cri-accent: #155e70;
+  color: var(--cri-ink);
+  display: grid;
+  gap: 1.2rem;
+}
+.app.dark .cri-toolkit {
+  --cri-paper: #182d32;
+  --cri-ink: #e7f4f5;
+  --cri-muted: #b6d1d6;
+  --cri-line: #436970;
+  --cri-wash: #203d45;
+  --cri-accent: #a7dfeb;
+}
+.cri-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid var(--cri-line);
+  padding-bottom: 1rem;
+}
+.cri-heading h3 {
+  font-size: 1.5rem;
+  margin: 0.2rem 0 0.5rem;
+  color: var(--cri-ink);
+}
+.cri-heading p,
+.cri-protocol-heading p {
+  margin: 0.3rem 0;
+  color: var(--cri-muted);
+}
+.cri-scope {
+  align-self: start;
+  font-size: 0.8rem;
+  color: var(--cri-accent);
+}
+.cri-patient {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--cri-wash);
+  border-radius: 10px;
+}
+.cri-toolkit label {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--cri-ink);
+}
+.cri-toolkit input:not([type="checkbox"]),
+.cri-toolkit select {
+  min-width: 0;
+  width: 100%;
+  min-height: 42px;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--cri-line);
+  border-radius: 6px;
+  background: var(--cri-paper);
+  color: var(--cri-ink);
+  font: inherit;
+  box-sizing: border-box;
+}
+.cri-toolkit input[aria-invalid="true"] {
+  border-color: #bf4527;
+}
+.cri-toolkit button {
+  min-height: 40px;
+  border: 1px solid var(--cri-line);
+  background: var(--cri-paper);
+  color: var(--cri-accent);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  transition: border-color 0.15s;
+}
+.cri-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.85fr) minmax(0, 2fr);
+  gap: 1.5rem;
+}
+.cri-picker {
+  min-width: 0;
+}
+.cri-picker nav {
+  display: grid;
+  margin-top: 0.8rem;
+}
+.cri-picker nav button {
+  display: grid;
+  text-align: left;
+  gap: 0.35rem;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--cri-line);
+  border-radius: 0;
+  padding: 0.85rem;
+}
+.cri-picker nav button span {
+  color: var(--cri-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.cri-toolkit button[aria-pressed="true"] {
+  background: var(--cri-wash);
+  border-color: var(--cri-accent);
+  color: var(--cri-accent);
+}
+.cri-toolkit button:hover {
+  background: var(--cri-wash);
+}
+.cri-workspace {
+  min-width: 0;
+}
+.cri-protocol-heading h4 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--cri-ink);
+}
+.cri-warning {
+  background: #fff2df;
+  color: #754215;
+  border-left: 3px solid #af6725;
+  padding: 0.8rem 1rem;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  border-radius: 4px;
+}
+.app.dark .cri-warning {
+  background: #392d20;
+  color: #ffdcac;
+  border-color: #dfa453;
+}
+.cri-modes {
+  display: flex;
+  gap: 0.4rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+.cri-preparation-fields,
+.cri-drug-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+.cri-preparation-fields {
+  margin-bottom: 1rem;
+}
+.cri-drug {
+  padding: 1rem 0;
+  border-top: 1px solid var(--cri-line);
+}
+.cri-drug-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
+.cri-drug-heading span {
+  color: var(--cri-accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.cri-toolkit .cri-reference-button {
+  margin: 0.6rem 0;
+  padding: 0.3rem 0.6rem;
+  min-height: 32px;
+  font-size: 0.78rem;
+}
+.cri-muted,
+.cri-footer {
+  color: var(--cri-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.cri-output {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--cri-wash);
+  border-left: 3px solid var(--cri-accent);
+  padding: 0.8rem 1rem;
+  gap: 1rem;
+}
+.cri-output span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--cri-muted);
+  margin-bottom: 0.3rem;
+}
+.cri-output strong {
+  font-size: 1.45rem;
+  color: var(--cri-accent);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.cri-output small {
+  font-size: 0.8rem;
+}
+.cri-guidance {
+  margin: 1rem 0;
+  font-size: 0.84rem;
+}
+.cri-guidance > div {
+  display: grid;
+  grid-template-columns: 125px minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--cri-line);
+}
+.cri-guidance dt {
+  font-weight: 700;
+  color: var(--cri-accent);
+}
+.cri-guidance dd {
+  margin: 0;
+  line-height: 1.5;
+}
+.cri-evidence,
+.cri-phenobarbital {
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--cri-line);
+  border-radius: 7px;
+  background: var(--cri-paper);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.cri-toolkit summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--cri-accent);
+  min-height: 24px;
+}
+.cri-toolkit a {
+  display: block;
+  color: var(--cri-accent);
+  text-decoration: underline;
+  margin-top: 0.6rem;
+  overflow-wrap: anywhere;
+}
+.cri-toolkit .cri-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cri-checkbox input {
+  width: 18px;
+  height: 18px;
+}
+.cri-footer {
+  border-top: 1px solid var(--cri-line);
+  padding-top: 1rem;
+}
+@media (max-width: 760px) {
+  .cri-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cri-picker nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cri-heading {
+    display: block;
+  }
+  .cri-scope {
+    display: block;
+    margin-top: 0.8rem;
+  }
+  .cri-patient label {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+@media (max-width: 450px) {
+  .cri-drug-inputs,
+  .cri-preparation-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cri-guidance > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+  .cri-picker nav {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cri-toolkit button {
+    transition: none;
+  }
+}
+
+.cri-toolkit .cri-protocol-picker {
+  display: grid;
+  margin-bottom: .8rem;
+}
+@media (max-width: 760px) {
+  .cri-toolkit .cri-protocol-picker {
+    display: grid;
+    margin-top: 0.8rem;
+  }
+  .cri-picker nav {
+    display: none;
+  }
+}
+/* Override the app's general dark button surface inside this workspace. */
+.app.dark .cri-toolkit button {
+  background: var(--cri-paper);
+  color: var(--cri-accent);
+  border-color: var(--cri-line);
+}
+.app.dark .cri-toolkit button[aria-pressed="true"],
+.app.dark .cri-toolkit button:hover {
+  background: var(--cri-wash);
+  color: var(--cri-accent);
+  border-color: var(--cri-accent);
+}
+
+.cri-categories,
+.cri-volume-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.cri-categories button[aria-pressed="true"] {
+  font-weight: 750;
+}
+.cri-toolkit button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cri-toolkit .cri-product-field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.cri-toolkit .cri-product-source {
+  font-size: 0.75rem;
+  margin: 0;
+}
+.cri-product-field input[readonly] {
+  background: var(--cri-wash);
+}
+.cri-solution-planner {
+  padding: 0.9rem;
+  background: var(--cri-wash);
+  border-radius: 7px;
+  margin-bottom: 1rem;
+}
+.cri-volume-presets {
+  margin-bottom: 0.85rem;
+}
+.cri-solution-planner .cri-preparation-fields {
+  margin-bottom: 0;
+}
+.cri-preparation-recipe,
+.cri-loading-kind {
+  color: var(--cri-accent);
+  background: var(--cri-wash);
+  padding: 0.7rem 0.8rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  border-left: 3px solid var(--cri-accent);
+}
+.cri-loading-workspace .cri-checkbox {
+  margin: 0.7rem 0 1rem;
+}
+.cri-loading-workspace {
+  font-size: 0.85rem;
+}
+@media (max-width: 760px) {
+  .cri-toolkit .cri-protocol-picker {
+    margin-top: 0;
+  }
+}
+
+.cri-drug-inputs {
+  align-items: start;
+}
+.cri-volume-delivery {
+  color: var(--cri-ink);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* CRI workbench: one search, a quiet index and high-contrast calculations. */
+.cri-toolkit, .cri-related {
+  --cri-paper: #fff;
+  --cri-ink: #17383f;
+  --cri-muted: #3d5962;
+  --cri-line: #8ba8b0;
+  --cri-wash: #edf5f6;
+  --cri-accent: #075568;
+}
+.app.dark .cri-toolkit, .app.dark .cri-related {
+  --cri-paper: #162d34;
+  --cri-ink: #edf8fa;
+  --cri-muted: #bfd6dd;
+  --cri-line: #64858f;
+  --cri-wash: #223f49;
+  --cri-accent: #a2e9f6;
+}
+.cri-search { display: grid; gap: .5rem; }
+.cri-search-input { display: flex; align-items: center; gap: .65rem; border: 2px solid var(--cri-accent); border-radius: 8px; padding: .2rem .6rem; background: var(--cri-paper); }
+.cri-search-input > span { font-size: 1.65rem; color: var(--cri-accent); }
+.cri-toolkit .cri-search-input input { border: 0; background: transparent; font-size: 1rem; min-height: 44px; }
+.cri-toolkit input::placeholder { color: var(--cri-muted); opacity: 1; }
+.cri-search-input:focus-within { outline: 3px solid var(--cri-line); outline-offset: 3px; }
+.cri-toolkit .cri-search-input button { border: 0; font-size: 1.25rem; min-width: 40px; }
+.cri-search-hint, .cri-result-count { margin: 0; font-size: .78rem; line-height: 1.5; color: var(--cri-muted); }
+.cri-result-count { margin-bottom: .65rem; font-weight: 650; }
+.cri-picker nav { max-height: 620px; overflow-y: auto; scrollbar-width: thin; padding-right: .3rem; }
+.cri-picker nav button { padding: .7rem .75rem; line-height: 1.4; }
+.cri-toolkit .cri-categories button[aria-pressed="true"],
+.cri-toolkit .cri-modes button[aria-pressed="true"],
+.cri-toolkit .cri-volume-presets button[aria-pressed="true"],
+.cri-toolkit .cri-dilution-presets button[aria-pressed="true"] { background: #075568; color: #fff; border-color: #075568; }
+.app.dark .cri-toolkit .cri-categories button[aria-pressed="true"],
+.app.dark .cri-toolkit .cri-modes button[aria-pressed="true"],
+.app.dark .cri-toolkit .cri-volume-presets button[aria-pressed="true"],
+.app.dark .cri-toolkit .cri-dilution-presets button[aria-pressed="true"] { background: #a2e9f6; color: #102d36; border-color: #a2e9f6; }
+.cri-toolkit .cri-picker nav button[aria-pressed="true"] { background: var(--cri-wash); border-left: 4px solid var(--cri-accent); }
+.cri-toolkit .cri-output { background: #123f49; border-left: 4px solid #37bfd1; border-radius: 5px; padding: 1rem; }
+.cri-toolkit .cri-output span { color: #d3e9ed; }
+.cri-toolkit .cri-output strong { color: #fff; }
+.app.dark .cri-toolkit .cri-output { background: #0d242c; border-color: #a2e9f6; }
+.cri-evidence h5 { font-size: .9rem; margin: 0; color: var(--cri-accent); }
+.cri-toolkit .cri-dilution-presets { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .9rem; align-items: center; }
+.cri-dilution-presets > span { font-size: .8rem; flex-basis: 100%; font-weight: 650; }
+.cri-toolkit :is(button, a, input, select):focus-visible, .cri-related :is(button, a):focus-visible { outline: 3px solid var(--cri-accent); outline-offset: 3px; }
+.cri-info { display: inline-flex; position: relative; vertical-align: middle; margin-inline: .3rem; font-weight: 400; }
+.cri-toolkit .cri-info-trigger { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; min-height: 22px; padding: 0; border: 1.5px solid var(--cri-accent); border-radius: 50%; font: 700 .8rem Georgia, serif; color: var(--cri-accent); background: var(--cri-paper); }
+.cri-info-tip { position: absolute; top: 100%; padding: .8rem; width: min(280px, calc(100vw - 70px)); box-sizing: border-box; z-index: 20; background: #123f49; color: #fff; border: 1px solid #77c4d1; border-radius: 5px; font: 400 .8rem/1.55 Arial, sans-serif; box-shadow: 0 5px 16px #0003; text-align: left; }
+.cri-related { margin: .8rem 0 1.2rem; padding: .9rem 0; border-block: 1px solid var(--cri-line); color: var(--cri-ink); }
+.cri-related-heading { display: flex; align-items: center; justify-content: space-between; gap: .7rem; flex-wrap: wrap; }
+.cri-related p { color: var(--cri-muted); font-size: .82rem; line-height: 1.5; margin: .5rem 0 0; }
+.cri-related button { font: inherit; font-size: .85rem; cursor: pointer; border: 1px solid var(--cri-line); border-radius: 5px; padding: .6rem .75rem; background: var(--cri-paper); color: var(--cri-accent); text-align: left; }
+.app.dark .cri-related button { background: var(--cri-paper); color: var(--cri-accent); border-color: var(--cri-line); }
+.cri-related-results { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .4rem; }
+.cri-related-results button { display: grid; gap: .3rem; width: 100%; }
+.cri-related-results :is(span, small) { color: var(--cri-muted); line-height: 1.5; }
+@media(max-width: 760px) {
+  .cri-info-trigger { position: relative; }
+  .cri-info-trigger::after { content: ''; position: absolute; inset: -6px; }
+  .cri-search-input { padding-inline: .4rem; gap: .3rem; }
+  .cri-toolkit .cri-search-input input { font-size: 16px; }
+}
+.app .cri-toolkit .cri-search-input input { border: 0; box-shadow: none; background: transparent; }
+.cri-inline-label { display: inline-flex; align-items: center; gap: .2rem; }
+.cri-toolkit .cri-product-help { margin: 0; font-size: .75rem; font-weight: 400; color: var(--cri-muted); line-height: 1.5; }
+.cri-search-input input::-webkit-search-cancel-button { display: none; }
+.app .cri-toolkit select {
+  appearance: none;
+  padding-right: 2.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%2364858f' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .65rem center;
+  background-size: 12px 8px;
+}
+/* Selection text and background must change together to keep contrast in every frame. */
+.app .cri-toolkit button[aria-pressed] { transition: none; }
+
+/* Bag preparation follows the MLK workflow: configuration beside a stable recipe. */
+.cri-layout.cri-layout-bags { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.cri-layout-bags .cri-picker { display: flex; align-items: end; gap: 1rem; flex-wrap: wrap; }
+.cri-layout-bags .cri-picker nav { display: none; }
+.cri-layout-bags .cri-protocol-picker { width: min(100%, 32rem); margin: 0; }
+.cri-layout-bags .cri-result-count { padding-bottom: .5rem; }
+.cri-workspace { container-type: inline-size; }
+.cri-bag-planner { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.5rem; row-gap: 1.2rem; align-items: start; }
+.cri-bag-config-fluid { grid-column: 1; grid-row: 1; }
+.cri-bag-config-dose { grid-column: 1; grid-row: 2; }
+.cri-bag-review { grid-column: 2; grid-row: 1 / span 3; }
+.cri-bag-planner .cri-mixture-note { grid-column: 1; grid-row: 3; }
+.cri-bag-step { min-width: 0; border-top: 1px solid var(--cri-line); padding-top: 1rem; }
+.cri-bag-step h5, .cri-mixture-note h5 { margin: 0 0 1rem; font-size: .95rem; color: var(--cri-ink); display: flex; align-items: center; gap: .55rem; line-height: 1.5; }
+.cri-bag-step h5 > span { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--cri-accent); color: var(--cri-paper); font-size: .8rem; }
+.cri-bag-planner .cri-preparation-fields, .cri-bag-planner .cri-drug-inputs { grid-template-columns: minmax(0, 1fr); }
+.cri-bag-separate, .cri-mixture-note { color: var(--cri-ink); background: var(--cri-wash); border-left: 3px solid var(--cri-accent); padding: .8rem; font-size: .82rem; line-height: 1.6; }
+.cri-mixture-note h5 { margin-bottom: .5rem; }
+.cri-mixture-note p { margin: 0; }
+.cri-fluid-advice { margin-top: .85rem; padding: .8rem; border-left: 3px solid var(--cri-accent); background: var(--cri-wash); color: var(--cri-ink); font-size: .8rem; line-height: 1.6; }
+.cri-fluid-advice p { margin: .3rem 0; }
+.cri-fluid-advice.is-unverified { border-color: #af6725; }
+.cri-toolkit .cri-fluid-advice a { margin-top: .3rem; }
+.cri-bag-result { padding-top: .7rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--cri-line); padding-bottom: 1rem; }
+.cri-bag-result .cri-drug-heading > span { font-size: .72rem; }
+.cri-toolkit .cri-bag-recipe > div > small { display: block; color: #d3e9ed; margin-top: .3rem; line-height: 1.5; }
+.cri-bag-delivery strong { font-size: 1.25rem; }
+.cri-rate-adjustment { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin-top: 1rem; align-items: start; }
+.cri-rate-adjustment > div { display: grid; gap: .4rem; font-size: .8rem; line-height: 1.5; }
+.cri-rate-adjustment strong { display: block; color: var(--cri-accent); font-size: 1.2rem; }
+.cri-rate-adjustment small, .cri-rate-range { color: var(--cri-muted); font-size: .78rem; line-height: 1.5; }
+.cri-stability { color: var(--cri-ink); border-left: 3px solid var(--cri-accent); padding-left: .75rem; font-size: .8rem; line-height: 1.6; }
+.cri-bag-total { background: var(--cri-wash); color: var(--cri-ink); padding: .8rem; font-size: .85rem; line-height: 1.6; }
+@container (max-width: 840px) {
+  .cri-bag-planner { grid-template-columns: minmax(0, 1fr); }
+  .cri-bag-planner > * { grid-column: 1; grid-row: auto; }
+}
+@media (max-width: 450px) {
+  .cri-rate-adjustment { grid-template-columns: minmax(0, 1fr); }
+  .cri-bag-planner { display: flex; flex-direction: column; }
+  .cri-bag-planner > * { width: 100%; box-sizing: border-box; }
+  .cri-bag-delivery strong { font-size: 1.1rem; }
+}
+.cri-concentration-presets { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+.cri-concentration-presets > span { flex-basis: 100%; color: var(--cri-muted); font-size: .78rem; }
+.app .cri-toolkit .cri-concentration-presets button[aria-pressed="true"] { background: #075568; color: #fff; }
+.app.dark .cri-toolkit .cri-concentration-presets button[aria-pressed="true"] { background: #a2e9f6; color: #102d36; }
