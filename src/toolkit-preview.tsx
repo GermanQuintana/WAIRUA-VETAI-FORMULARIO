@@ -4,6 +4,7 @@ import WritingAssistantToolkit from './components/WritingAssistantToolkit';
 import VitalConstantsToolkit from './components/VitalConstantsToolkit';
 import EndocrineToolkit from './components/EndocrineToolkit';
 import GeneticsToolkit from './components/GeneticsToolkit';
+import ContinuousInfusionToolkit from './components/ContinuousInfusionToolkit';
 import InfusionCalculator from './components/InfusionCalculator';
 import FluidTherapyToolkit from './components/FluidTherapyToolkit';
 import AnesthesiaToolkit from './components/AnesthesiaToolkit';
@@ -19,7 +20,7 @@ import './styles.css';
 import './design.css';
 import './toolkit-contrast.css';
 
-type PreviewTool = 'endocrine' | 'writing' | 'constants' | 'dose' | 'genetics' | 'interactions' | 'infusion' | 'fluid' | 'anesthesia' | 'converter' | 'surface' | 'nutrition' | 'management' | 'haemotherapy' | 'chill' | 'fip';
+type PreviewTool = 'cri' | 'endocrine' | 'writing' | 'constants' | 'dose' | 'genetics' | 'interactions' | 'infusion' | 'fluid' | 'anesthesia' | 'converter' | 'surface' | 'nutrition' | 'management' | 'haemotherapy' | 'chill' | 'fip';
 
 const toolNames: Record<PreviewTool, { es: string; en: string }> = {
   endocrine: { es: 'Endocrino', en: 'Endocrinology' },
@@ -28,6 +29,7 @@ const toolNames: Record<PreviewTool, { es: string; en: string }> = {
   dose: { es: 'Dosis', en: 'Dose' },
   genetics: { es: 'Genética', en: 'Genetics' },
   interactions: { es: 'Interacciones', en: 'Interactions' },
+  cri: { es: 'Infusión continua · CRI', en: 'Continuous infusion · CRI' },
   infusion: { es: 'Infusión', en: 'Infusion' },
   fluid: { es: 'Fluidoterapia', en: 'Fluid therapy' },
   anesthesia: { es: 'Anestesia', en: 'Anesthesia' },
@@ -41,16 +43,21 @@ const toolNames: Record<PreviewTool, { es: string; en: string }> = {
 };
 
 function ToolkitPreview() {
+  const [criProtocolId, setCriProtocolId] = useState<string | undefined>();
   const [dark, setDark] = useState(false);
   const [lang, setLang] = useState<'es' | 'en'>('es');
-  const [tool, setTool] = useState<PreviewTool>('endocrine');
+  const [tool, setTool] = useState<PreviewTool | 'overview'>(() => {
+    const requested = new URLSearchParams(window.location.search).get('tool');
+    return requested && Object.prototype.hasOwnProperty.call(toolNames, requested) ? requested as PreviewTool : 'overview';
+  });
   const content: Record<PreviewTool, ReactNode> = {
     endocrine: <EndocrineToolkit lang={lang} />,
     writing: <WritingAssistantToolkit lang={lang} />,
     constants: <VitalConstantsToolkit lang={lang} />,
-    dose: <DoseCalculator lang={lang} entries={[]} onOpenKnowledge={() => {}} />,
+    dose: <DoseCalculator lang={lang} entries={[]} onOpenKnowledge={() => {}} onOpenCri={(id) => { setCriProtocolId(id); setTool("cri"); }} />,
     genetics: <GeneticsToolkit lang={lang} />,
     interactions: <DrugInteractionChecker lang={lang} entries={[]} />,
+    cri: <ContinuousInfusionToolkit key={criProtocolId ?? "default"} lang={lang} initialProtocolId={criProtocolId} />,
     infusion: <InfusionCalculator lang={lang} />,
     fluid: <FluidTherapyToolkit lang={lang} />,
     anesthesia: <AnesthesiaToolkit lang={lang} />,
@@ -66,9 +73,12 @@ function ToolkitPreview() {
   return (
     <div className={`app toolkit-preview ${dark ? 'dark' : ''}`}>
       <header className="toolkit-preview-controls" aria-label={lang === 'es' ? 'Controles de vista previa' : 'Preview controls'}>
-        <strong>WAIRUA · Toolkit</strong>
+        <div className="toolkit-preview-brand"><strong>WAIRUA · Toolkit</strong><small>{lang === 'es' ? 'Vista previa local' : 'Local preview'}</small></div>
         <div>
-          <select aria-label={lang === 'es' ? 'Herramienta' : 'Tool'} value={tool} onChange={(event) => setTool(event.target.value as PreviewTool)}>
+          {tool !== 'overview' && <button type="button" onClick={() => setTool('overview')}>{lang === 'es' ? '← Volver al toolkit' : '← Back to toolkit'}</button>}
+          <a className="toolkit-preview-app-link" href={`${import.meta.env.BASE_URL}?view=toolkit&tool=${tool === 'overview' ? 'overview' : tool}`}>{lang === 'es' ? 'Abrir aplicación' : 'Open application'}</a>
+          <select aria-label={lang === 'es' ? 'Herramienta' : 'Tool'} value={tool} onChange={(event) => setTool(event.target.value as PreviewTool | 'overview')}>
+            <option value="overview">{lang === 'es' ? 'Resumen del toolkit' : 'Toolkit overview'}</option>
             {(Object.keys(toolNames) as PreviewTool[]).map((id) => <option key={id} value={id}>{toolNames[id][lang]}</option>)}
           </select>
           <button type="button" onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
@@ -81,7 +91,7 @@ function ToolkitPreview() {
       </header>
       <main className={`clinical-content toolkit-preview-content toolkit-module-panel toolkit-view-${tool}`}>
         {(tool === 'dose' || tool === 'interactions') && <p className="toolkit-preview-hint">{lang === 'es' ? 'Vista visual sin datos de pacientes ni fichas clínicas.' : 'Visual preview without patient data or clinical records.'}</p>}
-        {content[tool]}
+        {tool === 'overview' ? <section className="toolkit-preview-overview"><h2>{lang === 'es' ? 'Toolkit · vista previa' : 'Toolkit · preview'}</h2><p>{lang === 'es' ? 'Muestra local de herramientas. Para tu cuenta y navegación completa, abre la aplicación.' : 'Local tool preview. Open the application for your account and full navigation.'}</p><nav aria-label={lang === 'es' ? 'Herramientas del toolkit' : 'Toolkit tools'}>{(Object.keys(toolNames) as PreviewTool[]).map((id) => <button type="button" key={id} onClick={() => setTool(id)}>{toolNames[id][lang]} <span aria-hidden="true">→</span></button>)}</nav></section> : content[tool]}
       </main>
     </div>
   );

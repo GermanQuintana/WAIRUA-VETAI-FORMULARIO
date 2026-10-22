@@ -9,7 +9,8 @@
 }
 
 .toolkit-view-dose,
-.toolkit-view-infusion { --tk-accent: #176d81; --tk-strong: #10556a; --tk-wash: #eaf4f7; --tk-line: #bad3da; }
+.toolkit-view-infusion,
+.toolkit-view-cri { --tk-accent: #176d81; --tk-strong: #10556a; --tk-wash: #eaf4f7; --tk-line: #bad3da; }
 .toolkit-view-genetics { --tk-accent: #6756a1; --tk-strong: #514182; --tk-wash: #f1eff8; --tk-line: #ccc5e0; }
 .toolkit-view-interactions { --tk-accent: #5964a0; --tk-strong: #445084; --tk-wash: #eef0f8; --tk-line: #c6cce0; }
 .toolkit-view-endocrine { --tk-accent: #087b83; --tk-strong: #09626a; --tk-wash: #e9f5f4; --tk-line: #b6d6d4; }
@@ -223,7 +224,8 @@
   --tk-strong: #a9ebc5;
 }
 .app.dark .toolkit-view-dose,
-.app.dark .toolkit-view-infusion { --tk-accent: #91cfdd; --tk-strong: #b4e4ed; --tk-wash: #1d3540; --tk-line: #406475; }
+.app.dark .toolkit-view-infusion,
+.app.dark .toolkit-view-cri { --tk-accent: #91cfdd; --tk-strong: #b4e4ed; --tk-wash: #1d3540; --tk-line: #406475; }
 .app.dark .toolkit-view-genetics { --tk-accent: #c5b1ed; --tk-strong: #dbcdf5; --tk-wash: #29263d; --tk-line: #5b5079; }
 .app.dark .toolkit-view-interactions { --tk-accent: #b8c5f0; --tk-strong: #d7def9; --tk-wash: #252d43; --tk-line: #53617e; }
 .app.dark .toolkit-view-endocrine { --tk-accent: #8cdbd4; --tk-strong: #b2ede6; --tk-wash: #1a3535; --tk-line: #3d6867; }
@@ -320,3 +322,12 @@
   .endocrine-toolkit .endo-protocol-block { padding: 0.75rem; }
   .endocrine-toolkit .endo-step-card { grid-template-columns: 1fr; gap: 0.3rem; }
 }
+
+.toolkit-preview-brand { display: grid; gap: .25rem; }
+.toolkit-preview-brand small { color: #496458; font-size: .75rem; }
+.toolkit-preview-app-link { display: inline-flex; align-items: center; min-height: 2.5rem; padding: .45rem .7rem; color: #185549; text-decoration: underline; font-size: .85rem; }
+.app.dark .toolkit-preview-app-link, .app.dark .toolkit-preview-brand small { color: #b4d8c5; }
+.toolkit-preview-overview nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.5rem; }
+.toolkit-preview-overview nav button { display: flex; justify-content: space-between; padding: 1rem .5rem; border: 0; border-bottom: 1px solid var(--tk-line); border-radius: 0; background: transparent; color: var(--tk-strong); font: inherit; text-align: left; cursor: pointer; }
+.app.dark .toolkit-preview-overview nav button { background: transparent; color: var(--tk-strong); }
+@media(max-width: 600px) { .toolkit-preview-overview nav { grid-template-columns: minmax(0, 1fr); } }
