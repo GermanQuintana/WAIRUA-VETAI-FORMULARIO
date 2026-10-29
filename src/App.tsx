@@ -64,6 +64,7 @@ import { AccessPreviewMode, AuthAccountSnapshot, LocalizedText, OtcProductRecord
 
 gsap.registerPlugin(ScrollTrigger);
 
+const AntibioticToolkit = lazy(() => import('./components/AntibioticToolkit'));
 const EndocrineToolkit = lazy(() => import('./components/EndocrineToolkit'));
 const HaemotherapyCalculator = lazy(() => import('./components/HaemotherapyCalculator'));
 const ContinuousInfusionToolkit = lazy(() => import('./components/ContinuousInfusionToolkit'));
@@ -74,6 +75,7 @@ const premiumTabs = ['active'] as const;
 const activeViews = ['records', 'create'] as const;
 const toolkitViews = [
   'overview',
+  'antibiotics',
   'dose',
   'infusion',
   'cri',
@@ -105,6 +107,7 @@ type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'active
 
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
+  'antibiotics',
   'haemotherapy',
   'dose',
   'endocrine',
@@ -2100,6 +2103,7 @@ function App() {
 
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => {
     const toolkitTags: Record<string, string[]> = {
+      antibiotics: ['antibióticos', 'antibioticos', 'antibiotics', 'cobertura', 'espectro', 'ameg', 'combinaciones', 'anaerobios', 'gram', 'antimicrobianos'],
       'chill-protocol': ['protocolo', 'calculadora', 'perro', 'preconsulta', 'miedo', 'ansiedad', 'agresividad', 'reactividad', 'gabapentina', 'acepromacina', 'otm'],
       'fip-protocol': ['protocolo', 'calculadora', 'gato', 'pif', 'fip', 'gs-441524', 'infecciosas', 'oral', 'inyectable sc', 'seguimiento', 'efusiva', 'seca', 'ocular', 'neurológica', 'neurológica', 'remisión'],
       'dose-calculator': ['calculadora', 'dosis', 'mg/kg', 'mg', 'ml', 'comprimidos', 'medicación'],
@@ -3804,6 +3808,8 @@ function App() {
                 {renderLocalizedCards(toolkitModules)}
               </>
             )}
+
+            {activeToolkitView === 'antibiotics' && <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando antibióticos…' : 'Loading antibiotics…'}</p>}><AntibioticToolkit lang={lang} /></Suspense>}
 
             {activeToolkitView === 'dose' && (
               <DoseCalculator

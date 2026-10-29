@@ -3,6 +3,7 @@ import { Language, labels } from '../i18n';
 import { translateMedicalTerm } from '../lib/terms';
 import { DoseCalculatorEntry } from '../types';
 import CriProtocolLinks from './CriProtocolLinks';
+import './dose-records.css';
 
 interface Props {
   entries: DoseCalculatorEntry[];
@@ -29,16 +30,16 @@ const getResolvedDoseUnit = (value?: string) => (value && value.trim() ? value :
 const getAmegReferenceRows = (lang: Language) =>
   lang === 'es'
     ? [
-        { group: 'D', meaning: 'Prudencia', use: 'Uso prudente. Opcion con menor impacto relativo dentro de AMEG.', tone: 'd' },
-        { group: 'C', meaning: 'Precaucion', use: 'Requiere mas cautela y justificacion clinica.', tone: 'c' },
-        { group: 'B', meaning: 'Limitar', use: 'Reservar y limitar el uso a situaciones justificadas.', tone: 'b' },
-        { group: 'A', meaning: 'Evitar', use: 'Evitar salvo situaciones excepcionales o de ultima reserva.', tone: 'a' },
+        { group: 'D', meaning: 'Prudencia', use: 'Priorizar si es clínicamente eficaz; usar solo cuando esté indicado.', tone: 'd' },
+        { group: 'C', meaning: 'Cautela', use: 'Considerar si no existe una opción eficaz de categoría D.', tone: 'c' },
+        { group: 'B', meaning: 'Restringir', use: 'Si C/D no son eficaces; basar en sensibilidad siempre que sea posible.', tone: 'b' },
+        { group: 'A', meaning: 'Evitar', use: 'Evitar; comprobar prohibiciones y normativa. AMEG no autoriza una prescripción.', tone: 'a' },
       ]
     : [
-        { group: 'D', meaning: 'Prudence', use: 'Prudent use. Lower relative impact option within AMEG.', tone: 'd' },
-        { group: 'C', meaning: 'Caution', use: 'Needs more caution and clear clinical justification.', tone: 'c' },
-        { group: 'B', meaning: 'Restrict', use: 'Reserve and limit use to justified situations.', tone: 'b' },
-        { group: 'A', meaning: 'Avoid', use: 'Avoid unless the situation is exceptional or last-resort.', tone: 'a' },
+        { group: 'D', meaning: 'Prudence', use: 'Prefer when clinically effective; use only when indicated.', tone: 'd' },
+        { group: 'C', meaning: 'Caution', use: 'Consider if no effective category D option is available.', tone: 'c' },
+        { group: 'B', meaning: 'Restrict', use: 'If C/D are not effective; base on susceptibility testing wherever possible.', tone: 'b' },
+        { group: 'A', meaning: 'Avoid', use: 'Avoid; check prohibitions and legislation. AMEG does not authorise prescribing.', tone: 'a' },
       ];
 
 const renderReviewBadge = (entry: DoseCalculatorEntry, lang: Language) => {
@@ -71,18 +72,18 @@ export default function DoseCalculator({
     antibioticCategory: true,
     species: true,
     route: true,
-    indication: true,
+    indication: false,
     dose: true,
     doseUnit: true,
     frequency: true,
-    duration: true,
+    duration: false,
     selectedDose: true,
     calculatedDose: true,
-    concentration: true,
-    presentation: true,
-    observations: true,
+    concentration: false,
+    presentation: false,
+    observations: false,
     bibliography: false,
-    openKnowledge: true,
+    openKnowledge: false,
   });
 
   const speciesOptions = useMemo(() => {
@@ -236,14 +237,14 @@ export default function DoseCalculator({
         </summary>
         <div className="ameg-table-shell">
           <table className="ameg-table">
-            <thead>
+            <thead className="dose-records-head">
               <tr>
-                <th>{t.amegGroupLabel}</th>
-                <th>{t.amegMeaningLabel}</th>
-                <th>{t.amegUseLabel}</th>
+                <th scope="col">{t.amegGroupLabel}</th>
+                <th scope="col">{t.amegMeaningLabel}</th>
+                <th scope="col">{t.amegUseLabel}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {amegReferenceRows.map((row) => (
                 <tr key={row.group} className={`ameg-row ameg-row-${row.tone}`}>
                   <td>
@@ -256,6 +257,7 @@ export default function DoseCalculator({
             </tbody>
           </table>
         </div>
+        <p className="dose-disclaimer"><a href="https://www.ema.europa.eu/en/partners-networks/animal-health-practitioners" target="_blank" rel="noopener noreferrer">{lang === 'es' ? 'Fuente oficial: EMA · AMEG' : 'Official source: EMA · AMEG'} ↗</a></p>
       </details>
 
       <section className="dose-columns-bar" aria-label={lang === 'es' ? 'Columnas visibles' : 'Visible columns'}>
@@ -282,31 +284,33 @@ export default function DoseCalculator({
         </div>
       </section>
 
-      <div className="dose-table-shell">
-        <table className="dose-table">
-          <thead>
+      {!Object.values(visibleColumns).some(Boolean) && <p role="status">{lang === 'es' ? 'Activa al menos una columna para ver los datos.' : 'Enable at least one column to see the data.'}</p>}
+      {filteredEntries.length === 0 && <p role="status">{lang === 'es' ? 'No hay pautas para estos filtros.' : 'No dosing records match these filters.'}</p>}
+      <div className="dose-table-shell dose-records-shell">
+        <table className="dose-table dose-records" role="table">
+          <thead className="dose-records-head">
             <tr>
-              {visibleColumns.activeIngredient ? <th>{t.activeIngredient}</th> : null}
-              {visibleColumns.category ? <th>{t.doseCalculatorCategory}</th> : null}
-              {visibleColumns.subcategory ? <th>{t.doseCalculatorSubcategory}</th> : null}
-              {visibleColumns.antibioticCategory ? <th>{t.doseCalculatorAntibioticCategory}</th> : null}
-              {visibleColumns.species ? <th>{t.species}</th> : null}
-              {visibleColumns.route ? <th>{t.administrationRoute}</th> : null}
-              {visibleColumns.indication ? <th>{t.indications}</th> : null}
-              {visibleColumns.dose ? <th>{t.dose}</th> : null}
-              {visibleColumns.doseUnit ? <th>{t.doseUnitLabel}</th> : null}
-              {visibleColumns.frequency ? <th>{t.frequencyLabel}</th> : null}
-              {visibleColumns.duration ? <th>{t.durationLabel}</th> : null}
-              {visibleColumns.selectedDose ? <th>{t.selectedDose}</th> : null}
-              {visibleColumns.calculatedDose ? <th>{t.calculatedDose}</th> : null}
-              {visibleColumns.concentration ? <th>{t.concentrationLabel}</th> : null}
-              {visibleColumns.presentation ? <th>{t.presentationResult}</th> : null}
-              {visibleColumns.observations ? <th>{t.observationsLabel}</th> : null}
-              {visibleColumns.bibliography ? <th>{t.bibliographyLabel}</th> : null}
-              {visibleColumns.openKnowledge ? <th>{t.openKnowledgeRecord}</th> : null}
+              {visibleColumns.activeIngredient ? <th scope="col">{t.activeIngredient}</th> : null}
+              {visibleColumns.category ? <th scope="col">{t.doseCalculatorCategory}</th> : null}
+              {visibleColumns.subcategory ? <th scope="col">{t.doseCalculatorSubcategory}</th> : null}
+              {visibleColumns.antibioticCategory ? <th scope="col">{t.doseCalculatorAntibioticCategory}</th> : null}
+              {visibleColumns.species ? <th scope="col">{t.species}</th> : null}
+              {visibleColumns.route ? <th scope="col">{t.administrationRoute}</th> : null}
+              {visibleColumns.indication ? <th scope="col">{t.indications}</th> : null}
+              {visibleColumns.dose ? <th scope="col">{t.dose}</th> : null}
+              {visibleColumns.doseUnit ? <th scope="col">{t.doseUnitLabel}</th> : null}
+              {visibleColumns.frequency ? <th scope="col">{t.frequencyLabel}</th> : null}
+              {visibleColumns.duration ? <th scope="col">{t.durationLabel}</th> : null}
+              {visibleColumns.selectedDose ? <th scope="col">{t.selectedDose}</th> : null}
+              {visibleColumns.calculatedDose ? <th scope="col">{t.calculatedDose}</th> : null}
+              {visibleColumns.concentration ? <th scope="col">{t.concentrationLabel}</th> : null}
+              {visibleColumns.presentation ? <th scope="col">{t.presentationResult}</th> : null}
+              {visibleColumns.observations ? <th scope="col">{t.observationsLabel}</th> : null}
+              {visibleColumns.bibliography ? <th scope="col">{t.bibliographyLabel}</th> : null}
+              {visibleColumns.openKnowledge ? <th scope="col">{t.openKnowledgeRecord}</th> : null}
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {filteredEntries.map((entry) => {
               const publicationStatus = entry.publicationStatus ?? 'active';
               const selectedDose = doseOverrides[entry.id] ?? entry.defaultDoseMgKg;
@@ -344,10 +348,11 @@ export default function DoseCalculator({
               const separateUnitLabel = entry.doseText && hasEmbeddedDoseUnit(entry.doseText) ? '--' : doseUnit;
 
               return (
-                <tr key={entry.id}>
+                <tr key={entry.id} role="row">
                   {visibleColumns.activeIngredient ? (
-                    <td>
+                    <td role="cell" data-label={t.activeIngredient}>
                       <strong>{entry.activeIngredient}</strong>
+                      {entry.dosePhase && <small className="dose-phase">{entry.indication[lang]}</small>}
                       <div className="dose-entry-review-meta">
                         <span>{renderReviewBadge(entry, lang)}</span>
                         {publicationStatus !== 'active' ? (
@@ -356,22 +361,23 @@ export default function DoseCalculator({
                       </div>
                     </td>
                   ) : null}
-                  {visibleColumns.category ? <td>{entry.category[lang]}</td> : null}
-                  {visibleColumns.subcategory ? <td>{entry.subcategory?.[lang] ?? '--'}</td> : null}
-                  {visibleColumns.antibioticCategory ? <td>{entry.antibioticCategory ?? '--'}</td> : null}
+                  {visibleColumns.category ? <td role="cell" data-label={t.doseCalculatorCategory}>{entry.category[lang]}</td> : null}
+                  {visibleColumns.subcategory ? <td role="cell" data-label={t.doseCalculatorSubcategory}>{entry.subcategory?.[lang] ?? '--'}</td> : null}
+                  {visibleColumns.antibioticCategory ? <td role="cell" data-label={t.doseCalculatorAntibioticCategory}>{entry.antibioticCategory ?? '--'}</td> : null}
                   {visibleColumns.species ? (
-                    <td>{entry.speciesLabel ?? entry.species.map((species) => translateMedicalTerm(species, lang)).join(', ')}</td>
+                    <td role="cell" data-label={t.species}>{(lang === 'es' ? entry.speciesLabel : undefined) ?? entry.species.map((species) => translateMedicalTerm(species, lang)).join(', ')}</td>
                   ) : null}
-                  {visibleColumns.route ? <td>{entry.route}</td> : null}
-                  {visibleColumns.indication ? <td>{entry.indication[lang]}</td> : null}
-                  {visibleColumns.dose ? <td>{rangeLabel}</td> : null}
-                  {visibleColumns.doseUnit ? <td>{separateUnitLabel}</td> : null}
-                  {visibleColumns.frequency ? <td>{entry.frequency ?? '--'}</td> : null}
-                  {visibleColumns.duration ? <td>{entry.duration ?? '--'}</td> : null}
+                  {visibleColumns.route ? <td role="cell" data-label={t.administrationRoute}>{lang === 'en' ? entry.route.replace(/VO/g, 'PO') : entry.route}</td> : null}
+                  {visibleColumns.indication ? <td role="cell" data-label={t.indications}>{entry.indication[lang]}</td> : null}
+                  {visibleColumns.dose ? <td role="cell" data-label={t.dose}>{rangeLabel}{entry.dosePhase && <small className="dose-phase">{entry.dosePhase[lang]}</small>}</td> : null}
+                  {visibleColumns.doseUnit ? <td role="cell" data-label={t.doseUnitLabel}>{separateUnitLabel}</td> : null}
+                  {visibleColumns.frequency ? <td role="cell" data-label={t.frequencyLabel}>{(lang === 'es' ? entry.frequency?.replace(/q(\d+)h/g, 'c$1h') : entry.frequency?.replace(/c(\d+)h/g, 'q$1h')) ?? '--'}</td> : null}
+                  {visibleColumns.duration ? <td role="cell" data-label={t.durationLabel}>{entry.dosePhase?.[lang] ?? entry.duration ?? '--'}</td> : null}
                   {visibleColumns.selectedDose ? (
-                    <td>
+                    <td role="cell" data-label={t.selectedDose}>
                       <input
                         className="dose-inline-input"
+                        aria-label={`${t.selectedDose} · ${entry.activeIngredient} · ${entry.species.join('/')} · ${entry.indication[lang]} · ${doseUnit}`}
                         type="number"
                         min={Number.isFinite(entry.doseRangeMgKg.min) ? entry.doseRangeMgKg.min : undefined}
                         max={Number.isFinite(entry.doseRangeMgKg.max) ? entry.doseRangeMgKg.max : undefined}
@@ -388,11 +394,11 @@ export default function DoseCalculator({
                     </td>
                   ) : null}
                   {visibleColumns.calculatedDose ? (
-                    <td>{calculatedDoseValue !== null ? `${doseFormatter.format(calculatedDoseValue)} ${computedDoseUnit}`.trim() : '--'}</td>
+                    <td role="cell" data-label={t.calculatedDose}>{calculatedDoseValue !== null ? `${doseFormatter.format(calculatedDoseValue)} ${computedDoseUnit}`.trim() : '--'}</td>
                   ) : null}
-                  {visibleColumns.concentration ? <td>{entry.concentration[lang] || '--'}</td> : null}
+                  {visibleColumns.concentration ? <td role="cell" data-label={t.concentrationLabel}>{entry.concentration[lang] || '--'}</td> : null}
                   {visibleColumns.presentation ? (
-                    <td>
+                    <td role="cell" data-label={t.presentationResult}>
                       {mlValue !== null
                         ? `${mlValue.toFixed(2)} mL`
                         : tabletValue !== null
@@ -400,10 +406,10 @@ export default function DoseCalculator({
                           : '--'}
                     </td>
                   ) : null}
-                  {visibleColumns.observations ? <td>{entry.observations ?? '--'}</td> : null}
-                  {visibleColumns.bibliography ? <td>{entry.bibliography ?? '--'}</td> : null}
+                  {visibleColumns.observations ? <td role="cell" data-label={t.observationsLabel}>{entry.clinicalNotes?.[lang] ?? entry.observations ?? '--'}</td> : null}
+                  {visibleColumns.bibliography ? <td role="cell" data-label={t.bibliographyLabel}>{entry.bibliography ?? '--'}</td> : null}
                   {visibleColumns.openKnowledge ? (
-                    <td>
+                    <td role="cell" data-label={t.openKnowledgeRecord}>
                       <div className="dose-entry-actions">
                         <button className="secondary-button" type="button" onClick={() => onOpenKnowledge(entry)}>
                           {t.openKnowledgeRecord}

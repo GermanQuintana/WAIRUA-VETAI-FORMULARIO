@@ -1,3 +1,4 @@
+import { levetiracetamDoseEntries } from './levetiracetam';
 import { DoseCalculatorEntry, Species } from '../types';
 
 const rawSpreadsheetDoseTable = `Categoría	Subcategoría	Principio activo	AMEG UE	Especie	Indicación	Dosis	Unidad	Vía	Frecuencia	Duración	Observaciones	Bibliografía
@@ -787,7 +788,7 @@ const makeEntryId = (values: string[]) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-export const spreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSpreadsheetDoseTable.split('\n'))
+const importedSpreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSpreadsheetDoseTable.split('\n'))
   .slice(1)
   .map((line) => line.split('\t'))
   .map(([
@@ -828,3 +829,9 @@ export const spreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSprea
       concentration: { es: '', en: '' },
     };
   });
+
+// Replace the legacy feline-only row with sourced, bilingual dog/cat regimens.
+export const spreadsheetDoseEntries: DoseCalculatorEntry[] = [
+  ...importedSpreadsheetDoseEntries.filter((entry) => entry.activeIngredient.toLowerCase() !== 'levetiracetam'),
+  ...levetiracetamDoseEntries,
+];

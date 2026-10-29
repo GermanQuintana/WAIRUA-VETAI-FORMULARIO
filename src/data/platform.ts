@@ -32,7 +32,8 @@ export interface LocalizedCollectionCard {
     | 'management'
     | 'writing'
     | 'chill'
-    | 'fip';
+    | 'fip'
+    | 'antibiotics';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -160,6 +161,12 @@ export const protocolFocusExamples: LocalizedCollectionCard[] = [
 ];
 
 export const toolkitModules: LocalizedCollectionCard[] = [
+  {
+    id: 'antibiotics',
+    title: { es: 'Antibióticos: cobertura y grupos', en: 'Antibiotics: coverage and groups' },
+    description: { es: 'Tabla de espectro, clasificación AMEG y combinaciones contextualizadas para perros y gatos.', en: 'Spectrum table, AMEG classification and contextualised combinations for dogs and cats.' },
+    status: { es: 'Premium', en: 'Premium' }, statusTone: 'premium', accessTier: 'premium', toolkitView: 'antibiotics',
+  },
   {
     id: 'chill-protocol',
     title: { es: 'Protocolo Chill', en: 'Chill protocol' },

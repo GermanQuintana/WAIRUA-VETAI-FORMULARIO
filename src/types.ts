@@ -118,6 +118,8 @@ export interface DoseCalculatorPreset {
 }
 
 export interface DoseCalculatorEntry {
+  dosePhase?: LocalizedText;
+  clinicalNotes?: LocalizedText;
   id: string;
   activeIngredient: string;
   category: LocalizedText;

@@ -1,4 +1,5 @@
 import { TherapeuticEntry } from '../types';
+import { levetiracetamEntry } from './levetiracetam';
 import { cardiovascularEntries, cardiovascularEntryNames } from './cardiovascularEntries';
 import { digestiveEntries, digestiveEntryNames } from './digestiveEntries';
 import { hematologyOncologyEntries, hematologyOncologyEntryNames } from './hematologyOncologyEntries';
@@ -14,6 +15,7 @@ const normalizeIngredient = (value: string) =>
     .trim();
 
 const baseEntries: TherapeuticEntry[] = [
+  levetiracetamEntry,
   {
     id: 'amoxicillin-clavulanate',
     activeIngredient: 'Amoxicilina + acido clavulanico',

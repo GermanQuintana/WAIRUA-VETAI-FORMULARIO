@@ -1,3 +1,6 @@
+import AntibioticToolkit from './components/AntibioticToolkit';
+import { therapeuticEntries } from './data/entries';
+import { buildDoseCalculatorEntries } from './lib/indexes';
 import { type ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import WritingAssistantToolkit from './components/WritingAssistantToolkit';
@@ -20,9 +23,10 @@ import './styles.css';
 import './design.css';
 import './toolkit-contrast.css';
 
-type PreviewTool = 'cri' | 'endocrine' | 'writing' | 'constants' | 'dose' | 'genetics' | 'interactions' | 'infusion' | 'fluid' | 'anesthesia' | 'converter' | 'surface' | 'nutrition' | 'management' | 'haemotherapy' | 'chill' | 'fip';
+type PreviewTool = 'antibiotics' | 'cri' | 'endocrine' | 'writing' | 'constants' | 'dose' | 'genetics' | 'interactions' | 'infusion' | 'fluid' | 'anesthesia' | 'converter' | 'surface' | 'nutrition' | 'management' | 'haemotherapy' | 'chill' | 'fip';
 
 const toolNames: Record<PreviewTool, { es: string; en: string }> = {
+  antibiotics: { es: 'Antibióticos', en: 'Antibiotics' },
   endocrine: { es: 'Endocrino', en: 'Endocrinology' },
   writing: { es: 'Redacción', en: 'Writing' },
   constants: { es: 'Constantes', en: 'Vitals' },
@@ -42,6 +46,8 @@ const toolNames: Record<PreviewTool, { es: string; en: string }> = {
   fip: { es: 'PIF', en: 'FIP' },
 };
 
+const previewDoseEntries = buildDoseCalculatorEntries(therapeuticEntries);
+
 function ToolkitPreview() {
   const [criProtocolId, setCriProtocolId] = useState<string | undefined>();
   const [dark, setDark] = useState(false);
@@ -51,10 +57,11 @@ function ToolkitPreview() {
     return requested && Object.prototype.hasOwnProperty.call(toolNames, requested) ? requested as PreviewTool : 'overview';
   });
   const content: Record<PreviewTool, ReactNode> = {
+    antibiotics: <AntibioticToolkit lang={lang} />,
     endocrine: <EndocrineToolkit lang={lang} />,
     writing: <WritingAssistantToolkit lang={lang} />,
     constants: <VitalConstantsToolkit lang={lang} />,
-    dose: <DoseCalculator lang={lang} entries={[]} onOpenKnowledge={() => {}} onOpenCri={(id) => { setCriProtocolId(id); setTool("cri"); }} />,
+    dose: <DoseCalculator lang={lang} entries={previewDoseEntries} onOpenKnowledge={() => {}} onOpenCri={(id) => { setCriProtocolId(id); setTool("cri"); }} />,
     genetics: <GeneticsToolkit lang={lang} />,
     interactions: <DrugInteractionChecker lang={lang} entries={[]} />,
     cri: <ContinuousInfusionToolkit key={criProtocolId ?? "default"} lang={lang} initialProtocolId={criProtocolId} />,
@@ -90,7 +97,7 @@ function ToolkitPreview() {
         </div>
       </header>
       <main className={`clinical-content toolkit-preview-content toolkit-module-panel toolkit-view-${tool}`}>
-        {(tool === 'dose' || tool === 'interactions') && <p className="toolkit-preview-hint">{lang === 'es' ? 'Vista visual sin datos de pacientes ni fichas clínicas.' : 'Visual preview without patient data or clinical records.'}</p>}
+        {(tool === 'dose' || tool === 'interactions') && <p className="toolkit-preview-hint">{lang === 'es' ? 'Vista local con referencias terapéuticas, sin datos de pacientes.' : 'Local preview with therapeutic references, without patient data.'}</p>}
         {tool === 'overview' ? <section className="toolkit-preview-overview"><h2>{lang === 'es' ? 'Toolkit · vista previa' : 'Toolkit · preview'}</h2><p>{lang === 'es' ? 'Muestra local de herramientas. Para tu cuenta y navegación completa, abre la aplicación.' : 'Local tool preview. Open the application for your account and full navigation.'}</p><nav aria-label={lang === 'es' ? 'Herramientas del toolkit' : 'Toolkit tools'}>{(Object.keys(toolNames) as PreviewTool[]).map((id) => <button type="button" key={id} onClick={() => setTool(id)}>{toolNames[id][lang]} <span aria-hidden="true">→</span></button>)}</nav></section> : content[tool]}
       </main>
     </div>

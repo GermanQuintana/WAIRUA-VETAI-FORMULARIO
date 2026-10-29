@@ -1,0 +1,17 @@
+/* Each dosing record wraps its selected fields within the available workspace. */
+.dose-table-shell.dose-records-shell { min-width: 0; overflow-x: hidden; }
+.dose-table.dose-records { display: block; min-width: 0; width: 100%; }
+.dose-records-head { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dose-records tbody { display: grid; }
+.dose-records tbody tr { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 1rem 1.25rem; padding: 1.15rem; border-bottom: 1px solid var(--tk-line, #bad3da); }
+.dose-records tbody tr:last-child { border-bottom: 0; }
+.dose-records tbody td { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; }
+.dose-records td::before { content: attr(data-label); display: block; color: var(--tk-strong, #10556a); font-size: .78rem; line-height: 1.4; font-weight: 700; }
+.dose-records td .dose-inline-input { box-sizing: border-box; width: 100%; min-width: 0; max-width: 10rem; min-height: 2.75rem; padding: .55rem .65rem; font-variant-numeric: tabular-nums; }
+.dose-phase { line-height: 1.5; font-weight: 600; }
+.dose-records .dose-entry-actions { flex-wrap: wrap; }
+.app.dark .dose-records td::before { color: var(--tk-strong, #a2dce8); }
+@media (max-width: 480px) { .dose-records tbody tr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: .85rem; } }
+
+.dose-records .dose-entry-review-meta { color: var(--tk-muted, #496458); }
+.dose-records .dose-phase { color: inherit; }
