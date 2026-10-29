@@ -1,3 +1,4 @@
+import DentalToolkit from './components/DentalToolkit';
 import AntibioticToolkit from './components/AntibioticToolkit';
 import { therapeuticEntries } from './data/entries';
 import { buildDoseCalculatorEntries } from './lib/indexes';
@@ -23,9 +24,10 @@ import './styles.css';
 import './design.css';
 import './toolkit-contrast.css';
 
-type PreviewTool = 'antibiotics' | 'cri' | 'endocrine' | 'writing' | 'constants' | 'dose' | 'genetics' | 'interactions' | 'infusion' | 'fluid' | 'anesthesia' | 'converter' | 'surface' | 'nutrition' | 'management' | 'haemotherapy' | 'chill' | 'fip';
+type PreviewTool = 'dental' | 'antibiotics' | 'cri' | 'endocrine' | 'writing' | 'constants' | 'dose' | 'genetics' | 'interactions' | 'infusion' | 'fluid' | 'anesthesia' | 'converter' | 'surface' | 'nutrition' | 'management' | 'haemotherapy' | 'chill' | 'fip';
 
 const toolNames: Record<PreviewTool, { es: string; en: string }> = {
+  dental: { es: 'Ficha dental', en: 'Dental chart' },
   antibiotics: { es: 'Antibióticos', en: 'Antibiotics' },
   endocrine: { es: 'Endocrino', en: 'Endocrinology' },
   writing: { es: 'Redacción', en: 'Writing' },
@@ -57,6 +59,7 @@ function ToolkitPreview() {
     return requested && Object.prototype.hasOwnProperty.call(toolNames, requested) ? requested as PreviewTool : 'overview';
   });
   const content: Record<PreviewTool, ReactNode> = {
+    dental: <DentalToolkit lang={lang} />,
     antibiotics: <AntibioticToolkit lang={lang} />,
     endocrine: <EndocrineToolkit lang={lang} />,
     writing: <WritingAssistantToolkit lang={lang} />,

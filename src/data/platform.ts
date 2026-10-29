@@ -33,7 +33,8 @@ export interface LocalizedCollectionCard {
     | 'writing'
     | 'chill'
     | 'fip'
-    | 'antibiotics';
+    | 'antibiotics'
+    | 'dental';
 }
 
 export const otcWorkflowCards: LocalizedCollectionCard[] = [
@@ -161,6 +162,12 @@ export const protocolFocusExamples: LocalizedCollectionCard[] = [
 ];
 
 export const toolkitModules: LocalizedCollectionCard[] = [
+  {
+    id: 'dental',
+    title: { es: 'Ficha dental', en: 'Dental chart' },
+    description: { es: 'Odontograma de perro y gato, periodontograma en seis puntos, informes y revisiones. Guardado local por usuario.', en: 'Dog and cat odontograms, six-site periodontal charts, reports and reviews. Local storage per user.' },
+    status: { es: 'Premium', en: 'Premium' }, statusTone: 'premium', accessTier: 'premium', toolkitView: 'dental',
+  },
   {
     id: 'antibiotics',
     title: { es: 'Antibióticos: cobertura y grupos', en: 'Antibiotics: coverage and groups' },

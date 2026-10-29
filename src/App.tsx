@@ -64,6 +64,7 @@ import { AccessPreviewMode, AuthAccountSnapshot, LocalizedText, OtcProductRecord
 
 gsap.registerPlugin(ScrollTrigger);
 
+const DentalToolkit = lazy(() => import('./components/DentalToolkit'));
 const AntibioticToolkit = lazy(() => import('./components/AntibioticToolkit'));
 const EndocrineToolkit = lazy(() => import('./components/EndocrineToolkit'));
 const HaemotherapyCalculator = lazy(() => import('./components/HaemotherapyCalculator'));
@@ -76,6 +77,7 @@ const activeViews = ['records', 'create'] as const;
 const toolkitViews = [
   'overview',
   'antibiotics',
+  'dental',
   'dose',
   'infusion',
   'cri',
@@ -108,6 +110,7 @@ type EditorialQueueFilter = 'all' | 'draft' | 'review' | 'publication' | 'active
 const premiumTabSet = new Set<ProductTab>(premiumTabs);
 const availableToolkitViewSet = new Set<ToolkitView>([
   'antibiotics',
+  'dental',
   'haemotherapy',
   'dose',
   'endocrine',
@@ -2103,6 +2106,7 @@ function App() {
 
   const renderLocalizedCards = (cards: LocalizedCollectionCard[], gridClassName?: string) => {
     const toolkitTags: Record<string, string[]> = {
+      dental: ['dental', 'odontología', 'odontologia', 'dientes', 'periodonto', 'odontograma', 'triadan', 'dentistry', 'teeth'],
       antibiotics: ['antibióticos', 'antibioticos', 'antibiotics', 'cobertura', 'espectro', 'ameg', 'combinaciones', 'anaerobios', 'gram', 'antimicrobianos'],
       'chill-protocol': ['protocolo', 'calculadora', 'perro', 'preconsulta', 'miedo', 'ansiedad', 'agresividad', 'reactividad', 'gabapentina', 'acepromacina', 'otm'],
       'fip-protocol': ['protocolo', 'calculadora', 'gato', 'pif', 'fip', 'gs-441524', 'infecciosas', 'oral', 'inyectable sc', 'seguimiento', 'efusiva', 'seca', 'ocular', 'neurológica', 'neurológica', 'remisión'],
@@ -3809,6 +3813,7 @@ function App() {
               </>
             )}
 
+            {activeToolkitView === 'dental' && <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando ficha dental…' : 'Loading dental chart…'}</p>}><DentalToolkit lang={lang} userId={authAccount?.profile?.id} clinicName={authAccount?.profile?.workplaceName} /></Suspense>}
             {activeToolkitView === 'antibiotics' && <Suspense fallback={<p role="status">{lang === 'es' ? 'Cargando antibióticos…' : 'Loading antibiotics…'}</p>}><AntibioticToolkit lang={lang} /></Suspense>}
 
             {activeToolkitView === 'dose' && (
