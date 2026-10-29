@@ -15,7 +15,7 @@
 .abx-variable { background: var(--abx-variable-bg); color: var(--abx-variable-ink); }
 .abx-poor { background: var(--abx-poor-bg); color: var(--abx-poor-ink); }
 .abx-help { font-size: .83rem; color: var(--tk-muted, #496458); }
-.abx-table-shell { max-height: 42rem; overflow: auto; border: 1px solid var(--tk-line, #bcd2c4); border-radius: .65rem; overscroll-behavior: contain; }
+.abx-table-shell { overflow-x: auto; border: 1px solid var(--tk-line, #bcd2c4); border-radius: .65rem; overscroll-behavior: contain; }
 .abx-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1040px; font-size: .88rem; }
 .abx-table caption { text-align: left; padding: .8rem; font-weight: 600; background: var(--tk-wash, #edf6ef); }
 .abx-table th, .abx-table td { padding: .85rem .65rem; border-bottom: 1px solid var(--tk-line, #bcd2c4); text-align: center; vertical-align: top; }
