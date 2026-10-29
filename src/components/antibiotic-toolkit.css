@@ -45,3 +45,8 @@
 .abx-sources li { break-inside: avoid; margin-bottom: .65rem; }
 .app.dark .antibiotic-toolkit { --abx-good-bg: #183f32; --abx-good-ink: #b0ebca; --abx-variable-bg: #493a19; --abx-variable-ink: #ffdc83; --abx-poor-bg: #2d3542; --abx-poor-ink: #d0d8e7; }
 @media (max-width: 650px) { .abx-filters, .abx-combinations dl, .abx-group-list > div { grid-template-columns: 1fr; } .abx-group-list > div { gap: .5rem; } .abx-combination-title { flex-direction: column; gap: .5rem; } .abx-sources { columns: 1; } }
+
+.abx-combination-filter { grid-template-columns: minmax(0, 40rem); }
+.abx-combinations .abx-evidence { margin: .65rem 0 1rem; font-size: .82rem; color: var(--tk-strong, #0b5845); }
+.abx-combination-sources { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; list-style: none; padding: 0; margin: .8rem 0 0; font-size: .78rem; }
+.abx-combination-sources li { max-width: 100%; overflow-wrap: anywhere; }
