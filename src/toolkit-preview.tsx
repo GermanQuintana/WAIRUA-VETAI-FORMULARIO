@@ -64,7 +64,7 @@ function ToolkitPreview() {
     endocrine: <EndocrineToolkit lang={lang} />,
     writing: <WritingAssistantToolkit lang={lang} />,
     constants: <VitalConstantsToolkit lang={lang} />,
-    dose: <DoseCalculator lang={lang} entries={previewDoseEntries} onOpenKnowledge={() => {}} onOpenCri={(id) => { setCriProtocolId(id); setTool("cri"); }} />,
+    dose: <DoseCalculator lang={lang} entries={previewDoseEntries} onOpenCri={(id) => { setCriProtocolId(id); setTool("cri"); }} />,
     genetics: <GeneticsToolkit lang={lang} />,
     interactions: <DrugInteractionChecker lang={lang} entries={[]} />,
     cri: <ContinuousInfusionToolkit key={criProtocolId ?? "default"} lang={lang} initialProtocolId={criProtocolId} />,

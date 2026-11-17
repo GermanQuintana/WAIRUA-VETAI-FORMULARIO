@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Language, labels } from '../i18n';
 import { translateMedicalTerm } from '../lib/terms';
 import { DoseCalculatorEntry } from '../types';
@@ -8,13 +8,18 @@ import './dose-records.css';
 interface Props {
   entries: DoseCalculatorEntry[];
   lang: Language;
-  onOpenKnowledge: (entry: DoseCalculatorEntry) => void;
+  onOpenKnowledge?: (entry: DoseCalculatorEntry) => void;
   onReviewEntry?: (entry: DoseCalculatorEntry, approvalLevel: number) => void;
   onPublicationChange?: (entry: DoseCalculatorEntry, status: 'active' | 'rejected') => void;
   canReview?: boolean;
   canActivate?: boolean;
   onOpenCri?: (id?: string) => void;
 }
+
+const searchKey = (text: string) => text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+const normalizeDoseQuery = (text: string) =>
+  searchKey(text).replace(/\b(?:acepromacina|acepromazine)\b/g, 'acepromazina');
 
 const KG_TO_LB = 2.2046226218;
 
@@ -44,7 +49,7 @@ const getAmegReferenceRows = (lang: Language) =>
 
 const renderReviewBadge = (entry: DoseCalculatorEntry, lang: Language) => {
   const review = entry.reviewSummary;
-  if (!review?.approvalCount) return lang === 'es' ? 'Pendiente' : 'Pending';
+  if (!review?.approvalCount) return lang === 'es' ? 'Revisión editorial pendiente' : 'Pending editorial review';
   const icon = review.approvalScore / review.approvalCount >= 2.5 ? '⭐⭐⭐' : '👍';
   return `${icon} x${review.approvalCount}`;
 };
@@ -60,21 +65,23 @@ export default function DoseCalculator({
   onOpenCri,
 }: Props) {
   const t = labels[lang];
+  const es = lang === 'es';
+  const searchInput = useRef<HTMLInputElement>(null);
   const [weightKg, setWeightKg] = useState('');
   const [search, setSearch] = useState('');
   const [speciesFilter, setSpeciesFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [doseOverrides, setDoseOverrides] = useState<Record<string, number>>({});
+  const [doseOverrides, setDoseOverrides] = useState<Record<string, string>>({});
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     activeIngredient: true,
-    category: true,
-    subcategory: true,
+    category: false,
+    subcategory: false,
     antibioticCategory: true,
     species: true,
     route: true,
-    indication: false,
+    indication: true,
     dose: true,
-    doseUnit: true,
+    doseUnit: false,
     frequency: true,
     duration: false,
     selectedDose: true,
@@ -83,7 +90,7 @@ export default function DoseCalculator({
     presentation: false,
     observations: false,
     bibliography: false,
-    openKnowledge: false,
+    openKnowledge: Boolean(onOpenKnowledge),
   });
 
   const speciesOptions = useMemo(() => {
@@ -91,7 +98,13 @@ export default function DoseCalculator({
   }, [entries]);
 
   const categoryOptions = useMemo(() => {
-    return Array.from(new Set(entries.map((entry) => entry.category[lang]))).sort((a, b) => a.localeCompare(b));
+    const categories = new Map<string, string>();
+    for (const entry of entries) {
+      const key = searchKey(entry.category.es);
+      const label = translateMedicalTerm(entry.category[lang], lang);
+      if (!categories.has(key) || label !== entry.category.es) categories.set(key, label);
+    }
+    return Array.from(categories).sort((a, b) => a[1].localeCompare(b[1], lang));
   }, [entries, lang]);
 
   const doseFormatter = useMemo(
@@ -122,23 +135,25 @@ export default function DoseCalculator({
       { key: 'presentation', label: t.presentationResult },
       { key: 'observations', label: t.observationsLabel },
       { key: 'bibliography', label: t.bibliographyLabel },
-      { key: 'openKnowledge', label: t.openKnowledgeRecord },
+      ...(onOpenKnowledge ? [{ key: 'openKnowledge', label: t.openKnowledgeRecord }] : []),
     ],
-    [t],
+    [t, onOpenKnowledge],
   );
 
   const filteredEntries = useMemo(() => {
-    const normalizedQuery = search.trim().toLowerCase();
+    const normalizedQuery = normalizeDoseQuery(search);
+    if (!normalizedQuery && !categoryFilter && !speciesFilter) return [];
 
     return entries.filter((entry) => {
       const matchesSpecies = speciesFilter ? entry.species.includes(speciesFilter as DoseCalculatorEntry['species'][number]) : true;
-      const matchesCategory = categoryFilter ? entry.category[lang] === categoryFilter : true;
+      const matchesCategory = categoryFilter ? searchKey(entry.category.es) === categoryFilter : true;
 
       if (!normalizedQuery) return matchesSpecies && matchesCategory;
 
-      const haystack = [
+      const haystack = normalizeDoseQuery([
         entry.activeIngredient,
         entry.category.es,
+        translateMedicalTerm(entry.category.en, 'en'),
         entry.category.en,
         entry.subcategory?.es ?? '',
         entry.subcategory?.en ?? '',
@@ -154,54 +169,36 @@ export default function DoseCalculator({
         entry.clinicalNotes?.en ?? '',
         entry.bibliography ?? '',
         ...entry.species,
-      ]
-        .join(' ')
-        .toLowerCase();
+      ].join(' '));
 
       return matchesSpecies && matchesCategory && haystack.includes(normalizedQuery);
     });
-  }, [categoryFilter, entries, lang, search, speciesFilter]);
+  }, [categoryFilter, entries, search, speciesFilter]);
 
   const numericWeightKg = Number(weightKg);
   const weightLb = Number.isFinite(numericWeightKg) && numericWeightKg > 0 ? roundValue(numericWeightKg * KG_TO_LB, 2) : null;
 
-  return (
-    <section className="dose-calculator">
-      <div className="dose-calculator-header">
-        <div>
-          <p className="section-kicker">{t.doseCalculatorKicker}</p>
-          <h3>{t.doseCalculatorTitle}</h3>
-          <p>{t.doseCalculatorText}</p>
-        </div>
-        <div className="dose-weight-card">
-          <label>
-            {t.weightKg}
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={weightKg}
-              onChange={(event) => setWeightKg(event.target.value)}
-              placeholder="4.5"
-              title="4.5"
-            />
-          </label>
-          <div>
-            <span>{t.weightLb}</span>
-            <strong>{weightLb !== null ? weightLb.toFixed(2) : '--'}</strong>
-          </div>
-        </div>
-      </div>
+  const hasCriteria = Boolean(search.trim() || speciesFilter || categoryFilter);
+  const hasVisibleFields = Object.values(visibleColumns).some(Boolean);
+  const clearFilters = () => {
+    setSearch('');
+    setSpeciesFilter('');
+    setCategoryFilter('');
+    searchInput.current?.focus();
+  };
 
-      <div className="dose-filter-grid">
-        <label>
-          {t.search}
+  return (
+    <section className="dose-calculator dose-guide">
+      <h3 className="dose-guide-title">{es ? 'Guía de dosis' : 'Dosing guide'}</h3>
+      <div className="dose-guide-controls">
+        <label className="dose-guide-search">
+          {es ? 'Buscar pauta' : 'Find a regimen'}
           <input
+            ref={searchInput}
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder={t.doseCalculatorSearchPlaceholder}
-            title={t.doseCalculatorSearchPlaceholder}
+            placeholder={es ? 'Principio activo o indicación' : 'Active ingredient or indication'}
           />
         </label>
         <label>
@@ -219,54 +216,30 @@ export default function DoseCalculator({
           {t.doseCalculatorCategory}
           <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
             <option value="">{t.all}</option>
-            {categoryOptions.map((category) => (
-              <option key={category} value={category}>
+            {categoryOptions.map(([key, category]) => (
+              <option key={key} value={key}>
                 {category}
               </option>
             ))}
           </select>
         </label>
+        <label>
+          <span>{t.weightKg}{weightLb !== null && <small className="dose-guide-lb"> · {doseFormatter.format(weightLb)} lb</small>}</span>
+          <input aria-label={t.weightKg} type="number" min="0" step="any" value={weightKg}
+            onChange={(event) => setWeightKg(event.target.value)} placeholder={es ? 'Peso' : 'Weight'} />
+        </label>
+      </div>
+      <div className="dose-guide-toolbar">
+        <p role="status">
+          {hasCriteria
+            ? `${filteredEntries.length} ${es ? (filteredEntries.length === 1 ? 'pauta' : 'pautas') : (filteredEntries.length === 1 ? 'regimen' : 'regimens')}`
+            : (es ? 'Busca un principio activo o elige una especie o categoría para ver las pautas.' : 'Search for an active ingredient or select a species or category to see regimens.')}
+        </p>
+        {hasCriteria && <button type="button" className="dose-guide-clear" onClick={clearFilters}>{es ? 'Limpiar filtros' : 'Clear filters'}</button>}
       </div>
 
-      {onOpenCri && <CriProtocolLinks lang={lang} query={search} onOpen={onOpenCri} />}
-
-      <details className="toolkit-reference-table accordion-card ameg-reference-card">
-        <summary className="accordion-summary">
-          <div>
-            <strong>{t.amegReferenceTitle}</strong>
-            <p>{t.amegReferenceText}</p>
-          </div>
-        </summary>
-        <div className="ameg-table-shell">
-          <table className="ameg-table">
-            <thead className="dose-records-head">
-              <tr>
-                <th scope="col">{t.amegGroupLabel}</th>
-                <th scope="col">{t.amegMeaningLabel}</th>
-                <th scope="col">{t.amegUseLabel}</th>
-              </tr>
-            </thead>
-            <tbody role="rowgroup">
-              {amegReferenceRows.map((row) => (
-                <tr key={row.group} className={`ameg-row ameg-row-${row.tone}`}>
-                  <td>
-                    <span className={`ameg-badge ameg-badge-${row.tone}`}>AMEG {row.group}</span>
-                  </td>
-                  <td>{row.meaning}</td>
-                  <td>{row.use}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="dose-disclaimer"><a href="https://www.ema.europa.eu/en/partners-networks/animal-health-practitioners" target="_blank" rel="noopener noreferrer">{lang === 'es' ? 'Fuente oficial: EMA · AMEG' : 'Official source: EMA · AMEG'} ↗</a></p>
-      </details>
-
-      <section className="dose-columns-bar" aria-label={lang === 'es' ? 'Columnas visibles' : 'Visible columns'}>
-        <div className="dose-columns-heading">
-          <strong>{lang === 'es' ? 'Columnas visibles' : 'Visible columns'}</strong>
-          <span>{lang === 'es' ? 'Marca o desmarca lo que quieres ver en la tabla.' : 'Toggle the fields you want to keep on screen.'}</span>
-        </div>
+      {hasCriteria && filteredEntries.length > 0 && <details className="dose-guide-options">
+        <summary>{es ? 'Personalizar vista' : 'Customize view'}</summary>
         <div className="dose-columns-list">
           {columnOptions.map((column) => (
             <label key={column.key} className="checkbox-inline dose-column-toggle">
@@ -284,21 +257,21 @@ export default function DoseCalculator({
             </label>
           ))}
         </div>
-      </section>
+      </details>}
 
-      {!Object.values(visibleColumns).some(Boolean) && <p role="status">{lang === 'es' ? 'Activa al menos una columna para ver los datos.' : 'Enable at least one column to see the data.'}</p>}
-      {filteredEntries.length === 0 && <p role="status">{lang === 'es' ? 'No hay pautas para estos filtros.' : 'No dosing records match these filters.'}</p>}
-      <div className="dose-table-shell dose-records-shell">
+      {hasCriteria && filteredEntries.length > 0 && !hasVisibleFields && <p role="status">{es ? 'Activa un campo en Personalizar vista.' : 'Enable a field under Customize view.'}</p>}
+      {hasCriteria && filteredEntries.length === 0 && <p>{es ? 'Prueba otro término o quita un filtro.' : 'Try another search term or remove a filter.'}</p>}
+      {filteredEntries.length > 0 && hasVisibleFields && <div className="dose-table-shell dose-records-shell">
         <table className="dose-table dose-records" role="table">
           <thead className="dose-records-head">
             <tr>
               {visibleColumns.activeIngredient ? <th scope="col">{t.activeIngredient}</th> : null}
               {visibleColumns.category ? <th scope="col">{t.doseCalculatorCategory}</th> : null}
               {visibleColumns.subcategory ? <th scope="col">{t.doseCalculatorSubcategory}</th> : null}
-              {visibleColumns.antibioticCategory ? <th scope="col">{t.doseCalculatorAntibioticCategory}</th> : null}
+              {visibleColumns.antibioticCategory && !visibleColumns.activeIngredient ? <th scope="col">{t.doseCalculatorAntibioticCategory}</th> : null}
               {visibleColumns.species ? <th scope="col">{t.species}</th> : null}
               {visibleColumns.route ? <th scope="col">{t.administrationRoute}</th> : null}
-              {visibleColumns.indication ? <th scope="col">{t.indications}</th> : null}
+              {visibleColumns.indication && !visibleColumns.activeIngredient ? <th scope="col">{t.indications}</th> : null}
               {visibleColumns.dose ? <th scope="col">{t.dose}</th> : null}
               {visibleColumns.doseUnit ? <th scope="col">{t.doseUnitLabel}</th> : null}
               {visibleColumns.frequency ? <th scope="col">{t.frequencyLabel}</th> : null}
@@ -309,18 +282,19 @@ export default function DoseCalculator({
               {visibleColumns.presentation ? <th scope="col">{t.presentationResult}</th> : null}
               {visibleColumns.observations ? <th scope="col">{t.observationsLabel}</th> : null}
               {visibleColumns.bibliography ? <th scope="col">{t.bibliographyLabel}</th> : null}
-              {visibleColumns.openKnowledge ? <th scope="col">{t.openKnowledgeRecord}</th> : null}
+              {visibleColumns.openKnowledge && onOpenKnowledge ? <th scope="col">{t.openKnowledgeRecord}</th> : null}
             </tr>
           </thead>
           <tbody role="rowgroup">
             {filteredEntries.map((entry) => {
               const publicationStatus = entry.publicationStatus ?? 'active';
-              const selectedDose = doseOverrides[entry.id] ?? entry.defaultDoseMgKg;
+              const doseInput = doseOverrides[entry.id] ?? (Number.isFinite(entry.defaultDoseMgKg) ? String(entry.defaultDoseMgKg) : '');
+              const selectedDose = doseInput === '' ? NaN : Number(doseInput);
               const doseUnit = getResolvedDoseUnit(entry.doseUnit);
               const weightBasedDose = isWeightBasedDoseUnit(doseUnit);
               const computedDoseUnit = weightBasedDose ? doseUnit.replace(/\/kg/gi, '').replace(/\/+/g, '/').trim() : doseUnit;
               const hasNumericDose =
-                Number.isFinite(selectedDose) &&
+                Number.isFinite(entry.defaultDoseMgKg) &&
                 Number.isFinite(entry.doseRangeMgKg.min) &&
                 Number.isFinite(entry.doseRangeMgKg.max);
               const validSelectedDose = hasNumericDose && selectedDose >= entry.doseRangeMgKg.min && selectedDose <= entry.doseRangeMgKg.max;
@@ -348,31 +322,46 @@ export default function DoseCalculator({
                     ? doseFormatter.format(entry.doseRangeMgKg.min)
                     : `${doseFormatter.format(entry.doseRangeMgKg.min)}-${doseFormatter.format(entry.doseRangeMgKg.max)}`
                   : '--';
+              let calculationHint = es ? 'Introduce el peso' : 'Enter weight';
+              if (!hasNumericDose) calculationHint = es ? 'Pauta de consulta' : 'Reference only';
+              else if (!doseInput) calculationHint = es ? 'Introduce la dosis' : 'Enter dose';
+              else if (!validSelectedDose) calculationHint = es ? 'Dosis fuera de rango' : 'Dose outside range';
+              const notes = entry.clinicalNotes?.[lang] || entry.observations;
+              const detailNotes = !visibleColumns.observations && notes;
+              const detailSource = !visibleColumns.bibliography && entry.bibliography;
               const separateUnitLabel = entry.doseText && hasEmbeddedDoseUnit(entry.doseText) ? '--' : doseUnit;
 
               return (
                 <tr key={entry.id} role="row">
                   {visibleColumns.activeIngredient ? (
-                    <td role="cell" data-label={t.activeIngredient}>
+                    <td role="cell" className="dose-guide-identity" data-label={t.activeIngredient}>
                       <strong>{entry.activeIngredient}</strong>
-                      {entry.dosePhase && <small className="dose-phase">{entry.indication[lang]}</small>}
+                      {(visibleColumns.indication || entry.dosePhase) && <span>{entry.indication[lang]}</span>}
+                      {visibleColumns.antibioticCategory && entry.antibioticCategory && <small>{t.doseCalculatorAntibioticCategory} · {entry.antibioticCategory}</small>}
                       <div className="dose-entry-review-meta">
                         <span>{renderReviewBadge(entry, lang)}</span>
                         {publicationStatus !== 'active' ? (
                           <span>{publicationStatus === 'pending_activation' ? t.pendingActivationOnly : t.rejectEntry}</span>
                         ) : null}
                       </div>
+                      {(detailNotes || detailSource) && (
+                        <details className="dose-guide-detail">
+                          <summary>{es ? 'Notas y fuentes' : 'Notes and sources'}</summary>
+                          {detailNotes && <p>{detailNotes}</p>}
+                          {detailSource && <p><strong>{t.bibliographyLabel}</strong> · {detailSource}</p>}
+                        </details>
+                      )}
                     </td>
                   ) : null}
-                  {visibleColumns.category ? <td role="cell" data-label={t.doseCalculatorCategory}>{entry.category[lang]}</td> : null}
+                  {visibleColumns.category ? <td role="cell" data-label={t.doseCalculatorCategory}>{translateMedicalTerm(entry.category[lang], lang)}</td> : null}
                   {visibleColumns.subcategory ? <td role="cell" data-label={t.doseCalculatorSubcategory}>{entry.subcategory?.[lang] ?? '--'}</td> : null}
-                  {visibleColumns.antibioticCategory ? <td role="cell" data-label={t.doseCalculatorAntibioticCategory}>{entry.antibioticCategory ?? '--'}</td> : null}
+                  {visibleColumns.antibioticCategory && !visibleColumns.activeIngredient ? <td role="cell" data-label={t.doseCalculatorAntibioticCategory}>{entry.antibioticCategory ?? '--'}</td> : null}
                   {visibleColumns.species ? (
                     <td role="cell" data-label={t.species}>{(lang === 'es' ? entry.speciesLabel : undefined) ?? entry.species.map((species) => translateMedicalTerm(species, lang)).join(', ')}</td>
                   ) : null}
                   {visibleColumns.route ? <td role="cell" data-label={t.administrationRoute}>{lang === 'en' ? entry.route.replace(/VO/g, 'PO') : entry.route}</td> : null}
-                  {visibleColumns.indication ? <td role="cell" data-label={t.indications}>{entry.indication[lang]}</td> : null}
-                  {visibleColumns.dose ? <td role="cell" data-label={t.dose}>{rangeLabel}{entry.dosePhase && <small className="dose-phase">{entry.dosePhase[lang]}</small>}</td> : null}
+                  {visibleColumns.indication && !visibleColumns.activeIngredient ? <td role="cell" data-label={t.indications}>{entry.indication[lang]}</td> : null}
+                  {visibleColumns.dose ? <td role="cell" data-label={t.dose}>{rangeLabel}{!entry.doseText && rangeLabel !== '--' && ` ${doseUnit}`}{entry.dosePhase && <small className="dose-phase">{entry.dosePhase[lang]}</small>}</td> : null}
                   {visibleColumns.doseUnit ? <td role="cell" data-label={t.doseUnitLabel}>{separateUnitLabel}</td> : null}
                   {visibleColumns.frequency ? <td role="cell" data-label={t.frequencyLabel}>{entry.frequency?.replace(/[qc](\d+(?:[–-]\d+)?)h/g, lang === 'es' ? 'c$1h' : 'q$1h') ?? '--'}</td> : null}
                   {visibleColumns.duration ? <td role="cell" data-label={t.durationLabel}>{entry.duration ?? entry.dosePhase?.[lang] ?? '--'}</td> : null}
@@ -384,21 +373,24 @@ export default function DoseCalculator({
                         type="number"
                         min={Number.isFinite(entry.doseRangeMgKg.min) ? entry.doseRangeMgKg.min : undefined}
                         max={Number.isFinite(entry.doseRangeMgKg.max) ? entry.doseRangeMgKg.max : undefined}
-                        step="0.01"
-                        value={Number.isFinite(selectedDose) ? selectedDose : ''}
+                        step="any"
+                        value={doseInput}
                         disabled={!hasNumericDose}
-                        aria-invalid={hasNumericDose && !validSelectedDose}
+                        aria-invalid={hasNumericDose && Boolean(doseInput) && !validSelectedDose}
                         onChange={(event) => {
-                          const value = Number(event.target.value);
-                          if (!Number.isNaN(value)) {
-                            setDoseOverrides((current) => ({ ...current, [entry.id]: value }));
-                          }
+                          const value = event.target.value;
+                          setDoseOverrides((current) => ({ ...current, [entry.id]: value }));
                         }}
                       />
+                      {hasNumericDose && <small>{doseUnit}</small>}
                     </td>
                   ) : null}
                   {visibleColumns.calculatedDose ? (
-                    <td role="cell" data-label={t.calculatedDose}>{calculatedDoseValue !== null ? `${doseFormatter.format(calculatedDoseValue)} ${computedDoseUnit}`.trim() : '--'}</td>
+                    <td role="cell" className="dose-guide-result" data-label={t.calculatedDose}>
+                      {calculatedDoseValue !== null
+                        ? <strong>{doseFormatter.format(calculatedDoseValue)} {computedDoseUnit}</strong>
+                        : <span>{calculationHint}</span>}
+                    </td>
                   ) : null}
                   {visibleColumns.concentration ? <td role="cell" data-label={t.concentrationLabel}>{entry.concentration[lang] || '--'}</td> : null}
                   {visibleColumns.presentation ? (
@@ -412,7 +404,7 @@ export default function DoseCalculator({
                   ) : null}
                   {visibleColumns.observations ? <td role="cell" data-label={t.observationsLabel}>{entry.clinicalNotes?.[lang] ?? entry.observations ?? '--'}</td> : null}
                   {visibleColumns.bibliography ? <td role="cell" data-label={t.bibliographyLabel}>{entry.bibliography ?? '--'}</td> : null}
-                  {visibleColumns.openKnowledge ? (
+                  {visibleColumns.openKnowledge && onOpenKnowledge ? (
                     <td role="cell" data-label={t.openKnowledgeRecord}>
                       <div className="dose-entry-actions">
                         <button className="secondary-button" type="button" onClick={() => onOpenKnowledge(entry)}>
@@ -420,10 +412,10 @@ export default function DoseCalculator({
                         </button>
                         {canReview && onReviewEntry && entry.linkedEntryId ? (
                           <>
-                            <button className="secondary-button" type="button" onClick={() => onReviewEntry(entry, 1)}>
+                            <button className="secondary-button" type="button" aria-label={es ? 'Valorar con un punto' : 'Rate one point'} onClick={() => onReviewEntry(entry, 1)}>
                               👍
                             </button>
-                            <button className="secondary-button" type="button" onClick={() => onReviewEntry(entry, 2)}>
+                            <button className="secondary-button" type="button" aria-label={es ? 'Valorar con dos puntos' : 'Rate two points'} onClick={() => onReviewEntry(entry, 2)}>
                               👍👍
                             </button>
                           </>
@@ -441,8 +433,43 @@ export default function DoseCalculator({
             })}
           </tbody>
         </table>
-      </div>
+      </div>}
 
+      <details className="dose-guide-references">
+        <summary>{es ? 'Referencias y herramientas relacionadas' : 'References and related tools'}</summary>
+        {onOpenCri && <CriProtocolLinks lang={lang} query={search} onOpen={onOpenCri} />}
+        <details className="toolkit-reference-table accordion-card ameg-reference-card">
+          <summary className="accordion-summary">
+            <div>
+              <strong>{t.amegReferenceTitle}</strong>
+              <p>{t.amegReferenceText}</p>
+            </div>
+          </summary>
+          <div className="ameg-table-shell">
+            <table className="ameg-table">
+              <thead className="dose-records-head">
+                <tr>
+                  <th scope="col">{t.amegGroupLabel}</th>
+                  <th scope="col">{t.amegMeaningLabel}</th>
+                  <th scope="col">{t.amegUseLabel}</th>
+                </tr>
+              </thead>
+              <tbody role="rowgroup">
+                {amegReferenceRows.map((row) => (
+                  <tr key={row.group} className={`ameg-row ameg-row-${row.tone}`}>
+                    <td>
+                      <span className={`ameg-badge ameg-badge-${row.tone}`}>AMEG {row.group}</span>
+                    </td>
+                    <td>{row.meaning}</td>
+                    <td>{row.use}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="dose-disclaimer"><a href="https://www.ema.europa.eu/en/partners-networks/animal-health-practitioners" target="_blank" rel="noopener noreferrer">{lang === 'es' ? 'Fuente oficial: EMA · AMEG' : 'Official source: EMA · AMEG'} ↗</a></p>
+        </details>
+      </details>
       <p className="dose-disclaimer">{t.doseCalculatorDisclaimer}</p>
     </section>
   );
