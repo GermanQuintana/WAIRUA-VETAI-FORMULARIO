@@ -84,6 +84,8 @@ export const buildDoseCalculatorEntries = (entries: TherapeuticEntry[]): DoseCal
       frequency: spreadsheetEntry.frequency ?? matchedEditorialEntry.frequency,
       duration: spreadsheetEntry.duration ?? matchedEditorialEntry.duration,
       observations: spreadsheetEntry.observations ?? matchedEditorialEntry.observations,
+      clinicalNotes: spreadsheetEntry.clinicalNotes ?? matchedEditorialEntry.clinicalNotes,
+      dosePhase: spreadsheetEntry.dosePhase ?? matchedEditorialEntry.dosePhase,
       bibliography: spreadsheetEntry.bibliography ?? matchedEditorialEntry.bibliography,
     };
   });

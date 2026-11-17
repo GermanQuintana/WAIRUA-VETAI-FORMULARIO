@@ -20,7 +20,7 @@ const baseEntries: TherapeuticEntry[] = [
     id: 'amoxicillin-clavulanate',
     activeIngredient: 'Amoxicilina + acido clavulanico',
     tradeNames: ['Clavamox', 'Synulox'],
-    species: ['Dog', 'Cat', 'Rabbit'],
+    species: ['Dog', 'Cat'],
     tags: ['Medicina interna', 'Dermatologia', 'Respiratorio', 'Antibioticos', 'Antiinfecciosos sistemicos', 'Penicilinas'],
     systems: ['Infectious Diseases', 'Dermatology', 'Respiratory'],
     pathologies: ['Pyoderma', 'Upper Respiratory Infection', 'Soft Tissue Infection'],
@@ -31,7 +31,7 @@ const baseEntries: TherapeuticEntry[] = [
     },
     dosage: {
       es: 'Perros/Gatos: 12.5-25 mg/kg VO cada 12 h.\nPerros/Gatos: en pioderma, colangitis neutrofilica, pancreatitis felina, hepatitis cronica canina no asociada al cobre y ITU, usar el extremo alto del rango segun gravedad y cultivo.\nPerros: en neumonia bacteriana, 10-20 mg/kg VO cada 8 h segun criterio clinico.',
-      en: 'Dogs: 12.5-25 mg/kg PO q12h.\nCats: 12.5-25 mg/kg PO q12h.\nRabbits: use with caution and only under strict veterinary monitoring.',
+      en: 'Dogs: 12.5-25 mg/kg PO q12h.\nCats: 12.5-25 mg/kg PO q12h.',
     },
     administrationConditions: {
       es: 'Puede administrarse con alimento si existe intolerancia gastrointestinal. Mantener intervalos regulares de dosificacion.',
@@ -42,8 +42,8 @@ const baseEntries: TherapeuticEntry[] = [
       en: 'Gastrointestinal upset, hypersensitivity, and microbiota disruption in sensitive species.',
     },
     contraindications: {
-      es: 'Evitar en hipersensibilidad grave a beta-lactamicos. Reevaluar en especies con riesgo de disbiosis gastrointestinal.',
-      en: 'Avoid in severe beta-lactam hypersensitivity. Reassess in GI dysbiosis risk species.',
+      es: 'Evitar en hipersensibilidad grave a beta-lactamicos. Contraindicado por via oral en conejos por riesgo de enterotoxemia.',
+      en: 'Avoid in severe beta-lactam hypersensitivity. Oral use is contraindicated in rabbits because of enterotoxemia risk.',
     },
     interactions: {
       es: 'Precaucion con otros antibioticos bacteriostaticos y revisar compatibilidad con probioticos o protectores digestivos cuando se use terapia prolongada.',
@@ -78,7 +78,7 @@ const baseEntries: TherapeuticEntry[] = [
         authors: 'Weese JS et al.',
         year: 2019,
         source: 'Veterinary Journal',
-        url: 'https://doi.org/10.1016/j.tvjl.2019.105406',
+        url: 'https://doi.org/10.1016/j.tvjl.2019.02.008',
       },
     ],
     cimavet: {
@@ -286,8 +286,8 @@ const baseEntries: TherapeuticEntry[] = [
       en: 'Fluoroquinolone reserved for infections with documented susceptibility and stewardship oversight.',
     },
     dosage: {
-      es: 'Perros/Gatos: piodermas, piometra, orquitis-epididimitis, prostatitis e infecciones urinarias 5 mg/kg VO/SC cada 24 h; en piodermas intensas hasta 20 mg/kg al dia.\nPerros: otitis intensa 5 mg/kg VO/SC cada 24 h; frente a Pseudomonas aeruginosa, 20 mg/kg cada 24 h.\nPerros/Gatos: diarrea aguda 5 mg/kg SC/IV lento cada 24 h.\nPerros: enteritis cronica 10-15 mg/kg VO cada 24 h.\nPerros/Gatos: colangitis neutrofilica y pancreatitis felinas o hepatitis cronica canina no asociada al cobre 5 mg/kg VO cada 24 h, combinado con metronidazol.\nPerros/Gatos: infecciones respiratorias 2.7-5.5 mg/kg VO cada 24 h.\nGatos: hemoplasmosis 2 mg/kg VO cada 24 h.',
-      en: 'Dogs: 5-20 mg/kg PO q24h depending on indication.\nCats: avoid high doses due to retinal toxicity risk.',
+      es: 'Perros: 5–20 mg/kg al dia segun indicacion, cultivo, formulacion y ficha. Gatos: no superar 5 mg/kg al dia; riesgo retinal incluso a dosis menores. El tratamiento de hemoplasmosis y la eleccion de via requieren revisar protocolo y ficha tecnica. En diarrea aguda canina leve o moderada no usar antibioticos de rutina.',
+      en: 'Dogs: 5–20 mg/kg daily depending on indication, culture, formulation and product label. Cats: do not exceed 5 mg/kg/day; retinal injury can occur at lower doses. Review protocol and label for haemoplasmosis and route. Do not routinely use antibiotics for mild or moderate acute diarrhoea in dogs.',
     },
     administrationConditions: {
       es: 'Separar de cationes multivalentes y ajustar con base en cultivo, sensibilidad y funcion renal cuando corresponda.',
@@ -323,7 +323,7 @@ const baseEntries: TherapeuticEntry[] = [
         },
       },
     ],
-    references: [],
+    references: [{ id: 'ema-baytril', title: 'Baytril injectable product information', authors: 'European Medicines Agency', year: 2014, source: 'EMA', url: 'https://www.ema.europa.eu/en/documents/referral/baytril-25-injectable-baytril-5-injectable-and-baytril-10-injectable-and-their-associated-names-annex-i-ii-iii_en.pdf' }],
     cimavet: {
       nameQuery: 'Baytril',
     },

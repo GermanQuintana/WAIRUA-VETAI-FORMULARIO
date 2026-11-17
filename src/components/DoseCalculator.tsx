@@ -150,6 +150,8 @@ export default function DoseCalculator({
         entry.frequency ?? '',
         entry.duration ?? '',
         entry.observations ?? '',
+        entry.clinicalNotes?.es ?? '',
+        entry.clinicalNotes?.en ?? '',
         entry.bibliography ?? '',
         ...entry.species,
       ]
@@ -321,10 +323,11 @@ export default function DoseCalculator({
                 Number.isFinite(selectedDose) &&
                 Number.isFinite(entry.doseRangeMgKg.min) &&
                 Number.isFinite(entry.doseRangeMgKg.max);
+              const validSelectedDose = hasNumericDose && selectedDose >= entry.doseRangeMgKg.min && selectedDose <= entry.doseRangeMgKg.max;
               const calculatedDoseValue =
-                hasNumericDose && weightBasedDose && Number.isFinite(numericWeightKg) && numericWeightKg > 0
+                validSelectedDose && weightBasedDose && Number.isFinite(numericWeightKg) && numericWeightKg > 0
                   ? roundValue(selectedDose * numericWeightKg, 2)
-                  : hasNumericDose && !weightBasedDose
+                  : validSelectedDose && !weightBasedDose
                     ? roundValue(selectedDose, 2)
                     : null;
               const presentationDoseMg = calculatedDoseValue !== null && computedDoseUnit.toLowerCase() === 'mg' ? calculatedDoseValue : null;
@@ -371,8 +374,8 @@ export default function DoseCalculator({
                   {visibleColumns.indication ? <td role="cell" data-label={t.indications}>{entry.indication[lang]}</td> : null}
                   {visibleColumns.dose ? <td role="cell" data-label={t.dose}>{rangeLabel}{entry.dosePhase && <small className="dose-phase">{entry.dosePhase[lang]}</small>}</td> : null}
                   {visibleColumns.doseUnit ? <td role="cell" data-label={t.doseUnitLabel}>{separateUnitLabel}</td> : null}
-                  {visibleColumns.frequency ? <td role="cell" data-label={t.frequencyLabel}>{(lang === 'es' ? entry.frequency?.replace(/q(\d+)h/g, 'c$1h') : entry.frequency?.replace(/c(\d+)h/g, 'q$1h')) ?? '--'}</td> : null}
-                  {visibleColumns.duration ? <td role="cell" data-label={t.durationLabel}>{entry.dosePhase?.[lang] ?? entry.duration ?? '--'}</td> : null}
+                  {visibleColumns.frequency ? <td role="cell" data-label={t.frequencyLabel}>{entry.frequency?.replace(/[qc](\d+(?:[–-]\d+)?)h/g, lang === 'es' ? 'c$1h' : 'q$1h') ?? '--'}</td> : null}
+                  {visibleColumns.duration ? <td role="cell" data-label={t.durationLabel}>{entry.duration ?? entry.dosePhase?.[lang] ?? '--'}</td> : null}
                   {visibleColumns.selectedDose ? (
                     <td role="cell" data-label={t.selectedDose}>
                       <input
@@ -384,6 +387,7 @@ export default function DoseCalculator({
                         step="0.01"
                         value={Number.isFinite(selectedDose) ? selectedDose : ''}
                         disabled={!hasNumericDose}
+                        aria-invalid={hasNumericDose && !validSelectedDose}
                         onChange={(event) => {
                           const value = Number(event.target.value);
                           if (!Number.isNaN(value)) {

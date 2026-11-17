@@ -1,4 +1,6 @@
 import { levetiracetamDoseEntries } from './levetiracetam';
+import { antitussiveDoseEntries } from './antitussives';
+import { reviewPhotographedAntiInfectives } from './reviewPhotographedAntiInfectives';
 import { DoseCalculatorEntry, Species } from '../types';
 
 const rawSpreadsheetDoseTable = `Categoría	Subcategoría	Principio activo	AMEG UE	Especie	Indicación	Dosis	Unidad	Vía	Frecuencia	Duración	Observaciones	Bibliografía
@@ -743,7 +745,9 @@ const normalizeText = (value: string) =>
     .trim();
 
 const parseDoseNumbers = (value: string) => {
-  const matches = value.match(/\d+(?:[.,]\d+)?/g) ?? [];
+  // The source uses Spanish thousands separators in values such as 20.000 UI/kg.
+  const normalizedValue = value.replace(/\b[1-9]\d{0,2}(?:\.\d{3})+(?=\D|$)/g, (match) => match.replace(/\./g, ''));
+  const matches = normalizedValue.match(/\d+(?:[.,]\d+)?/g) ?? [];
   const numeric = matches
     .map((item) => Number(item.replace(',', '.')))
     .filter((item) => Number.isFinite(item));
@@ -830,8 +834,13 @@ const importedSpreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSpre
     };
   });
 
-// Replace the legacy feline-only row with sourced, bilingual dog/cat regimens.
+// Replace legacy unsourced cough rows with the attributed bilingual regimens.
+// Keep butorphanol analgesia/tracheal-collapse rows and all unrelated indications.
 export const spreadsheetDoseEntries: DoseCalculatorEntry[] = [
-  ...importedSpreadsheetDoseEntries.filter((entry) => entry.activeIngredient.toLowerCase() !== 'levetiracetam'),
+  ...reviewPhotographedAntiInfectives(importedSpreadsheetDoseEntries.filter((entry) => {
+    if (entry.activeIngredient.toLowerCase() === 'levetiracetam') return false;
+    return !(entry.indication.es === 'Tos' && ['Butorfanol', 'Codeína', 'Dextrometorfano'].includes(entry.activeIngredient));
+  })),
   ...levetiracetamDoseEntries,
+  ...antitussiveDoseEntries,
 ];
