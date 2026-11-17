@@ -745,6 +745,7 @@ const normalizeText = (value: string) =>
     .trim();
 
 const parseDoseNumbers = (value: string) => {
+  if (value.includes('+')) return { min: Number.NaN, max: Number.NaN, defaultValue: Number.NaN };
   // The source uses Spanish thousands separators in values such as 20.000 UI/kg.
   const normalizedValue = value.replace(/\b[1-9]\d{0,2}(?:\.\d{3})+(?=\D|$)/g, (match) => match.replace(/\./g, ''));
   const matches = normalizedValue.match(/\d+(?:[.,]\d+)?/g) ?? [];
@@ -813,6 +814,7 @@ const importedSpreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSpre
     const dose = parseDoseNumbers(doseText ?? '');
 
     return {
+      dosePhase: (doseText ?? '').includes('+') ? { es: 'Dosis por componente · comprobar presentación', en: 'Dose per component · check formulation' } : undefined,
       id: `sheet-${makeEntryId([activeIngredient ?? '', speciesLabel ?? '', indication ?? '', route ?? '', doseText ?? '', doseUnit ?? ''])}`,
       activeIngredient: activeIngredient ?? '',
       category: asLocalized(category ?? ''),
@@ -824,7 +826,7 @@ const importedSpreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSpre
       indication: asLocalized(indication ?? ''),
       doseRangeMgKg: { min: dose.min, max: dose.max },
       defaultDoseMgKg: dose.defaultValue,
-      doseText: doseText ?? '',
+      doseText: (doseText ?? '').includes('+') && /[a-záéíóú]/i.test(doseText ?? '') ? `${doseText} ${doseUnit}` : doseText ?? '',
       doseUnit: doseUnit ?? '',
       frequency: frequency || undefined,
       duration: duration || undefined,
@@ -834,10 +836,64 @@ const importedSpreadsheetDoseEntries: DoseCalculatorEntry[] = dedupeRows(rawSpre
     };
   });
 
+// Attach references only to the species, indication and regimen they actually support.
+function reviewAntiparasitics(entries: DoseCalculatorEntry[]): DoseCalculatorEntry[] {
+  return entries.map((entry) => {
+    if (entry.category.es !== 'Antiparasitarios') return entry;
+    const drug = entry.activeIngredient;
+    const indication = entry.indication.es;
+    let e = { ...entry };
+    e.indication = {
+      es: indication.replace(/ \(ver tabla 62\)/g, '').replace(/; ver tabla 63/g, ''),
+      en: indication.includes('ver tabla 62') ? 'Internal parasite control; check product and parasite' : indication.includes('ver tabla 63') ? 'Parasite control; check product and parasite' : indication,
+    };
+    if (e.observations?.includes('pg.')) e.observations = undefined;
+    if (drug === 'Atovacuona' && e.speciesLabel === 'Gato') {
+      e.duration = '10 días / 10 days';
+      e.observations = 'Asociar azitromicina 10 mg/kg VO cada 24 h durante 10 días; valorar soporte y disponibilidad. / Combine with azithromycin 10 mg/kg PO every 24 h for 10 days; assess supportive care and availability.';
+      e.bibliography = 'CAPC, feline cytauxzoonosis: https://capcvet.org/guidelines/cytauxzoonosis';
+    } else if (drug === 'Atovacuona' && e.doseText === '13,3') {
+      e.indication = { es: 'Babesiosis por B. gibsoni y otras Babesia pequeñas', en: 'Babesiosis due to B. gibsoni and other small Babesia' };
+      e.observations = 'Asociar azitromicina 10 mg/kg VO cada 24 h durante 10 días. / Combine with azithromycin 10 mg/kg PO every 24 h for 10 days.';
+      e.bibliography = 'CAPC, canine babesiosis: https://capcvet.org/guidelines/babesia';
+    } else if (drug === 'Atovacuona' && e.doseText === '17-25') {
+      e.doseRangeMgKg = { min: NaN, max: NaN }; e.defaultDoseMgKg = NaN;
+      e.dosePhase = { es: 'Combinación · revisar componentes', en: 'Combination · verify components' };
+      e.observations = 'La dosis indicada corresponde a atovacuona, no al total atovacuona-proguanil; confirmar dosis de proguanil y protocolo completo. / The dose refers to atovaquone, not the combined atovaquone-proguanil total; verify the proguanil dose and full protocol.';
+      e.bibliography = 'Estudio clínico / Clinical study: https://doi.org/10.3390/ani12060708';
+    } else if (drug === 'Imidocarb' && e.speciesLabel === 'Perro' && indication.includes('Babesia')) {
+      e.duration = 'separadas 14 días / 14 days apart';
+      e.observations = 'Dipropionato de imidocarb; no administrar IV. / Imidocarb dipropionate; do not administer IV.';
+      e.bibliography = 'CAPC, canine babesiosis: https://capcvet.org/guidelines/babesia';
+    } else if (drug === 'Fenbendazol' && indication === 'Giardiosis') {
+      e.duration = '5–7 días / days';
+      e.observations = 'Pauta de 5–7 días descrita en guías; una duración superior a la autorizada puede ser uso fuera de ficha. / A 5–7 day regimen is described in guidelines; courses longer than labelled may be off-label.';
+      e.bibliography = 'ABCD feline guideline: https://www.abcdcatsvets.org/guideline-for-giardiasis/ ; WSAVA 2018, canine and feline giardiasis: https://www.vin.com/apputil/content/defaultadv1.aspx?id=8896559&pid=22915';
+    } else if (drug === 'Melarsomina') {
+      e.frequency = '3 dosis / doses'; e.duration = 'días / days 0, 30, 31';
+      e.observations = '2,5 mg/kg por inyección IM profunda. Integrar con doxiciclina, preventivo y restricción estricta de ejercicio según protocolo AHS. / 2.5 mg/kg per deep IM injection. Combine with doxycycline, preventive and strict exercise restriction per AHS protocol.';
+      e.bibliography = 'American Heartworm Society, canine treatment protocol: https://www.heartwormsociety.org/resources/clinical-faqs/the-ahs-protocol-vs-slow-kill';
+    } else if (drug === 'Milbemicina + praziquantel' && e.speciesLabel === 'Perro') {
+      e.bibliography = 'ANMV, Milbemax dog product information: https://www.ircp.anmv.anses.fr/rcp.aspx?NomMedicament=MILBEMAXTAB+12%2C5+MG%2F125+MG+COMPRIMES+POUR+CHIENS';
+    } else if (drug === 'Alopurinol' && e.speciesLabel === 'Perro' && indication === 'Leishmaniosis') {
+      e.observations = 'Valorar tratamiento combinado y controles; riesgo de urolitos de xantina. / Assess combination treatment and follow-up; risk of xanthine uroliths.';
+      e.bibliography = 'LeishVet, treatment recommendations: https://www.leishvet.org/therapy/';
+    } else if (drug === 'Meglumina antimoniato' && e.speciesLabel === 'Perro') {
+      e.bibliography = 'LeishVet, treatment recommendations: https://www.leishvet.org/therapy/';
+    }
+    if (drug.toLowerCase().includes('permetrina')) {
+      e.dosePhase = { es: 'Solo perros · tóxico para gatos', en: 'Dogs only · toxic to cats' };
+      e.clinicalNotes = { es: 'No aplicar a gatos; impedir el contacto y acicalamiento con perros tratados hasta que el producto esté seco. Consultar la ficha.', en: 'Do not apply to cats; prevent contact and grooming of treated dogs until the product is dry. Check the product label.' };
+      e.bibliography = 'UK VMD, product information: https://www.vmd.defra.gov.uk/productinformationdatabase/files/SPC_Documents/SPC_2876869.PDF';
+    }
+    return e;
+  });
+}
+
 // Replace legacy unsourced cough rows with the attributed bilingual regimens.
 // Keep butorphanol analgesia/tracheal-collapse rows and all unrelated indications.
 export const spreadsheetDoseEntries: DoseCalculatorEntry[] = [
-  ...reviewPhotographedAntiInfectives(importedSpreadsheetDoseEntries.filter((entry) => {
+  ...reviewPhotographedAntiInfectives(reviewAntiparasitics(importedSpreadsheetDoseEntries).filter((entry) => {
     if (entry.activeIngredient.toLowerCase() === 'levetiracetam') return false;
     return !(entry.indication.es === 'Tos' && ['Butorfanol', 'Codeína', 'Dextrometorfano'].includes(entry.activeIngredient));
   })),

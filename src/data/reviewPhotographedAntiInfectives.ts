@@ -40,7 +40,7 @@ const ref = {
   marbofloxacin: 'Marbocyl P, veterinary product information (2025): https://www.vmd.defra.gov.uk/ProductInformationDatabase/files/QRD_Documents/QRD-Auth_3060499.PDF',
 };
 const loc = (es: string, en: string): LocalizedText => ({ es, en });
-const sourcePhase = loc('Libro fotografiado · comprobar pauta y ficha', 'Photographed book · verify regimen and product label');
+const sourcePhase = loc('Comprobar pauta y ficha', 'Verify regimen and product label');
 const reviewPhase = loc('Discrepancia clínica · revisar antes de usar', 'Clinical discrepancy · review before use');
 const unavailable = { min: Number.NaN, max: Number.NaN };
 const pages = (entry: DoseCalculatorEntry) => photographedPages[entry.activeIngredient];
@@ -78,13 +78,12 @@ function clinicalContext(entry: DoseCalculatorEntry): string[] {
 
 function attachSources(entry: DoseCalculatorEntry): DoseCalculatorEntry {
   const contexts = clinicalContext(entry);
-  const source = `Guía terapéutica del animal de compañía, p. ${pages(entry)}. Fotografías aportadas; autores, edición y año no visibles. Photographs supplied; authors, edition and year not visible.`;
   return { ...entry, dosePhase: entry.dosePhase ?? sourcePhase,
-    bibliography: [entry.bibliography, source, ...contexts.map((item) => `Contexto clínico / clinical context (no valida todas las indicaciones ni la dosis exacta): ${item}`)].filter(Boolean).join('\n') };
+    bibliography: [entry.bibliography, ...contexts.map((item) => `Contexto clínico / clinical context (no valida todas las indicaciones ni la dosis exacta): ${item}`)].filter(Boolean).join('\n') };
 }
 
 function notes(entry: DoseCalculatorEntry, es: string, en: string, phase = reviewPhase): DoseCalculatorEntry {
-  return { ...entry, dosePhase: phase, clinicalNotes: loc(`${es}${entry.observations ? ` Libro: ${entry.observations}` : ''}`, en) };
+  return { ...entry, dosePhase: phase, clinicalNotes: loc(`${es}${entry.observations ? ` ${entry.observations}` : ''}`, en) };
 }
 function disable(entry: DoseCalculatorEntry): DoseCalculatorEntry {
   return { ...entry, doseRangeMgKg: unavailable, defaultDoseMgKg: Number.NaN };
@@ -114,7 +113,7 @@ function review(entry: DoseCalculatorEntry): DoseCalculatorEntry[] {
         if (indication === 'Infecciones respiratorias') part = { ...part, doseText: '5', doseRangeMgKg: { min: 5, max: 5 }, defaultDoseMgKg: 5 };
         // Remove legacy alternatives of 20 mg/kg which apply only to dogs.
         if (indication === 'Otitis intensa' || indication.startsWith('Piodermas')) part = { ...part, observations: undefined };
-        return notes(part, 'Gato: no superar 5 mg/kg al día; daño retiniano y ceguera pueden ocurrir incluso a dosis menores. La pauta de 20 mg/kg de la fotografía no es aplicable a gatos. Categoría AMEG B; valorar cultivo y alternativas.', 'Cat: do not exceed 5 mg/kg/day; retinal injury and blindness can occur even at lower doses. The 20 mg/kg photographed regimen does not apply to cats. AMEG B; assess culture and alternatives.', loc('Gato · máximo 5 mg/kg/día · riesgo retinal', 'Cat · maximum 5 mg/kg/day · retinal risk'));
+        return notes(part, 'Gato: no superar 5 mg/kg al día; daño retiniano y ceguera pueden ocurrir incluso a dosis menores. La pauta de 20 mg/kg no es aplicable a gatos. Categoría AMEG B; valorar cultivo y alternativas.', 'Cat: do not exceed 5 mg/kg/day; retinal injury and blindness can occur even at lower doses. The 20 mg/kg regimen does not apply to cats. AMEG B; assess culture and alternatives.', loc('Gato · máximo 5 mg/kg/día · riesgo retinal', 'Cat · maximum 5 mg/kg/day · retinal risk'));
       }
       return notes(part, 'Perro: la dosis de 20 mg/kg debe individualizarse según diagnóstico y sensibilidad. Categoría AMEG B; reservar cuando alternativas adecuadas no sean eficaces.', 'Dog: individualise any 20 mg/kg regimen to diagnosis and susceptibility. AMEG B; reserve for cases without effective appropriate alternatives.', loc('Perro · AMEG B · uso restringido', 'Dog · AMEG B · restricted use'));
     });
@@ -123,19 +122,19 @@ function review(entry: DoseCalculatorEntry): DoseCalculatorEntry[] {
     item = notes(item, 'Gato: no superar 5 mg/kg al día; existe riesgo de daño retinal incluso a dosis menores. Categoría AMEG B; valorar alternativas y sensibilidad.', 'Cat: do not exceed 5 mg/kg/day; retinal injury can occur even at lower doses. AMEG B; assess alternatives and susceptibility.', loc('Gato · máximo 5 mg/kg/día · riesgo retinal', 'Cat · maximum 5 mg/kg/day · retinal risk'));
   }
   if (drug === 'Metronidazol' && indication === 'Tétanos' && entry.species.includes('Cat')) {
-    item = disable(notes(item, 'El libro indica 250 mg/gato; un estudio de 2024 describió 8–15 mg/kg cada 12 h. La dosis fija puede ser excesiva: confirmar con especialista antes de usar.', 'The book states 250 mg/cat; a 2024 study reported 8–15 mg/kg every 12 h. The fixed dose may be excessive: consult a specialist before use.'));
+    item = disable(notes(item, 'La pauta de 250 mg/gato puede ser excesiva; un estudio de 2024 describió 8–15 mg/kg cada 12 h. La dosis fija puede ser excesiva: confirmar con especialista antes de usar.', 'The 250 mg/cat regimen may be excessive; a 2024 study reported 8–15 mg/kg every 12 h. The fixed dose may be excessive: consult a specialist before use.'));
   }
   if (drug === 'Pradofloxacino' && indication === 'Infecciones respiratorias') {
-    item = disable(notes(item, 'El libro indica comprimidos 5 mg/kg c12h; la ficha europea de Veraflox indica 3 mg/kg c24h para comprimidos y 5 mg/kg c24h para suspensión felina. La indicación y la formulación condicionan el uso; confirmar.', 'The book states tablets 5 mg/kg q12h; the European Veraflox label states tablets 3 mg/kg q24h and feline suspension 5 mg/kg q24h. Indication and formulation determine use; verify.'));
+    item = disable(notes(item, 'La pauta 5 mg/kg c12h difiere de la ficha europea, de Veraflox, que indica 3 mg/kg c24h para comprimidos y 5 mg/kg c24h para suspensión felina. La indicación y la formulación condicionan el uso; confirmar.', 'The 5 mg/kg q12h regimen differs from the European Veraflox label, which states tablets 3 mg/kg q24h and feline suspension 5 mg/kg q24h. Indication and formulation determine use; verify.'));
   }
   if (drug === 'Famciclovir') {
-    item = disable(notes(item, 'El libro usa una dosis fija de 62,5–125 mg/gato; la guía ABCD describe 90 mg/kg c8h durante 21 días. Confirmar pauta y función renal; no convertir automáticamente.', 'The book uses a fixed 62.5–125 mg/cat; the ABCD guideline describes 90 mg/kg q8h for 21 days. Confirm regimen and renal function; do not convert automatically.'));
+    item = disable(notes(item, 'La dosis fija de 62,5–125 mg/gato difiere de la guía ABCD, que describe 90 mg/kg c8h durante 21 días. Confirmar pauta y función renal; no convertir automáticamente.', 'The fixed dose of 62.5–125 mg/cat differs from the ABCD guideline, which describes 90 mg/kg q8h for 21 days. Confirm regimen and renal function; do not convert automatically.'));
   }
   if (drug === 'Remdesivir') {
     item = notes(item, 'La pauta depende de afectación ocular o neurológica, formulación y respuesta. Consultar guía ABCD actual y normativa local; no confundir remdesivir con GS-441524.', 'Dose depends on ocular or neurological involvement, formulation and response. Consult current ABCD guidance and local rules; do not confuse remdesivir with GS-441524.', loc('PIF · pauta según forma clínica', 'FIP · regimen depends on clinical presentation'));
   }
   if (drug === 'Fluconazol' && indication === 'Aspergilosis') {
-    item = disable(notes(item, 'El libro describe esta pauta, pero una revisión felina indica que fluconazol tiene baja actividad frente a muchos mohos y no debe emplearse salvo sensibilidad demostrada. Confirmar especie fúngica, localización y alternativas.', 'The book describes this regimen, but a feline review reports poor fluconazole activity against many moulds and advises against use unless susceptibility supports it. Confirm fungal species, site and alternatives.'));
+    item = disable(notes(item, 'Una revisión felina indica que fluconazol tiene baja actividad frente a muchos mohos y no debe emplearse salvo sensibilidad demostrada. Confirmar especie fúngica, localización y alternativas.', 'A feline review reports poor fluconazole activity against many moulds and advises against use unless susceptibility supports it. Confirm fungal species, site and alternatives.'));
   }
   if (drug === 'Zidovudina') {
     item = notes(item, 'La guía ABCD limita el beneficio demostrado en infecciones naturales por FeLV y describe toxicidad hematológica. Valorar indicación específica y vigilar hemograma, anemia y neutropenia.', 'The ABCD guideline notes limited demonstrated benefit in naturally occurring FeLV infection and haematological toxicity. Assess the specific indication and monitor blood counts, anaemia and neutropenia.', loc('FeLV · evidencia limitada · monitorizar hemograma', 'FeLV · limited evidence · monitor blood counts'));
@@ -153,12 +152,12 @@ function review(entry: DoseCalculatorEntry): DoseCalculatorEntry[] {
   if (drug === 'Trimetoprim o sulfamida o combinación') {
     const isCoccidiosis = indication === 'Coccidiosis';
     item = notes(item,
-      isCoccidiosis ? 'La dosis de la fotografía es de sulfadimetoxina sola, no de trimetoprim ni de una combinación. Confirmar principio activo, presentación y diagnóstico.' : 'La dosis de la fotografía corresponde a la suma de trimetoprim y sulfamida en la combinación; no corresponde a trimetoprim solo. Confirmar composición y concentración.',
-      isCoccidiosis ? 'The photographed dose is for sulfadimethoxine alone, not trimethoprim or a combination. Verify active ingredient, formulation and diagnosis.' : 'The photographed dose refers to total trimethoprim plus sulfonamide in the combination, not trimethoprim alone. Verify composition and concentration.',
+      isCoccidiosis ? 'La dosis indicada es de sulfadimetoxina sola, no de trimetoprim ni de una combinación. Confirmar principio activo, presentación y diagnóstico.' : 'La dosis indicada corresponde a la suma de trimetoprim y sulfamida en la combinación; no corresponde a trimetoprim solo. Confirmar composición y concentración.',
+      isCoccidiosis ? 'The stated dose is for sulfadimethoxine alone, not trimethoprim or a combination. Verify active ingredient, formulation and diagnosis.' : 'The stated dose refers to total trimethoprim plus sulfonamide in the combination, not trimethoprim alone. Verify composition and concentration.',
       loc(isCoccidiosis ? 'Sulfadimetoxina sola · verificar producto' : 'Dosis de la combinación · verificar producto', isCoccidiosis ? 'Sulfadimethoxine alone · verify product' : 'Combined drug dose · verify product'));
   }
   if (indication === 'Criptosporidiosis') {
-    item = disable(notes(item, 'ESCCAP indica que la infección suele ser autolimitada y recomienda soporte; no hay tratamiento autorizado establecido para perros o gatos en esa guía. La pauta del libro requiere valoración individual y evidencia adicional.', 'ESCCAP notes that infection is often self-limiting and recommends supportive care; its guideline identifies no established authorised treatment for dogs or cats. The book regimen requires individual assessment and further evidence.'));
+    item = disable(notes(item, 'ESCCAP indica que la infección suele ser autolimitada y recomienda soporte; no hay tratamiento autorizado establecido para perros o gatos en esa guía. La pauta requiere valoración individual y evidencia adicional.', 'ESCCAP notes that infection is often self-limiting and recommends supportive care; its guideline identifies no established authorised treatment for dogs or cats. This regimen requires individual assessment and further evidence.'));
   }
   if (indication.toLowerCase().includes('diarrea aguda')) {
     item = notes(item, 'En perros con diarrea aguda leve o moderada ENOVAT recomienda no usar antibióticos; considerar antimicrobianos sistémicos en enfermedad grave o circunstancias específicas. La referencia no valida esta dosis para todas las especies ni para todos los diagnósticos agrupados.', 'For mild or moderate acute diarrhoea in dogs ENOVAT recommends against antibiotics; consider systemic antimicrobials in severe disease or specific circumstances. The reference does not validate this dose for all species or grouped diagnoses.', loc('Diarrea canina · antibiótico solo si indicado', 'Canine diarrhoea · antibiotics only if indicated'));
@@ -176,7 +175,7 @@ const add = (ingredient: string, species: DoseCalculatorEntry['species'], indica
   const base: DoseCalculatorEntry = {
     id: `photo-2026-${ingredient.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${species.join('-').toLowerCase()}-${indication.en.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     activeIngredient: ingredient, category: loc('Antiinfecciosos Sistémicos', 'Systemic anti-infectives'),
-    subcategory: loc('Pautas del libro fotografiado', 'Photographed book regimens'), species,
+    subcategory: loc('Antiinfecciosos', 'Anti-infectives'), species,
     speciesLabel: species.map((s) => s === 'Dog' ? 'Perro' : 'Gato').join('/'),
     indication, route: options.route ?? 'VO', doseUnit: options.unit ?? 'mg/kg', doseRangeMgKg: { min, max }, defaultDoseMgKg: min,
     doseText: options.disable ? min === max ? `${min}` : `${min}–${max}` : undefined,
@@ -188,15 +187,15 @@ const add = (ingredient: string, species: DoseCalculatorEntry['species'], indica
 
 const newRows: DoseCalculatorEntry[] = [
   add('Cefalexina', ['Dog'], loc('Neumonía bacteriana', 'Bacterial pneumonia'), 22, 25, 'q12h'),
-  add('Cefalexina', ['Cat'], loc('Neumonía bacteriana', 'Bacterial pneumonia'), 22, 22, 'q24h', { disable: true, notes: loc('El libro indica c24h; la tabla respiratoria ISCAID indica 22–25 mg/kg c12h. Confirmar la pauta y su adecuación al paciente.', 'The book states q24h; the ISCAID respiratory table states 22–25 mg/kg q12h. Confirm regimen and patient suitability.') }),
+  add('Cefalexina', ['Cat'], loc('Neumonía bacteriana', 'Bacterial pneumonia'), 22, 22, 'q24h', { disable: true, notes: loc('La pauta c24h difiere de la tabla respiratoria ISCAID, que indica 22–25 mg/kg c12h. Confirmar la pauta y su adecuación al paciente.', 'The q24h regimen differs from the ISCAID respiratory table, which states 22–25 mg/kg q12h. Confirm regimen and patient suitability.') }),
   add('Marbofloxacino', ['Dog', 'Cat'], loc('Orquitis-epididimitis e infección urinaria bacteriana', 'Orchitis-epididymitis and bacterial urinary infection'), 2, 2, 'q24h', { route: 'VO/SC', disable: true, notes: loc('AMEG B: valorar cultivo y alternativas. Las indicaciones y pautas de inyección difieren según especie y producto; contrastar la ficha antes de elegir vía y frecuencia.', 'AMEG B: consider culture and alternatives. Indications and injection regimens differ by species and product; check the label before selecting route and interval.') }),
-  add('Marbofloxacino', ['Dog', 'Cat'], loc('Piodermas y otitis intensa', 'Pyoderma and severe otitis'), 2.75, 2.75, 'q24h', { route: 'VO/SC', disable: true, notes: loc('AMEG B: valorar alternativas y cultivo. El libro menciona 5,5 mg/kg frente a Pseudomonas o pioderma intensa; las pautas dependen de la especie y la formulación.', 'AMEG B: assess alternatives and culture. The book mentions 5.5 mg/kg for Pseudomonas or severe pyoderma; regimens depend on species and formulation.') }),
+  add('Marbofloxacino', ['Dog', 'Cat'], loc('Piodermas y otitis intensa', 'Pyoderma and severe otitis'), 2.75, 2.75, 'q24h', { route: 'VO/SC', disable: true, notes: loc('AMEG B: valorar alternativas y cultivo. Se han descrito 5,5 mg/kg frente a Pseudomonas o pioderma intensa; las pautas dependen de la especie y la formulación.', 'AMEG B: assess alternatives and culture. A dose of 5.5 mg/kg has been described for Pseudomonas or severe pyoderma; regimens depend on species and formulation.') }),
   add('Azitromicina', ['Dog'], loc('Piodermas por estafilococos multirresistentes', 'Multidrug-resistant staphylococcal pyoderma'), 10, 10, 'q24h', { notes: loc('Decisión guiada por cultivo y sensibilidad; verificar eficacia y alternativas.', 'Base the decision on culture and susceptibility; verify efficacy and alternatives.'), disable: true }),
-  add('Azitromicina', ['Dog', 'Cat'], loc('Rinitis alérgica o linfoplasmocitaria', 'Allergic or lymphoplasmacytic rhinitis'), 5, 5, 'q24h', { notes: loc('Pauta del libro; no se ha contrastado la eficacia para esta indicación. Evitar uso antimicrobiano sin indicación justificada.', 'Book regimen; efficacy for this indication has not been independently established. Avoid antimicrobial use without a justified indication.'), disable: true }),
-  add('Azitromicina', ['Dog'], loc('Papilomatosis', 'Papillomatosis'), 10, 10, 'q24h', { duration: '10 días', notes: loc('Pauta durante 10 días en el libro. Un ensayo pequeño sugirió beneficio; una revisión posterior considera la eficacia no concluyente. Ponderar resolución espontánea y uso prudente de antibióticos.', 'Book regimen for 10 days. A small trial suggested benefit; a later review considers efficacy inconclusive. Consider spontaneous resolution and antimicrobial stewardship.'), disable: true }),
+  add('Azitromicina', ['Dog', 'Cat'], loc('Rinitis alérgica o linfoplasmocitaria', 'Allergic or lymphoplasmacytic rhinitis'), 5, 5, 'q24h', { notes: loc('No se ha contrastado la eficacia para esta indicación. Evitar uso antimicrobiano sin indicación justificada.', 'Efficacy for this indication has not been independently established. Avoid antimicrobial use without a justified indication.'), disable: true }),
+  add('Azitromicina', ['Dog'], loc('Papilomatosis', 'Papillomatosis'), 10, 10, 'q24h', { duration: '10 días', notes: loc('Un ensayo pequeño sugirió beneficio; una revisión posterior considera la eficacia no concluyente. Ponderar resolución espontánea y uso prudente de antibióticos.', 'A small trial suggested benefit; a later review considers efficacy inconclusive. Consider spontaneous resolution and antimicrobial stewardship.'), disable: true }),
   add('Azitromicina', ['Dog'], loc('Criptosporidiosis', 'Cryptosporidiosis'), 5, 10, 'q12h', { notes: loc('Evidencia clínica y necesidad de tratamiento deben evaluarse individualmente.', 'Assess clinical evidence and the need for treatment individually.'), disable: true }),
   add('Azitromicina', ['Cat'], loc('Criptosporidiosis', 'Cryptosporidiosis'), 10, 10, 'q24h', { notes: loc('Evidencia clínica y necesidad de tratamiento deben evaluarse individualmente.', 'Assess clinical evidence and the need for treatment individually.'), disable: true }),
-  add('Pradofloxacino', ['Cat'], loc('Infección respiratoria · suspensión oral', 'Respiratory infection · oral suspension'), 7.5, 7.5, 'q24h', { notes: loc('El libro indica 7,5 mg/kg; la ficha de suspensión felina recomienda 5 mg/kg c24h y la graduación produce 5–7,5 mg/kg. Comprobar indicación y presentación.', 'The book states 7.5 mg/kg; the feline suspension label recommends 5 mg/kg q24h and syringe graduation results in 5–7.5 mg/kg. Check indication and formulation.'), disable: true }),
+  add('Pradofloxacino', ['Cat'], loc('Infección respiratoria · suspensión oral', 'Respiratory infection · oral suspension'), 7.5, 7.5, 'q24h', { notes: loc('La pauta de 7,5 mg/kg debe contrastarse con la ficha de suspensión felina, que recomienda 5 mg/kg c24h y la graduación produce 5–7,5 mg/kg. Comprobar indicación y presentación.', 'The 7.5 mg/kg regimen must be checked against the feline suspension label, which recommends 5 mg/kg q24h and syringe graduation results in 5–7.5 mg/kg. Check indication and formulation.'), disable: true }),
 ];
 
 export function reviewPhotographedAntiInfectives(entries: DoseCalculatorEntry[]): DoseCalculatorEntry[] {

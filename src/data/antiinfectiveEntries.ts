@@ -165,7 +165,7 @@ export const antiinfectiveEntries: TherapeuticEntry[] = [
     pathologies: ['Pioderma canina', 'ITU bacteriana', 'Mastitis', 'Otitis intensa', 'Neumonia bacteriana', 'Discospondilitis'],
     indications: 'Cefalosporina oral muy util para piel, oido, vias urinarias y algunas infecciones profundas.',
     dosage:
-      'Perros/Gatos: pioderma e ITU 15-30 mg/kg VO cada 12 h.\nPerros/Gatos: otitis intensa 22 mg/kg VO cada 12 h.\nPerros/Gatos: colangitis/hepatitis cronica no asociada al cobre 15 mg/kg VO cada 12 h.\nPerros: neumonia bacteriana 22-25 mg/kg VO cada 12 h.\nGatos: neumonia bacteriana 22 mg/kg VO cada 24 h. Consultar indicacion, ficha y sensibilidad; estas pautas se basan en las paginas fotografiadas.',
+      'Perros/Gatos: pioderma e ITU 15-30 mg/kg VO cada 12 h.\nPerros/Gatos: otitis intensa 22 mg/kg VO cada 12 h.\nPerros/Gatos: colangitis/hepatitis cronica no asociada al cobre 15 mg/kg VO cada 12 h.\nPerros: neumonia bacteriana 22-25 mg/kg VO cada 12 h.\nGatos: neumonia bacteriana 22 mg/kg VO cada 24 h. Consultar indicacion, ficha y sensibilidad; confirmar la pauta concreta antes de prescribir.',
     administrationConditions: 'En piodermas intensas puede usarse el extremo superior del rango. Ajustar segun cultivo.',
     adverseEffects: 'Trastornos gastrointestinales y reacciones de hipersensibilidad.',
     contraindications: 'Evitar en hipersensibilidad a cefalosporinas.',
@@ -465,7 +465,7 @@ export const antiinfectiveEntries: TherapeuticEntry[] = [
     pathologies: ['Pioderma canina', 'Infecciones respiratorias', 'Hemoplasmosis'],
     indications: 'Fluoroquinolona de uso companion con interes especial en gato y algunas infecciones cutaneas o respiratorias.',
     dosage:
-      'Perros/Gatos: piodermas 3 mg/kg VO cada 24 h; por via oral en algunas presentaciones 5 mg/kg cada 24 h.\nEl libro describe 5 mg/kg VO cada 12 h en infecciones respiratorias, pero difiere de la ficha europea: comprobar indicacion, formulacion y pauta antes de usar. La ficha de comprimidos indica 3 mg/kg VO cada 24 h; suspension felina 5 mg/kg cada 24 h (la graduacion puede resultar en 5-7,5 mg/kg).\nGatos: hemoplasmosis 5 mg/kg VO cada 24 h.',
+      'Perros/Gatos: piodermas 3 mg/kg VO cada 24 h; por via oral en algunas presentaciones 5 mg/kg cada 24 h.\nLa pauta de 5 mg/kg VO cada 12 h en infecciones respiratorias difiere de la ficha europea: comprobar indicacion, formulacion y pauta antes de usar. La ficha de comprimidos indica 3 mg/kg VO cada 24 h; suspension felina 5 mg/kg cada 24 h (la graduacion puede resultar en 5-7,5 mg/kg).\nGatos: hemoplasmosis 5 mg/kg VO cada 24 h.',
     administrationConditions: 'Ajustar a presentacion y especie; priorizar cultivo si se contempla uso repetido.',
     adverseEffects: 'Trastornos gastrointestinales y posibles efectos del grupo fluorquinolona.',
     contraindications: 'No administrar a perros en crecimiento de razas pequenas, medianas y grandes antes de los 12 meses, ni gigantes antes de los 18 meses; precaucion en gatos menores de 6 semanas, epilepticos, gestantes o lactantes.',
@@ -479,7 +479,7 @@ export const antiinfectiveEntries: TherapeuticEntry[] = [
     pathologies: ['Choque', 'Infecciones respiratorias graves', 'Tetano', 'Gastritis por Helicobacter', 'Enfermedad periodontal', 'Diarrea aguda', 'Enteritis cronica', 'Encefalopatia hepatica', 'Colangitis'],
     indications: 'Nitroimidazol para anaerobios y algunos protozoos, con mucho uso digestivo y hospitalario.',
     dosage:
-      'Perros/Gatos: choque e infecciones respiratorias graves 8-15 mg/kg IV cada 8 h.\nPerros: tetanos 10 mg/kg VO cada 8 h.\nGatos: el libro cita 250 mg/gato para tetanos; pauta de seguridad cuestionable y no calculable en la guia de dosis. Un estudio retrospectivo describe 8-15 mg/kg cada 12 h; confirmar via y protocolo con especialista.\nGatos: gastritis por Helicobacter 10 mg/kg VO cada 12 h en combinacion.\nPerros: enfermedad periodontal 10 mg/kg VO cada 12 h, con o sin espiramicina.\nDiarrea aguda: no usar antibioticos de rutina en perros con enfermedad leve o moderada; valorar solo si existe indicacion clinica conforme a ENOVAT.\nPerros: enteritis cronica 10 mg/kg VO cada 12 h.\nGatos: enteritis cronica 15 mg/kg VO cada 24 h.\nPerros/Gatos: encefalopatia hepatica 7,5 mg/kg VO cada 12 h.\nPerros/Gatos: colangitis neutrofilica y pancreatitis felinas, o hepatitis cronica canina no asociada al cobre, 7,5 mg/kg VO cada 12 h combinado con enrofloxacino.',
+      'Perros/Gatos: choque e infecciones respiratorias graves 8-15 mg/kg IV cada 8 h.\nPerros: tetanos 10 mg/kg VO cada 8 h.\nGatos: la pauta de 250 mg/gato para tetanos presenta dudas de seguridad y no calculable en la guia de dosis. Un estudio retrospectivo describe 8-15 mg/kg cada 12 h; confirmar via y protocolo con especialista.\nGatos: gastritis por Helicobacter 10 mg/kg VO cada 12 h en combinacion.\nPerros: enfermedad periodontal 10 mg/kg VO cada 12 h, con o sin espiramicina.\nDiarrea aguda: no usar antibioticos de rutina en perros con enfermedad leve o moderada; valorar solo si existe indicacion clinica conforme a ENOVAT.\nPerros: enteritis cronica 10 mg/kg VO cada 12 h.\nGatos: enteritis cronica 15 mg/kg VO cada 24 h.\nPerros/Gatos: encefalopatia hepatica 7,5 mg/kg VO cada 12 h.\nPerros/Gatos: colangitis neutrofilica y pancreatitis felinas, o hepatitis cronica canina no asociada al cobre, 7,5 mg/kg VO cada 12 h combinado con enrofloxacino.',
     administrationConditions: 'Reducir o evitar uso prolongado sin indicacion clara por riesgo neurotoxico.',
     adverseEffects: 'Ataxia, nistagmo, letargia, hiporexia y sintomas gastrointestinales.',
     contraindications: 'No administrar a pacientes con hepatopatia ni a hembras gestantes o lactantes.',
@@ -520,7 +520,7 @@ export const antiinfectiveEntries: TherapeuticEntry[] = [
     pathologies: ['Aspergilosis', 'Criptococosis', 'Cistitis fungica', 'Dermatitis por Malassezia', 'Estomatitis felina'],
     indications: 'Azol de buena penetracion tisular utilizado en criptococosis y algunas cistitis fungicas. Actividad limitada frente a muchos mohos; revisar sensibilidad en aspergilosis.',
     dosage:
-      'Aspergilosis: el libro cita 2,5-5 mg/kg cada 12 h, pero una revision felina no recomienda fluconazol frente a mohos salvo sensibilidad demostrada; confirmar diagnostico y alternativas.\nPerros/Gatos: criptococosis 10 mg/kg VO cada 12 h durante 3-6 meses.\nPerros: cistitis fungica 1,25-2,5 mg/kg VO/IV cada 12 h.\nGatos: cistitis fungica 50 mg/gato VO cada 12 h.\nPerros/Gatos: dermatitis por Malassezia y estomatitis felina 5 mg/kg VO cada 24 h.',
+      'Aspergilosis: una revision felina no recomienda fluconazol frente a mohos salvo sensibilidad demostrada; confirmar diagnostico y alternativas.\nPerros/Gatos: criptococosis 10 mg/kg VO cada 12 h durante 3-6 meses.\nPerros: cistitis fungica 1,25-2,5 mg/kg VO/IV cada 12 h.\nGatos: cistitis fungica 50 mg/gato VO cada 12 h.\nPerros/Gatos: dermatitis por Malassezia y estomatitis felina 5 mg/kg VO cada 24 h.',
     administrationConditions: 'Requiere seguimiento prolongado y control hepatico/renal.',
     adverseEffects: 'Hepatotoxicidad, hiporexia y trastornos gastrointestinales.',
     contraindications: 'Precaucion si se prolonga el tratamiento o existe hepatopatia.',
@@ -588,7 +588,7 @@ export const antiinfectiveEntries: TherapeuticEntry[] = [
     systems: ['Organos de los sentidos'],
     pathologies: ['Herpesvirosis felina'],
     indications: 'Antiviral felino de primera linea para herpesvirus y complicaciones oculares/respiratorias asociadas.',
-    dosage: 'Gatos: el libro cita 62,5-125 mg/gato cada 12-24 h; la guia ABCD describe 90 mg/kg VO cada 8 h durante 21 dias. Confirmar pauta, cuadro clinico y funcion renal antes de utilizar.',
+    dosage: 'Gatos: la guia ABCD describe 90 mg/kg VO cada 8 h durante 21 dias. Confirmar pauta, cuadro clinico y funcion renal antes de utilizar.',
     administrationConditions: 'Ajustar a gravedad ocular y respiratoria y a tolerancia del paciente.',
     adverseEffects: 'Hiporexia y molestias digestivas leves.',
     contraindications: 'Precaucion en enfermedad renal avanzada.',
