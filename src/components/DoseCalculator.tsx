@@ -3,6 +3,7 @@ import { Language, labels } from '../i18n';
 import { translateMedicalTerm } from '../lib/terms';
 import { DoseCalculatorEntry } from '../types';
 import CriProtocolLinks from './CriProtocolLinks';
+import DoseBibliography from './DoseBibliography';
 import './dose-records.css';
 
 interface Props {
@@ -348,7 +349,7 @@ export default function DoseCalculator({
                         <details className="dose-guide-detail">
                           <summary>{es ? 'Notas y fuentes' : 'Notes and sources'}</summary>
                           {detailNotes && <p>{detailNotes}</p>}
-                          {detailSource && <p><strong>{t.bibliographyLabel}</strong> · {detailSource}</p>}
+                          {detailSource && <DoseBibliography value={detailSource} lang={lang} />}
                         </details>
                       )}
                     </td>
@@ -403,7 +404,7 @@ export default function DoseCalculator({
                     </td>
                   ) : null}
                   {visibleColumns.observations ? <td role="cell" data-label={t.observationsLabel}>{entry.clinicalNotes?.[lang] ?? entry.observations ?? '--'}</td> : null}
-                  {visibleColumns.bibliography ? <td role="cell" data-label={t.bibliographyLabel}>{entry.bibliography ?? '--'}</td> : null}
+                  {visibleColumns.bibliography ? <td role="cell" className="dose-bibliography-cell" data-label={t.bibliographyLabel}><DoseBibliography value={entry.bibliography} lang={lang} /></td> : null}
                   {visibleColumns.openKnowledge && onOpenKnowledge ? (
                     <td role="cell" data-label={t.openKnowledgeRecord}>
                       <div className="dose-entry-actions">

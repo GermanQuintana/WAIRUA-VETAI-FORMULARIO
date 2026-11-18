@@ -84,3 +84,25 @@
 .dose-guide-detail { max-width: 100%; font-size: .88rem; }
 .dose-guide-detail > summary { cursor: pointer; padding: .35rem 0; color: var(--tk-strong); }
 .dose-guide-detail p { max-width: 85ch; white-space: pre-line; line-height: 1.5; margin: .45rem 0; }
+
+.dose-guide .dose-records td.dose-bibliography-cell {
+  grid-column: 1 / -1;
+  padding-top: .65rem;
+  border-top: 1px solid var(--tk-line);
+}
+.dose-bibliography { min-width: 0; max-width: 100%; font-size: .88rem; }
+.dose-guide .dose-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.dose-citations li { min-width: 0; overflow-wrap: anywhere; }
+.dose-citations a { color: var(--tk-strong); text-decoration: underline; }
+.dose-citations li small { margin-inline-start: .35rem; color: var(--tk-muted); }
+.dose-citation-scope { display: block; margin-top: .3rem; color: var(--tk-muted); }
+.dose-bibliography details { margin-top: .3rem; }
+.dose-bibliography details[open] .dose-citations { display: grid; }
+.dose-bibliography summary { width: fit-content; color: var(--tk-strong); cursor: pointer; padding-block: .25rem; }

@@ -3,7 +3,7 @@ import { DoseCalculatorEntry, LocalizedText } from '../types';
 // Checked against both the article and its image-based Table 1 on 2026-11-17.
 // Conflicting regimens remain readable, but NaN prevents automatic calculation.
 const articleUrl = 'https://todaysveterinarypractice.com/pharmacology/antitussive-medications-for-dogs-and-cats/';
-const bibliography = `Bruner JM, Zhang L. Antitussive Medications for Dogs and Cats. Today's Veterinary Practice. November/December 2025; published October 6, 2025. Table 1 and accompanying text. ${articleUrl}`;
+const bibliography = `Bruner & Zhang (2025) — Bruner JM, Zhang L. Antitussive Medications for Dogs and Cats. Today's Veterinary Practice. November/December 2025; published October 6, 2025. Table 1 and accompanying text. ${articleUrl}`;
 const localized = (es: string, en: string): LocalizedText => ({ es, en });
 const context = localized(
   'Uso antitusivo fuera de ficha técnica, a justificar por tos persistente tras abordar la causa. No suprimir la tos protectora/productiva. Revisión narrativa; evidencia veterinaria limitada. Individualizar y comprobar contraindicaciones e interacciones de la formulación.',
