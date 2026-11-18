@@ -1,6 +1,7 @@
 import { levetiracetamDoseEntries } from './levetiracetam';
 import { antitussiveDoseEntries } from './antitussives';
 import { reviewPhotographedAntiInfectives } from './reviewPhotographedAntiInfectives';
+import { photographedDigestiveAdditions, reviewPhotographedDigestive } from './reviewPhotographedDigestive';
 import { DoseCalculatorEntry, Species } from '../types';
 
 const rawSpreadsheetDoseTable = `Categoría	Subcategoría	Principio activo	AMEG UE	Especie	Indicación	Dosis	Unidad	Vía	Frecuencia	Duración	Observaciones	Bibliografía
@@ -896,7 +897,8 @@ export const spreadsheetDoseEntries: DoseCalculatorEntry[] = [
   ...reviewPhotographedAntiInfectives(reviewAntiparasitics(importedSpreadsheetDoseEntries).filter((entry) => {
     if (entry.activeIngredient.toLowerCase() === 'levetiracetam') return false;
     return !(entry.indication.es === 'Tos' && ['Butorfanol', 'Codeína', 'Dextrometorfano'].includes(entry.activeIngredient));
-  })),
+  })).map(reviewPhotographedDigestive),
+  ...photographedDigestiveAdditions,
   ...levetiracetamDoseEntries,
   ...antitussiveDoseEntries,
 ];
